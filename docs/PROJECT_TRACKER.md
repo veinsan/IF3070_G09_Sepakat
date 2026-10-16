@@ -4,61 +4,67 @@
 |---|---|
 | **Deadline** | Kamis, 22 Oktober 2026, **22.22 WIB** (release GitHub + submit di Edunex) |
 | **Target freeze internal** | Rabu, 21 Oktober 2026 (buffer 1 hari) |
-| **Repo** | `IF3070_G09_<NamaKelompok>` (GitHub akun pribadi, **public** sebelum deadline) |
+| **Kelompok** | G09 — **Sepakat** |
+| **Repo** | [`veinsan/IF3070_G09_Sepakat`](https://github.com/veinsan/IF3070_G09_Sepakat) (GitHub akun pribadi Riantama, **public** sebelum deadline) |
 | **Tag release** | `v1.0` (milestone 1, revisi 0). Revisi berikutnya `v1.1`, `v1.2`, … |
 | **Demo** | Jadwal menyusul, pantau Teams |
 
 ## Anggota
 
-| NIM | Nama | Fokus utama |
-|---|---|---|
-| | | Core model (state, objective, moves, IO, UB) + Hill-Climbing |
-| | | Simulated Annealing + Genetic Algorithm (roulette) |
-| | | Visualisasi + experiment runner + koordinator laporan |
+| Kode | NIM | Nama | Fokus utama |
+|---|---|---|---|
+| **R** | 18224061 | Riantama Putra | Core model (state, occupancy, objective + penalty, delta evaluation, moves, UB) + seluruh varian Hill-Climbing + Bonus 3 (multi-kapal) |
+| **T** | 18224059 | Tiara Kusuma Wardhani | Simulated Annealing + Genetic Algorithm (roulette) + Bonus 1 (objective ETA) |
+| **L** | 18224057 | Levina Nathania Bunardi | Input/loader + generator instance + visualisasi + CLI + experiment runner & plot + koordinator laporan |
 
+Kode `[R]`/`[T]`/`[L]` di milestone = penanggung jawab task. `[All]` = dikerjakan bersama.
 Semua anggota menulis bagian laporan untuk algoritma masing-masing dan ikut analisis.
+
+**Urutan dependensi:** `[L]` loader + `main.json` dan `[R]` core model harus jadi duluan, karena SA, GA,
+visualisasi, dan runner bergantung ke API state/objective/move. Sambil menunggu, `[T]` dan `[L]` bisa
+mulai dari kontrak API di DESIGN §3–§5.
 
 ---
 
 ## Milestones
 
-### M0 — Setup (25–27 Sep)
-- [ ] Isi sheet kelompok (**batas Minggu 27 Sep 23.59**) → dapat nomor kelompok final
-- [ ] Rename repo/folder sesuai format `IF3070_GXX_NamaKelompok`, invite anggota
-- [ ] Struktur folder: `src/`, `docs/`, `output/`, `README.md`, `.gitignore` (`__pycache__/`, `.venv/`)
-- [ ] Baca Q&A di unggahan Teams, lalu kirim pertanyaan terbuka (lihat §Q&A)
-- [ ] Tonton ulang / baca salindia Khodra: HC, SA, GA
+### M0 — Setup (25–27 Sep) ✅
+- [x] Isi sheet kelompok (**batas Minggu 27 Sep 23.59**) → dapat nomor kelompok final (G09)
+- [x] Rename repo/folder sesuai format `IF3070_GXX_NamaKelompok`, invite anggota
+- [x] Struktur folder: `src/`, `docs/`, `output/`, `README.md`, `.gitignore` (`__pycache__/`, `.venv/`)
+- [ ] Baca Q&A di unggahan Teams, lalu kirim pertanyaan terbuka (lihat §Q&A) — ditunda
+- [x] Tonton ulang / baca salindia Khodra: HC, SA, GA
 
 ### M1 — Core Model (28 Sep – 4 Okt)
-- [ ] Format input JSON + loader + validasi (DESIGN §2)
-- [ ] Generator instance random (seeded) + `src/data/main.json` + 1 instance kecil untuk brute force
-- [ ] State + occupancy grid + objective dengan penalty (DESIGN §4)
-- [ ] Delta evaluation + 1 self-check (hasil delta = hasil full recompute di ribuan random move)
-- [ ] 3 move: move (termasuk ke luar), swap, rotate + random neighbor + full neighborhood
-- [ ] Random initial state
-- [ ] Upper bound (DP knapsack berat+luas) + brute force instance kecil
-- [ ] Visualisasi state: grid deck, kendaraan berwarna + label id, daftar kendaraan di luar, nilai objective/fee/berat
+- [ ] `[L]` Format input JSON + loader + validasi (DESIGN §2)
+- [ ] `[L]` Generator instance random (seeded) + `src/data/main.json` + 1 instance kecil untuk brute force
+- [ ] `[R]` State + occupancy grid + objective dengan penalty (DESIGN §4)
+- [ ] `[R]` Delta evaluation + 1 self-check (hasil delta = hasil full recompute di ribuan random move)
+- [ ] `[R]` 3 move: move (termasuk ke luar), swap, rotate + random neighbor + full neighborhood
+- [ ] `[R]` Random initial state
+- [ ] `[R]` Upper bound (DP knapsack berat+luas) + brute force instance kecil
+- [ ] `[L]` Visualisasi state: grid deck, kendaraan berwarna + label id, daftar kendaraan di luar, nilai objective/fee/berat
 
 ### M2 — Algoritma (5–11 Okt)
-- [ ] Steepest Ascent HC
-- [ ] SA: T0 otomatis, geometric cooling, catat `e^(ΔE/T)` dan stuck count
-- [ ] GA: **roulette wheel selection eksplisit** (cumsum + spin), one-point crossover, mutation, elitism
-- [ ] Semua algoritma return format hasil yang sama (EXPERIMENTS §2)
-- [ ] CLI: `python src/main.py --algo <hc|sa|ga|...> --instance ... --seed ...`
-- [ ] (Bonus 2) Stochastic, Sideways, Random Restart HC
+- [ ] `[R]` Steepest Ascent HC
+- [ ] `[T]` SA: T0 otomatis, geometric cooling, catat `e^(ΔE/T)` dan stuck count
+- [ ] `[T]` GA: **roulette wheel selection eksplisit** (cumsum + spin), one-point crossover, mutation, elitism
+- [ ] `[All]` Semua algoritma return format hasil yang sama (EXPERIMENTS §2)
+- [ ] `[L]` CLI: `python src/main.py --algo <hc|sa|ga|...> --instance ... --seed ...`
+- [ ] `[R]` (Bonus 2) Stochastic, Sideways, Random Restart HC
 
 ### M3 — Eksperimen (12–16 Okt)
-- [ ] Script `experiments.py` untuk menjalankan semua run wajib (24) → `output/`
-- [ ] Generate semua plot dari JSON
-- [ ] Isi tabel di `EXPERIMENTS.md`
-- [ ] Sanity check: semua hasil akhir feasible? durasi masuk akal?
+- [ ] `[L]` Script `experiments.py` untuk menjalankan semua run wajib (24) → `output/`
+- [ ] `[L]` Generate semua plot dari JSON
+- [ ] `[All]` Isi tabel di `EXPERIMENTS.md` (masing-masing untuk algoritmanya)
+- [ ] `[All]` Sanity check: semua hasil akhir feasible? durasi masuk akal?
 
 ### M4 — Laporan, Bonus, Release (17–21 Okt)
-- [ ] Laporan PDF (lihat checklist di bawah)
-- [ ] Bonus 1 / 3 kalau waktunya cukup
-- [ ] README final (setup, run, pembagian tugas)
-- [ ] Repo **public**, tag `v1.0`, buat GitHub Release, submit di Edunex
-- [ ] Clone ulang repo di folder bersih, ikuti README dari nol, pastikan jalan
+- [ ] `[L]` Laporan PDF (koordinator; isi per bab oleh pemilik bagian, lihat checklist di bawah)
+- [ ] `[T]` Bonus 1 / `[R]` Bonus 3 kalau waktunya cukup
+- [ ] `[L]` README final (setup, run, pembagian tugas)
+- [ ] `[R]` Repo **public**, tag `v1.0`, buat GitHub Release (repo di akun Riantama), submit di Edunex
+- [ ] `[L]` Clone ulang repo di folder bersih, ikuti README dari nol, pastikan jalan
 
 ### M5 — Demo (TBA)
 - [ ] Isi jadwal demo
