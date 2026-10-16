@@ -26,6 +26,24 @@ mulai dari kontrak API di DESIGN §3–§5.
 
 ---
 
+## Jadwal Ulang (Jum 16 – Kam 22 Okt)
+
+Target: **semua spek wajib + Bonus 1, 2, 3 selesai**. Kolom "Gate" = kondisi yang harus tercapai di akhir
+hari. Kalau gate meleset, yang wajib didahulukan. Bonus boleh geser ke Senin/Selasa, tapi **tidak boleh
+makan Rabu** (hari laporan).
+
+| Hari | R (Riantama) | T (Tiara) | L (Levina) | Gate |
+|---|---|---|---|---|
+| **Jum 16** | Kontrak API (signature state/objective/move) di pagi hari, lalu state + occupancy + objective + delta eval + self-check, 3 move, random init | Review salindia SA/GA, tulis SA & GA terhadap kontrak API (pakai stub dulu) | Loader + validasi, generator instance, `main.json` + instance kecil | Core API jalan, `main.json` ada |
+| **Sab 17** | UB (DP knapsack) + brute force, Steepest HC | SA selesai: T0 otomatis, cooling, history `e^(ΔE/T)`, stuck count | Visualisasi state + writer result JSON (EXPERIMENTS §2) | HC & SA run end-to-end + bisa divisualisasi |
+| **Min 18** | Bonus 2: Stochastic, Sideways, Random Restart HC | GA selesai: roulette, crossover, mutation, elitism, history max/mean | CLI `main.py` + `experiments.py` + fungsi plot | **Code freeze spek wajib**, semua algoritma jalan via CLI |
+| **Sen 19** | Bonus 3: multi-kapal di core (constraint per kapal, move/swap lintas kapal, UB total) | Bonus 1: objective ETA, dibuat sebagai bobot per kendaraan supaya delta eval tidak berubah | Jalankan 24 run wajib + 9 run Bonus 2, generate plot, isi tabel EXPERIMENTS. Skeleton laporan + cover + deskripsi persoalan | Semua hasil wajib + Bonus 2 ada di `output/` |
+| **Sel 20** | Bonus 3 selesai + 3 run, tulis bab core + HC | 3 run Bonus 1, tulis bab SA + GA | Visualisasi multi-kapal, plot ringkasan (box plot, overlay konvergensi), tulis bab eksperimen | Semua run bonus selesai, draf laporan per bab |
+| **Rab 21** | `[All]` analisis (EXPERIMENTS §5), kesimpulan & saran, referensi, form AI | `[All]` (sama) | Compile PDF, README final, uji clone bersih | **Freeze internal 23.59**: PDF + README final |
+| **Kam 22** | Fix minor saja. Repo public, tag `v1.0`, GitHub Release, submit Edunex **≤ 20.00** | Latihan demo | Latihan demo | Tersubmit sebelum 22.22 |
+
+---
+
 ## Milestones
 
 ### M0 — Setup (25–27 Sep) ✅
@@ -35,7 +53,7 @@ mulai dari kontrak API di DESIGN §3–§5.
 - [ ] Baca Q&A di unggahan Teams, lalu kirim pertanyaan terbuka (lihat §Q&A) — ditunda
 - [x] Tonton ulang / baca salindia Khodra: HC, SA, GA
 
-### M1 — Core Model (28 Sep – 4 Okt)
+### M1 — Core Model (Jum 16 – Sab 17 Okt)
 - [ ] `[L]` Format input JSON + loader + validasi (DESIGN §2)
 - [ ] `[L]` Generator instance random (seeded) + `src/data/main.json` + 1 instance kecil untuk brute force
 - [ ] `[R]` State + occupancy grid + objective dengan penalty (DESIGN §4)
@@ -45,7 +63,7 @@ mulai dari kontrak API di DESIGN §3–§5.
 - [ ] `[R]` Upper bound (DP knapsack berat+luas) + brute force instance kecil
 - [ ] `[L]` Visualisasi state: grid deck, kendaraan berwarna + label id, daftar kendaraan di luar, nilai objective/fee/berat
 
-### M2 — Algoritma (5–11 Okt)
+### M2 — Algoritma (Sab 17 – Min 18 Okt)
 - [ ] `[R]` Steepest Ascent HC
 - [ ] `[T]` SA: T0 otomatis, geometric cooling, catat `e^(ΔE/T)` dan stuck count
 - [ ] `[T]` GA: **roulette wheel selection eksplisit** (cumsum + spin), one-point crossover, mutation, elitism
@@ -53,15 +71,16 @@ mulai dari kontrak API di DESIGN §3–§5.
 - [ ] `[L]` CLI: `python src/main.py --algo <hc|sa|ga|...> --instance ... --seed ...`
 - [ ] `[R]` (Bonus 2) Stochastic, Sideways, Random Restart HC
 
-### M3 — Eksperimen (12–16 Okt)
-- [ ] `[L]` Script `experiments.py` untuk menjalankan semua run wajib (24) → `output/`
+### M3 — Eksperimen (Sen 19 – Sel 20 Okt)
+- [ ] `[L]` Script `experiments.py` untuk menjalankan semua run wajib (24) + Bonus 2 (9) → `output/`
 - [ ] `[L]` Generate semua plot dari JSON
 - [ ] `[All]` Isi tabel di `EXPERIMENTS.md` (masing-masing untuk algoritmanya)
 - [ ] `[All]` Sanity check: semua hasil akhir feasible? durasi masuk akal?
 
-### M4 — Laporan, Bonus, Release (17–21 Okt)
+### M4 — Laporan, Bonus, Release (Sen 19 – Kam 22 Okt)
 - [ ] `[L]` Laporan PDF (koordinator; isi per bab oleh pemilik bagian, lihat checklist di bawah)
-- [ ] `[T]` Bonus 1 / `[R]` Bonus 3 kalau waktunya cukup
+- [ ] `[T]` Bonus 1 (objective ETA, 3 run)
+- [ ] `[R]` Bonus 3 (multi-kapal di core, 3 run) + `[L]` visualisasi multi-kapal
 - [ ] `[L]` README final (setup, run, pembagian tugas)
 - [ ] `[R]` Repo **public**, tag `v1.0`, buat GitHub Release (repo di akun Riantama), submit di Edunex
 - [ ] `[L]` Clone ulang repo di folder bersih, ikuti README dari nol, pastikan jalan
