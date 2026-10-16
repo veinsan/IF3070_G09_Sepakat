@@ -119,6 +119,6 @@ python -m unittest discover -s tests -t .
 
 | NIM | Nama | Tugas |
 |---|---|---|
-| 18224061 | Riantama Putra | Core model (representasi state, objective + penalty, delta evaluation, neighbor moves, upper bound), seluruh varian Hill-Climbing, multi-kapal |
+| 18224061 | Riantama Putra | Setup repository, input & generator instance, core model (representasi state, objective + penalty, delta evaluation, neighbor moves, upper bound), seluruh varian Hill-Climbing, multi-kapal |
 | 18224059 | Tiara Kusuma Wardhani | Simulated Annealing, Genetic Algorithm, objective alternatif (ETA) |
-| 18224057 | Levina Nathania Bunardi | Input & generator instance, visualisasi, CLI, experiment runner & plot, koordinator laporan |
+| 18224057 | Levina Nathania Bunardi | Visualisasi, CLI, experiment runner & plot, notebook analisis, koordinator laporan |
