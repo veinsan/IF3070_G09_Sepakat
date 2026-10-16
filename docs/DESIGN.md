@@ -118,16 +118,29 @@ menerapkan perubahan, membaca objective dari agregat (O(jumlah kapal)), lalu mem
 di 3000 move acak per instance. Terukur ~5 µs per `delta()` di `main.json`, jadi satu iterasi Steepest
 Ascent (~12.5 ribu neighbor) ≈ 0.07 s.
 
-## 5. Neighbor Moves ✅ (sesuai spec)
+## 5. Neighbor Moves ✅ (`search/neighbors.py`)
 
 | Move | Definisi |
 |---|---|
 | `move(i, pos')` | Pindahkan kendaraan `i` ke koordinat lain, **termasuk ke "luar kapal"** (`None`) atau dari luar ke dalam |
-| `swap(i, j)` | Tukar anchor `pos` dua kendaraan (orientasi masing-masing tetap). Berlaku dalam↔dalam, dalam↔luar |
-| `rotate(i)` | Toggle H↔V, anchor tetap. Hanya untuk kendaraan yang di dalam |
+| `swap(i, j)` | Tukar anchor (kapal, x, y) dua kendaraan, orientasi masing-masing tetap. Berlaku dalam↔dalam dan dalam↔luar. Kendaraan yang masuk dari luar memakai orientasi pasangannya (karena kendaraan di luar tidak punya orientasi) |
+| `rotate(i)` | Toggle H↔V, anchor tetap. Hanya untuk kendaraan di dalam yang **tidak persegi** (rotasi persegi menempati sel yang sama) |
 
-- **Full neighborhood** (untuk Steepest Ascent): semua `move` (n × (W·L·2 + 1)) + semua `swap` (n(n−1)/2) + semua `rotate` (n).
-- **Random neighbor** (untuk Stochastic HC, SA, mutasi GA): pilih tipe move secara uniform, lalu parameternya secara random.
+Satu move = list perubahan `[(i, placement), ...]` yang langsung dipakai `State.delta()` / `State.apply()`.
+
+- **Full neighborhood** (`all_neighbors`, untuk Steepest Ascent), tanpa duplikat dan tanpa no-op:
+  - `move`: tiap kendaraan ke semua placement `S·W·L·2`. Kendaraan di dalam melewati placement dengan
+    anchor yang sama (orientasi lain = `rotate`), ditambah satu move ke luar.
+  - `swap`: semua pasangan, kecuali pasangan yang sama-sama di luar atau yang hasilnya tidak berubah.
+  - `rotate`: kendaraan di dalam yang tidak persegi.
+  - `main.json`: ~12.3 ribu neighbor, satu iterasi Steepest (enumerasi + `delta`) ≈ 0.07 s.
+- **Random neighbor** (`random_neighbor`, untuk Stochastic HC, SA, mutasi GA): tipe move dipilih uniform
+  dari {move, swap, rotate}, lalu parameternya acak. Bila tipe tidak mungkin (misalnya tidak ada kendaraan
+  di dalam untuk di-swap/rotate), dipakai `move`. ≈ 9 µs per neighbor + `delta`.
+  - **Heuristik:** untuk `move` kendaraan yang di dalam, target "ke luar" dan "ke koordinat acak" masing-masing
+    berpeluang 1/2. Kalau target dipilih uniform dari semua `2·W·L + 1` kemungkinan, peluang keluar hanya
+    1/401 di `main.json`, sehingga kendaraan yang melanggar constraint hampir tidak pernah dikeluarkan oleh
+    SA/Stochastic HC. Tulis heuristik ini di laporan.
 
 ## 6. Referensi Global Optimum (untuk analisis "seberapa dekat ke global optima")
 

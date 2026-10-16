@@ -13,16 +13,18 @@
 
 | Kode | NIM | Nama | Fokus utama |
 |---|---|---|---|
-| **R** | 18224061 | Riantama Putra | Core model (state, occupancy, objective + penalty, delta evaluation, moves, UB) + seluruh varian Hill-Climbing + Bonus 3 (multi-kapal) |
+| **R** | 18224061 | Riantama Putra | Fondasi: setup repo, input/loader + generator instance, core model (state, occupancy, objective + penalty, delta evaluation, moves, UB) + seluruh varian Hill-Climbing + Bonus 3 (multi-kapal) |
 | **T** | 18224059 | Tiara Kusuma Wardhani | Simulated Annealing + Genetic Algorithm (roulette) + Bonus 1 (objective ETA) |
-| **L** | 18224057 | Levina Nathania Bunardi | Input/loader + generator instance + visualisasi + CLI + experiment runner & plot + koordinator laporan |
+| **L** | 18224057 | Levina Nathania Bunardi | Visualisasi + CLI + experiment runner & plot + notebook analisis + koordinator laporan |
 
 Kode `[R]`/`[T]`/`[L]` di milestone = penanggung jawab task. `[All]` = dikerjakan bersama.
 Semua anggota menulis bagian laporan untuk algoritma masing-masing dan ikut analisis.
 
-**Urutan dependensi:** `[L]` loader + `main.json` dan `[R]` core model harus jadi duluan, karena SA, GA,
-visualisasi, dan runner bergantung ke API state/objective/move. Sambil menunggu, `[T]` dan `[L]` bisa
-mulai dari kontrak API di DESIGN §3–§5.
+**Fondasi dulu, lalu sesuai pembagian.** Fondasi (branch #1–#5: setup, instance-io, core-state,
+neighbors, upper-bound) dikerjakan `[R]` karena SA, GA, visualisasi, dan runner bergantung ke API
+state/objective/move. Loader + generator instance yang awalnya milik `[L]` sudah diambil alih `[R]` sebagai
+bagian fondasi. Setelah fondasi selesai, **setiap anggota hanya mengerjakan task miliknya sendiri**
+(tidak mengambil task anggota lain). Kontrak API ada di DESIGN §3–§5.
 
 ---
 
@@ -34,7 +36,7 @@ makan Rabu** (hari laporan).
 
 | Hari | R (Riantama) | T (Tiara) | L (Levina) | Gate |
 |---|---|---|---|---|
-| **Jum 16** | Kontrak API (signature state/objective/move) di pagi hari, lalu state + occupancy + objective + delta eval + self-check, 3 move, random init | Review salindia SA/GA, tulis SA & GA terhadap kontrak API (pakai stub dulu) | Loader + validasi, generator instance, `main.json` + instance kecil | Core API jalan, `main.json` ada |
+| **Jum 16** | Setup repo, loader + validasi, generator + `main.json`/`small.json` (diambil alih dari L), state + occupancy + objective + delta eval + test, 3 move, random init ✅ | Review salindia SA/GA, tulis SA & GA terhadap kontrak API (DESIGN §3–§5) | ~~Loader + generator~~ (diambil alih R). Mulai visualisasi state (dimajukan dari Sab 17) | Core API jalan, `main.json` ada ✅ |
 | **Sab 17** | UB (DP knapsack) + brute force, Steepest HC | SA selesai: T0 otomatis, cooling, history `e^(ΔE/T)`, stuck count | Visualisasi state + writer result JSON (EXPERIMENTS §2) | HC & SA run end-to-end + bisa divisualisasi |
 | **Min 18** | Bonus 2: Stochastic, Sideways, Random Restart HC | GA selesai: roulette, crossover, mutation, elitism, history max/mean | CLI `main.py` + `experiments.py` + fungsi plot | **Code freeze spek wajib**, semua algoritma jalan via CLI |
 | **Sen 19** | Bonus 3: multi-kapal di core (constraint per kapal, move/swap lintas kapal, UB total) | Bonus 1: objective ETA, dibuat sebagai bobot per kendaraan supaya delta eval tidak berubah | Jalankan 24 run wajib + 9 run Bonus 2, generate plot, isi tabel EXPERIMENTS. Skeleton laporan + cover + deskripsi persoalan | Semua hasil wajib + Bonus 2 ada di `output/` |
@@ -54,11 +56,11 @@ makan Rabu** (hari laporan).
 - [x] Tonton ulang / baca salindia Khodra: HC, SA, GA
 
 ### M1 — Core Model (Jum 16 – Sab 17 Okt)
-- [x] `[L]` Format input JSON + loader + validasi (DESIGN §2)
-- [x] `[L]` Generator instance random (seeded) + `src/data/main.json` + 1 instance kecil untuk brute force
+- [x] `[R]` Format input JSON + loader + validasi (DESIGN §2)
+- [x] `[R]` Generator instance random (seeded) + `src/data/main.json` + 1 instance kecil untuk brute force
 - [x] `[R]` State + occupancy grid + objective dengan penalty (DESIGN §4)
 - [x] `[R]` Delta evaluation + 1 self-check (hasil delta = hasil full recompute di ribuan random move)
-- [ ] `[R]` 3 move: move (termasuk ke luar), swap, rotate + random neighbor + full neighborhood
+- [x] `[R]` 3 move: move (termasuk ke luar), swap, rotate + random neighbor + full neighborhood
 - [x] `[R]` Random initial state
 - [ ] `[R]` Upper bound (DP knapsack berat+luas) + brute force instance kecil
 - [ ] `[L]` Visualisasi state: grid deck, kendaraan berwarna + label id, daftar kendaraan di luar, nilai objective/fee/berat
@@ -168,7 +170,7 @@ Tanya **hanya** lewat komentar di unggahan Tubes di Teams (DM ke asisten tidak d
 | # | Branch | Isi | PJ |
 |---|---|---|---|
 | 1 | `chore/project-setup` | Struktur repo, `requirements.txt`, README, konvensi kode (DESIGN §10) | R |
-| 2 | `feat/instance-io` | `core/problem.py`, `core/generator.py`, `data/main.json`, `data/small.json` | L |
+| 2 | `feat/instance-io` | `core/problem.py`, `core/generator.py`, `data/main.json`, `data/small.json` | R |
 | 3 | `feat/core-state` | `core/state.py`, `core/objective.py` + test delta = full recompute | R |
 | 4 | `feat/neighbors` | `search/neighbors.py` + test | R |
 | 5 | `feat/upper-bound` | `core/bounds.py` (DP knapsack + brute force) | R |
