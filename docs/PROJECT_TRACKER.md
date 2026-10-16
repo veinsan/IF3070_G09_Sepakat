@@ -157,6 +157,28 @@ Tanya **hanya** lewat komentar di unggahan Tubes di Teams (DM ke asisten tidak d
 
 ## Konvensi Git
 
-- Branch: `feat/<scope>`, `fix/<scope>`, `docs/<scope>`, `exp/<scope>` → PR ke `main` (review minimal 1 anggota lain)
+- Branch: `feat/<scope>`, `fix/<scope>`, `docs/<scope>`, `exp/<scope>`, `chore/<scope>` → PR ke `main` (review minimal 1 anggota lain)
+- Branch dibuat dari `main` terbaru **saat fitur mulai dikerjakan**, bukan semuanya di awal, supaya tidak basi
+  dan tidak konflik. Satu branch = satu fitur = satu PR.
 - Commit: `feat(ga): add roulette wheel selection`, `fix(core): overlap count on rotate`, `docs(report): add SA analysis`
 - Jangan commit `.venv/`, `__pycache__/`. Output eksperimen final **di-commit** (spec wajib ada `output/`)
+
+### Rencana Branch (urutan merge)
+
+| # | Branch | Isi | PJ |
+|---|---|---|---|
+| 1 | `chore/project-setup` | Struktur repo, `requirements.txt`, README, konvensi kode (DESIGN §10) | R |
+| 2 | `feat/instance-io` | `core/problem.py`, `core/generator.py`, `data/main.json`, `data/small.json` | L |
+| 3 | `feat/core-state` | `core/state.py`, `core/objective.py` + test delta = full recompute | R |
+| 4 | `feat/neighbors` | `search/neighbors.py` + test | R |
+| 5 | `feat/upper-bound` | `core/bounds.py` (DP knapsack + brute force) | R |
+| 6 | `feat/visualization` | `visualization/state_view.py`, `visualization/plots.py` | L |
+| 7 | `feat/hill-climbing` | `config.py`, `search/result.py`, Steepest Ascent | R |
+| 8 | `feat/simulated-annealing` | `search/simulated_annealing.py` | T |
+| 9 | `feat/genetic-algorithm` | `search/genetic_algorithm.py` (roulette) | T |
+| 10 | `feat/cli` | `main.py` | L |
+| 11 | `feat/hc-variants` | Stochastic, Sideways, Random Restart (Bonus 2) | R |
+| 12 | `exp/main-experiments` | `experiments.py`, `output/`, `notebooks/experiments.ipynb` | L |
+| 13 | `feat/eta-objective` | Objective ETA (Bonus 1) | T |
+| 14 | `feat/multi-ship` | Multi-kapal di core + visualisasi (Bonus 3) | R, L |
+| 15 | `docs/report` | Laporan PDF + README final | L |

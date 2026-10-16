@@ -154,3 +154,31 @@ Urutan pengerjaan yang disarankan: Bonus 2 → Bonus 1 → Bonus 3, **setelah** 
 - [ ] Definisi "stuck" SA disepakati
 - [ ] Nilai default SA (`α`, `T_min`, `max_iter`) dan GA (`p_c`, `p_m`, elitism)
 - [ ] Format input dikonfirmasi (apakah asisten kasih test case sendiri saat demo?)
+
+## 10. Struktur Kode & Konvensi ✅
+
+Struktur lengkap per file ada di [README](../README.md#struktur-repository). Pembagian layer:
+
+| Layer | Folder | Tanggung jawab | Boleh import |
+|---|---|---|---|
+| Model | `src/core/` | Data persoalan, state, objective, delta evaluation, upper bound | stdlib saja |
+| Search | `src/search/` | Neighbor + HC, SA, GA. Hanya bicara ke API `State` | `core` |
+| Visualisasi | `src/visualization/` | Gambar state + plot. Membaca dict hasil / JSON di `output/`, tidak menjalankan search | `core`, `matplotlib` |
+| Entry point | `src/main.py`, `src/experiments.py` | CLI + runner eksperimen | semua |
+| Analisis | `notebooks/experiments.ipynb` | Tabel + plot dari `output/*.json` | `src` (via `sys.path`) |
+
+Alasan: algoritma tidak tahu detail grid, jadi delta evaluation dan multi-kapal (Bonus 3) cukup diubah di
+`core/`. Visualisasi dibuat dari JSON, jadi plot bisa dibuat ulang tanpa run ulang (EXPERIMENTS §2).
+
+**Konvensi:**
+- Program dijalankan dari root repo (`python src/main.py ...`), import absolut dari `src/`
+  (`from core.state import State`).
+- Identifier dalam bahasa Inggris. Docstring modul + fungsi publik, serta komentar, dalam bahasa Indonesia.
+- Type hints di semua fungsi publik.
+- **Tidak ada RNG global.** Setiap fungsi acak menerima `rng: random.Random` sehingga run dengan seed
+  yang sama selalu identik.
+- Semua algoritma mengembalikan format hasil yang sama (`search/result.py`, EXPERIMENTS §2).
+- Kode yang diadaptasi dari internet diberi komentar `# Sumber: <judul>, <url>` (aturan spek) dan
+  dicantumkan di referensi laporan.
+- Logika non-trivial punya test di `tests/` (stdlib `unittest`, tanpa dependency tambahan):
+  `python -m unittest discover -s tests -t .`
