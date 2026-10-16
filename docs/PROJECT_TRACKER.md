@@ -56,10 +56,10 @@ makan Rabu** (hari laporan).
 ### M1 — Core Model (Jum 16 – Sab 17 Okt)
 - [x] `[L]` Format input JSON + loader + validasi (DESIGN §2)
 - [x] `[L]` Generator instance random (seeded) + `src/data/main.json` + 1 instance kecil untuk brute force
-- [ ] `[R]` State + occupancy grid + objective dengan penalty (DESIGN §4)
-- [ ] `[R]` Delta evaluation + 1 self-check (hasil delta = hasil full recompute di ribuan random move)
+- [x] `[R]` State + occupancy grid + objective dengan penalty (DESIGN §4)
+- [x] `[R]` Delta evaluation + 1 self-check (hasil delta = hasil full recompute di ribuan random move)
 - [ ] `[R]` 3 move: move (termasuk ke luar), swap, rotate + random neighbor + full neighborhood
-- [ ] `[R]` Random initial state
+- [x] `[R]` Random initial state
 - [ ] `[R]` Upper bound (DP knapsack berat+luas) + brute force instance kecil
 - [ ] `[L]` Visualisasi state: grid deck, kendaraan berwarna + label id, daftar kendaraan di luar, nilai objective/fee/berat
 

@@ -56,7 +56,7 @@ hampir tidak pernah aktif karena luas habis duluan). Parameter generator disimpa
 | `src/data/main.json` | `--seed 1 --vehicles 30 --width 10 --length 20` | luas 466/200 (2.33×), berat 382/131 (2.92×), fee total 2351 |
 | `src/data/small.json` | `--seed 2 --vehicles 7 --width 4 --length 6 --types motor sedan suv` | luas 38/24 (1.58×), berat 26/13 (2.00×), untuk brute force |
 
-## 3. Representasi State 🟡
+## 3. Representasi State ✅ (`core/state.py`)
 
 Satu gene per kendaraan (urutan index tetap):
 
@@ -68,21 +68,27 @@ pos[i] = (ship, x, y, orient)      # anchor = sel kiri-atas, orient ∈ {H, V}
 - `H`: menempati `w_i` kolom × `l_i` baris. `V`: di-rotate (`l_i` × `w_i`). Konvensi ini ditulis di laporan.
 - Koordinat integer, `0 ≤ x < W`, `0 ≤ y < L`.
 - Representasi yang sama dipakai HC, SA, dan GA (jadi GA chromosome = list `pos`).
-- Untuk evaluasi cepat: simpan `occupancy[ship][y][x]` = jumlah kendaraan di sel itu.
+- Anchor acak selalu di dalam geladak, tapi badan kendaraan boleh keluar (dihitung sebagai pelanggaran).
+- Untuk evaluasi cepat: simpan `occupancy[ship][y * W + x]` (list datar per kapal) = jumlah kendaraan
+  di sel itu, plus agregat overlap, out-of-bound, fee, dan berat per kapal.
+- **Initial state** (`random_state`): tiap kendaraan masuk ke kapal/anchor/orientasi acak dengan peluang
+  `p_inside` (default 0.5), sisanya di luar. Tidak ada perbaikan greedy, sesuai spek "inisialisasi random".
+- State bisa diserialisasi ke JSON (`to_dict`/`from_dict`): per kendaraan `{id, ship, x, y, orientation}`,
+  `ship = null` untuk kendaraan di luar.
 
 **Kenapa pakai koordinat eksplisit (bukan permutasi + decoder bottom-left)?** Tiga move di spec
 ("pindah ke koordinat", "tukar", "ubah orientasi") itu operasi terhadap koordinat, jadi
 representasi ini map 1:1 ke spec.
 
-## 4. Objective Function ✅ (bentuk) / 🟡 (konstanta)
+## 4. Objective Function ✅ (`core/objective.py`)
 
 ```
-f(s) = Σ_{i dimuat} fee_i
-       − P · (overlap_cells + out_of_bound_cells)
-       − P · max(0, Σ_{i dimuat} weight_i − C)
+f(s) = Σ_{i dimuat} fee_i − P · (overlap_cells + out_of_bound_cells + weight_units)
 
 overlap_cells      = Σ_cells max(0, occupancy − 1)
 out_of_bound_cells = jumlah sel kendaraan yang keluar batas geladak
+weight_units       = Σ_kapal ceil( max(0, Σ_{i di kapal} weight_i − C_kapal) / w_min )
+w_min              = berat kendaraan teringan
 P                  = max_i(fee_i) + 1
 ```
 
@@ -93,13 +99,24 @@ P                  = max_i(fee_i) + 1
 3. **Properti penting (tulis di laporan):** karena `P > max fee`, dari state infeasible mana pun,
    mengeluarkan kendaraan yang melanggar **pasti** menaikkan `f` (penalty turun ≥ P, fee turun
    < P). Jadi **tidak ada state infeasible yang jadi local optimum** untuk HC dengan neighborhood
-   penuh, dan hasil akhir HC pasti feasible.
+   penuh, dan hasil akhir HC pasti feasible. Properti ini diuji di
+   `tests/test_state.py::test_infeasible_state_always_has_improving_removal`.
+4. **Kenapa berat dibagi `w_min` lalu dibulatkan ke atas?** Berat boleh pecahan (DESIGN §2). Dengan
+   `max(0, Σw − C)` biasa, mengeluarkan kendaraan seberat 0.5 hanya menurunkan penalty 0.5·P (< fee),
+   sehingga state kelebihan berat bisa menjadi local optimum. Dengan `ceil(excess / w_min)`, mengeluarkan
+   kendaraan mana pun (berat ≥ `w_min`) dari kapal yang kelebihan berat menurunkan `weight_units`
+   minimal 1, jadi penalty turun ≥ P. Untuk `w_min = 1` (misalnya `main.json`, yang punya motor seberat 1),
+   rumus ini sama dengan kelebihan berat biasa. Perbandingan berat memakai toleransi `1e-9` agar noise
+   float tidak dihitung sebagai pelanggaran.
 
 Yang dicatat di output: `objective`, `total_fee`, `is_feasible`, `used_weight`, `used_area_pct`.
 
 **Delta evaluation (heuristik performa):** move hanya mengubah 1–2 kendaraan, jadi hitung ulang
-cukup untuk sel-sel yang disentuh (update `occupancy`), bukan seluruh grid. Tanpa ini Steepest
-Ascent bakal lambat banget.
+cukup untuk sel-sel yang disentuh (update `occupancy`), bukan seluruh grid. `State.delta(changes)`
+menerapkan perubahan, membaca objective dari agregat (O(jumlah kapal)), lalu membatalkannya.
+`core.objective.evaluate()` menghitung semuanya dari nol dan menjadi acuan: test membandingkan keduanya
+di 3000 move acak per instance. Terukur ~5 µs per `delta()` di `main.json`, jadi satu iterasi Steepest
+Ascent (~12.5 ribu neighbor) ≈ 0.07 s.
 
 ## 5. Neighbor Moves ✅ (sesuai spec)
 
@@ -172,7 +189,7 @@ Urutan pengerjaan yang disarankan: Bonus 2 → Bonus 1 → Bonus 3, **setelah** 
 
 ## 9. Keputusan Terbuka
 
-- [ ] Konstanta penalty `P` final
+- [x] Konstanta penalty `P` final (`max fee + 1`, berat via `weight_units`)
 - [ ] `max_sideways` berturut-turut atau total
 - [ ] Definisi "stuck" SA disepakati
 - [ ] Nilai default SA (`α`, `T_min`, `max_iter`) dan GA (`p_c`, `p_m`, elitism)
