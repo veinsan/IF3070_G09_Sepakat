@@ -130,14 +130,6 @@ Tanya **hanya** lewat komentar di unggahan Tubes di Teams (DM ke asisten tidak d
 | 7 | Bonus 2 "seluruh HC" = Steepest, Stochastic, Sideways, Random Restart saja? | open | |
 | 8 | Eksperimen GA: konfigurasi kontrol boleh dipakai bersama di dua set variasi (15 run), atau harus 18 run terpisah? | open | |
 
-## AI Usage Log
-
-Isi setiap kali pakai GenAI. Log ini jadi bahan untuk **Form Penggunaan Generative AI** di lampiran. Harus jujur, spec mengancam sanksi untuk ketidakjujuran.
-
-| Tanggal | Anggota | Tool | Untuk apa | Bagian yang terpengaruh |
-|---|---|---|---|---|
-| 2026-09-25 | | Claude Code | Membaca spec, menyusun rencana kerja, draft DESIGN/EXPERIMENTS/TRACKER/README | `docs/*.md`, `README.md` |
-
 ## Konvensi Git
 
 - Branch: `feat/<scope>`, `fix/<scope>`, `docs/<scope>`, `exp/<scope>` → PR ke `main` (review minimal 1 anggota lain)
