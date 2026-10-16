@@ -33,6 +33,29 @@ Status keputusan: ✅ final · 🟡 usulan (perlu disepakati / dikonfirmasi asis
 `ships` sengaja berupa list sejak awal. Single-ship = list berisi 1 elemen, jadi Bonus 3 (multi-kapal)
 tidak butuh refactor.
 
+**Validasi** (`core/problem.py`, pesan error menunjuk lokasi, misalnya `vehicles[3].width`):
+
+| Field | Aturan |
+|---|---|
+| `ships`, `vehicles` | list tidak kosong, `id` string unik |
+| `width`, `length` | bilangan bulat ≥ 1 |
+| `max_capacity`, `weight` | angka > 0 (berat > 0 dibutuhkan oleh properti penalty §4) |
+| `shipping_fee` | angka ≥ 0 |
+| `eta` | bilangan bulat ≥ 0 |
+
+Key lain (`meta`, `type`, dll.) diabaikan supaya instance dari asisten tetap terbaca.
+
+**Generator** (`core/generator.py`): kendaraan dari katalog 6 tipe (motor 1×2, sedan 2×4, SUV 2×5,
+pickup 2×6, truk 3×8, bus 3×10) dengan fee/berat acak per rentang tipe. Kapasitas =
+`capacity_ratio` (default 0.8) × luas geladak × rata-rata berat per sel, sehingga geladak **tidak bisa
+diisi penuh** dan constraint berat ikut aktif (kalau kapasitas dibuat dari total berat, constraint berat
+hampir tidak pernah aktif karena luas habis duluan). Parameter generator disimpan di `meta` instance.
+
+| Instance | Perintah | Isi |
+|---|---|---|
+| `src/data/main.json` | `--seed 1 --vehicles 30 --width 10 --length 20` | luas 466/200 (2.33×), berat 382/131 (2.92×), fee total 2351 |
+| `src/data/small.json` | `--seed 2 --vehicles 7 --width 4 --length 6 --types motor sedan suv` | luas 38/24 (1.58×), berat 26/13 (2.00×), untuk brute force |
+
 ## 3. Representasi State 🟡
 
 Satu gene per kendaraan (urutan index tetap):

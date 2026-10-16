@@ -1,0 +1,89 @@
+{
+  "meta": {
+    "generator": "src/core/generator.py",
+    "seed": 2,
+    "vehicles": 7,
+    "width": 4,
+    "length": 6,
+    "capacity_ratio": 0.8,
+    "types": [
+      "motor",
+      "sedan",
+      "suv"
+    ],
+    "out": "src/data/small.json"
+  },
+  "ships": [
+    {
+      "id": "Deck-1",
+      "width": 4,
+      "length": 6,
+      "max_capacity": 13
+    }
+  ],
+  "vehicles": [
+    {
+      "id": "V1",
+      "type": "motor",
+      "width": 1,
+      "length": 2,
+      "shipping_fee": 6,
+      "weight": 1,
+      "eta": 3
+    },
+    {
+      "id": "V2",
+      "type": "motor",
+      "width": 1,
+      "length": 2,
+      "shipping_fee": 9,
+      "weight": 1,
+      "eta": 5
+    },
+    {
+      "id": "V3",
+      "type": "motor",
+      "width": 1,
+      "length": 2,
+      "shipping_fee": 5,
+      "weight": 1,
+      "eta": 4
+    },
+    {
+      "id": "V4",
+      "type": "suv",
+      "width": 2,
+      "length": 5,
+      "shipping_fee": 57,
+      "weight": 8,
+      "eta": 7
+    },
+    {
+      "id": "V5",
+      "type": "suv",
+      "width": 2,
+      "length": 5,
+      "shipping_fee": 56,
+      "weight": 8,
+      "eta": 4
+    },
+    {
+      "id": "V6",
+      "type": "suv",
+      "width": 2,
+      "length": 5,
+      "shipping_fee": 53,
+      "weight": 6,
+      "eta": 7
+    },
+    {
+      "id": "V7",
+      "type": "motor",
+      "width": 1,
+      "length": 2,
+      "shipping_fee": 10,
+      "weight": 1,
+      "eta": 3
+    }
+  ]
+}

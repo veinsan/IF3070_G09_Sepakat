@@ -1,0 +1,292 @@
+{
+  "meta": {
+    "generator": "src/core/generator.py",
+    "seed": 1,
+    "vehicles": 30,
+    "width": 10,
+    "length": 20,
+    "capacity_ratio": 0.8,
+    "types": null,
+    "out": "src/data/main.json"
+  },
+  "ships": [
+    {
+      "id": "Deck-1",
+      "width": 10,
+      "length": 20,
+      "max_capacity": 131
+    }
+  ],
+  "vehicles": [
+    {
+      "id": "V01",
+      "type": "sedan",
+      "width": 2,
+      "length": 4,
+      "shipping_fee": 48,
+      "weight": 4,
+      "eta": 3
+    },
+    {
+      "id": "V02",
+      "type": "motor",
+      "width": 1,
+      "length": 2,
+      "shipping_fee": 12,
+      "weight": 1,
+      "eta": 4
+    },
+    {
+      "id": "V03",
+      "type": "bus",
+      "width": 3,
+      "length": 10,
+      "shipping_fee": 144,
+      "weight": 23,
+      "eta": 1
+    },
+    {
+      "id": "V04",
+      "type": "pickup",
+      "width": 2,
+      "length": 6,
+      "shipping_fee": 50,
+      "weight": 10,
+      "eta": 4
+    },
+    {
+      "id": "V05",
+      "type": "truck",
+      "width": 3,
+      "length": 8,
+      "shipping_fee": 138,
+      "weight": 15,
+      "eta": 6
+    },
+    {
+      "id": "V06",
+      "type": "pickup",
+      "width": 2,
+      "length": 6,
+      "shipping_fee": 58,
+      "weight": 8,
+      "eta": 5
+    },
+    {
+      "id": "V07",
+      "type": "motor",
+      "width": 1,
+      "length": 2,
+      "shipping_fee": 10,
+      "weight": 1,
+      "eta": 1
+    },
+    {
+      "id": "V08",
+      "type": "motor",
+      "width": 1,
+      "length": 2,
+      "shipping_fee": 5,
+      "weight": 1,
+      "eta": 6
+    },
+    {
+      "id": "V09",
+      "type": "sedan",
+      "width": 2,
+      "length": 4,
+      "shipping_fee": 43,
+      "weight": 6,
+      "eta": 1
+    },
+    {
+      "id": "V10",
+      "type": "truck",
+      "width": 3,
+      "length": 8,
+      "shipping_fee": 104,
+      "weight": 22,
+      "eta": 4
+    },
+    {
+      "id": "V11",
+      "type": "truck",
+      "width": 3,
+      "length": 8,
+      "shipping_fee": 104,
+      "weight": 20,
+      "eta": 2
+    },
+    {
+      "id": "V12",
+      "type": "bus",
+      "width": 3,
+      "length": 10,
+      "shipping_fee": 134,
+      "weight": 27,
+      "eta": 3
+    },
+    {
+      "id": "V13",
+      "type": "motor",
+      "width": 1,
+      "length": 2,
+      "shipping_fee": 11,
+      "weight": 1,
+      "eta": 2
+    },
+    {
+      "id": "V14",
+      "type": "bus",
+      "width": 3,
+      "length": 10,
+      "shipping_fee": 166,
+      "weight": 24,
+      "eta": 1
+    },
+    {
+      "id": "V15",
+      "type": "bus",
+      "width": 3,
+      "length": 10,
+      "shipping_fee": 141,
+      "weight": 28,
+      "eta": 4
+    },
+    {
+      "id": "V16",
+      "type": "truck",
+      "width": 3,
+      "length": 8,
+      "shipping_fee": 132,
+      "weight": 18,
+      "eta": 3
+    },
+    {
+      "id": "V17",
+      "type": "suv",
+      "width": 2,
+      "length": 5,
+      "shipping_fee": 63,
+      "weight": 7,
+      "eta": 7
+    },
+    {
+      "id": "V18",
+      "type": "truck",
+      "width": 3,
+      "length": 8,
+      "shipping_fee": 115,
+      "weight": 24,
+      "eta": 7
+    },
+    {
+      "id": "V19",
+      "type": "motor",
+      "width": 1,
+      "length": 2,
+      "shipping_fee": 12,
+      "weight": 1,
+      "eta": 6
+    },
+    {
+      "id": "V20",
+      "type": "pickup",
+      "width": 2,
+      "length": 6,
+      "shipping_fee": 63,
+      "weight": 8,
+      "eta": 3
+    },
+    {
+      "id": "V21",
+      "type": "truck",
+      "width": 3,
+      "length": 8,
+      "shipping_fee": 134,
+      "weight": 25,
+      "eta": 6
+    },
+    {
+      "id": "V22",
+      "type": "suv",
+      "width": 2,
+      "length": 5,
+      "shipping_fee": 47,
+      "weight": 7,
+      "eta": 6
+    },
+    {
+      "id": "V23",
+      "type": "truck",
+      "width": 3,
+      "length": 8,
+      "shipping_fee": 96,
+      "weight": 17,
+      "eta": 5
+    },
+    {
+      "id": "V24",
+      "type": "pickup",
+      "width": 2,
+      "length": 6,
+      "shipping_fee": 61,
+      "weight": 10,
+      "eta": 6
+    },
+    {
+      "id": "V25",
+      "type": "motor",
+      "width": 1,
+      "length": 2,
+      "shipping_fee": 12,
+      "weight": 1,
+      "eta": 3
+    },
+    {
+      "id": "V26",
+      "type": "bus",
+      "width": 3,
+      "length": 10,
+      "shipping_fee": 174,
+      "weight": 29,
+      "eta": 5
+    },
+    {
+      "id": "V27",
+      "type": "truck",
+      "width": 3,
+      "length": 8,
+      "shipping_fee": 115,
+      "weight": 25,
+      "eta": 2
+    },
+    {
+      "id": "V28",
+      "type": "sedan",
+      "width": 2,
+      "length": 4,
+      "shipping_fee": 46,
+      "weight": 4,
+      "eta": 1
+    },
+    {
+      "id": "V29",
+      "type": "sedan",
+      "width": 2,
+      "length": 4,
+      "shipping_fee": 47,
+      "weight": 6,
+      "eta": 2
+    },
+    {
+      "id": "V30",
+      "type": "pickup",
+      "width": 2,
+      "length": 6,
+      "shipping_fee": 66,
+      "weight": 9,
+      "eta": 7
+    }
+  ]
+}
