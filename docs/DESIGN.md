@@ -54,7 +54,7 @@ hampir tidak pernah aktif karena luas habis duluan). Parameter generator disimpa
 | Instance | Perintah | Isi |
 |---|---|---|
 | `src/data/main.json` | `--seed 1 --vehicles 30 --width 10 --length 20` | luas 466/200 (2.33×), berat 382/131 (2.92×), fee total 2351 |
-| `src/data/small.json` | `--seed 2 --vehicles 7 --width 4 --length 6 --types motor sedan suv` | luas 38/24 (1.58×), berat 26/13 (2.00×), untuk brute force |
+| `src/data/small.json` | `--seed 3 --vehicles 12 --width 6 --length 8 --capacity-ratio 1.0 --types motor sedan suv pickup` | luas 88/48 (1.83×), berat 62/34 (1.82×), fee total 493, untuk brute force (§6) |
 
 ## 3. Representasi State ✅ (`core/state.py`)
 
@@ -142,13 +142,34 @@ Satu move = list perubahan `[(i, placement), ...]` yang langsung dipakai `State.
     1/401 di `main.json`, sehingga kendaraan yang melanggar constraint hampir tidak pernah dikeluarkan oleh
     SA/Stochastic HC. Tulis heuristik ini di laporan.
 
-## 6. Referensi Global Optimum (untuk analisis "seberapa dekat ke global optima")
+## 6. Referensi Global Optimum ✅ (`core/bounds.py`)
 
-Global optimum sebenarnya susah dihitung. Kita pakai **upper bound**:
-- 0/1 knapsack 2 dimensi (berat ≤ C, total luas ≤ W·L) via DP, dengan geometri diabaikan.
+Global optimum `main.json` (30 kendaraan) terlalu mahal untuk dihitung persis. Kita pakai **upper bound**:
+- **UB** (`upper_bound`): 0/1 knapsack 2 dimensi (total berat ≤ ΣC, total luas ≤ Σ W·L) via DP
+  `best[luas][berat]`, dengan geometri diabaikan. Kendaraan yang tidak muat di geladak mana pun
+  (dalam orientasi apa pun) dibuang. Berat dan kapasitas dibulatkan ke bawah: untuk himpunan feasible,
+  `Σ floor(w) ≤ Σ w ≤ C`, jadi `Σ floor(w) ≤ floor(C)`. Relaksasi tetap valid untuk berat pecahan dan persis
+  untuk berat bulat. Multi-kapal (Bonus 3) memakai total kapasitas dan total luas.
 - `UB ≥ optimum sebenarnya`, jadi `gap = (UB − f) / UB` adalah **batas atas** gap yang sebenarnya.
-- Opsional: 1 instance kecil (≤ 6 kendaraan, deck kecil) di-brute force untuk global optimum yang
-  pasti, supaya bisa dibandingkan dengan UB.
+- **Brute force** (`brute_force`): backtracking per kendaraan (di luar, atau tiap posisi yang masih feasible)
+  dengan sel terpakai sebagai bitmask, ditambah branch and bound: cabang dipotong bila
+  `fee sekarang + fee semua kendaraan sisa ≤ terbaik`. Kendaraan ber-fee besar dicoba dulu. Ada batas
+  `max_nodes` supaya tidak macet di instance besar.
+
+| Instance | UB | Global optimum | UB longgar | Waktu |
+|---|---|---|---|---|
+| `main.json` | **1035** | tidak dihitung | – | UB 0.02 s |
+| `small.json` | 298 | **287** (brute force) | 3.7% | brute force 0.2 s |
+
+**Temuan untuk laporan (seberapa longgar UB):** pada instance kecil acak, UB = optimum persis bila yang
+membatasi adalah berat (kendaraan kecil mudah disusun rapat). Bila kapasitas berat dibuat longgar sehingga
+geometri yang membatasi (misalnya sedan/SUV/pickup di deck 5×7), UB lebih tinggi 5–23% dari optimum,
+karena sisa sel yang "terfragmentasi" tidak bisa dipakai. Di `main.json` keduanya membatasi, jadi gap terhadap
+UB sebaiknya dibaca sebagai batas atas, bukan jarak pasti ke optimum. `small.json` dipakai untuk
+membandingkan hasil algoritma terhadap global optimum yang pasti.
+
+Kebenaran diuji di `tests/test_bounds.py`: UB = enumerasi semua subset, brute force = enumerasi semua state
+pada instance mungil, dan optimum ≤ UB pada instance acak.
 
 ## 7. Algoritma
 

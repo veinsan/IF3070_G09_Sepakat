@@ -6,7 +6,7 @@ Semua run **harus reproducible**: instance tetap, seed tercatat, output mentah d
 
 - **Instance utama:** `src/data/main.json` (n kendaraan = 30, deck = 10×20, C = 131, generator seed 1; lihat DESIGN §2).
   Semua eksperimen wajib memakai instance ini supaya antar-algoritma bisa dibandingkan.
-- **Upper bound (UB):** __ (lihat DESIGN §6). `gap = (UB − f) / UB`.
+- **Upper bound (UB):** 1035 (lihat DESIGN §6). `gap = (UB − f) / UB`.
 - **Seeds:** run 1/2/3 = seed `1`, `2`, `3` untuk semua algoritma.
 - **Durasi:** wall-clock dengan `time.perf_counter()`, hanya bagian search (tidak termasuk plotting / IO).
 - **Mesin:** (CPU / RAM / versi Python) __ . Semua run di satu mesin yang sama.

@@ -22,8 +22,7 @@ Semua anggota menulis bagian laporan untuk algoritma masing-masing dan ikut anal
 
 **Fondasi dulu, lalu sesuai pembagian.** Fondasi (branch #1–#5: setup, instance-io, core-state,
 neighbors, upper-bound) dikerjakan `[R]` karena SA, GA, visualisasi, dan runner bergantung ke API
-state/objective/move. Loader + generator instance yang awalnya milik `[L]` sudah diambil alih `[R]` sebagai
-bagian fondasi. Setelah fondasi selesai, **setiap anggota hanya mengerjakan task miliknya sendiri**
+state/objective/move. Setelah fondasi selesai, **setiap anggota hanya mengerjakan task miliknya sendiri**
 (tidak mengambil task anggota lain). Kontrak API ada di DESIGN §3–§5.
 
 ---
@@ -36,8 +35,8 @@ makan Rabu** (hari laporan).
 
 | Hari | R (Riantama) | T (Tiara) | L (Levina) | Gate |
 |---|---|---|---|---|
-| **Jum 16** | Setup repo, loader + validasi, generator + `main.json`/`small.json` (diambil alih dari L), state + occupancy + objective + delta eval + test, 3 move, random init ✅ | Review salindia SA/GA, tulis SA & GA terhadap kontrak API (DESIGN §3–§5) | ~~Loader + generator~~ (diambil alih R). Mulai visualisasi state (dimajukan dari Sab 17) | Core API jalan, `main.json` ada ✅ |
-| **Sab 17** | UB (DP knapsack) + brute force, Steepest HC | SA selesai: T0 otomatis, cooling, history `e^(ΔE/T)`, stuck count | Visualisasi state + writer result JSON (EXPERIMENTS §2) | HC & SA run end-to-end + bisa divisualisasi |
+| **Jum 16** | Setup repo, loader + validasi, generator + `main.json`/`small.json`, state + occupancy + objective + delta eval + test, 3 move, random init ✅ | Review salindia SA/GA, tulis SA & GA terhadap kontrak API (DESIGN §3–§5) | Mulai visualisasi state (dimajukan dari Sab 17) | Core API jalan, `main.json` ada ✅ |
+| **Sab 17** | UB (DP knapsack) + brute force ✅, Steepest HC | SA selesai: T0 otomatis, cooling, history `e^(ΔE/T)`, stuck count | Visualisasi state + writer result JSON (EXPERIMENTS §2) | HC & SA run end-to-end + bisa divisualisasi |
 | **Min 18** | Bonus 2: Stochastic, Sideways, Random Restart HC | GA selesai: roulette, crossover, mutation, elitism, history max/mean | CLI `main.py` + `experiments.py` + fungsi plot | **Code freeze spek wajib**, semua algoritma jalan via CLI |
 | **Sen 19** | Bonus 3: multi-kapal di core (constraint per kapal, move/swap lintas kapal, UB total) | Bonus 1: objective ETA, dibuat sebagai bobot per kendaraan supaya delta eval tidak berubah | Jalankan 24 run wajib + 9 run Bonus 2, generate plot, isi tabel EXPERIMENTS. Skeleton laporan + cover + deskripsi persoalan | Semua hasil wajib + Bonus 2 ada di `output/` |
 | **Sel 20** | Bonus 3 selesai + 3 run, tulis bab core + HC | 3 run Bonus 1, tulis bab SA + GA | Visualisasi multi-kapal, plot ringkasan (box plot, overlay konvergensi), tulis bab eksperimen | Semua run bonus selesai, draf laporan per bab |
@@ -62,7 +61,7 @@ makan Rabu** (hari laporan).
 - [x] `[R]` Delta evaluation + 1 self-check (hasil delta = hasil full recompute di ribuan random move)
 - [x] `[R]` 3 move: move (termasuk ke luar), swap, rotate + random neighbor + full neighborhood
 - [x] `[R]` Random initial state
-- [ ] `[R]` Upper bound (DP knapsack berat+luas) + brute force instance kecil
+- [x] `[R]` Upper bound (DP knapsack berat+luas) + brute force instance kecil
 - [ ] `[L]` Visualisasi state: grid deck, kendaraan berwarna + label id, daftar kendaraan di luar, nilai objective/fee/berat
 
 ### M2 — Algoritma (Sab 17 – Min 18 Okt)

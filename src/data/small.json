@@ -1,89 +1,135 @@
 {
   "meta": {
     "generator": "src/core/generator.py",
-    "seed": 2,
-    "vehicles": 7,
-    "width": 4,
-    "length": 6,
-    "capacity_ratio": 0.8,
+    "seed": 3,
+    "vehicles": 12,
+    "width": 6,
+    "length": 8,
+    "capacity_ratio": 1.0,
     "types": [
       "motor",
       "sedan",
-      "suv"
+      "suv",
+      "pickup"
     ],
     "out": "src/data/small.json"
   },
   "ships": [
     {
       "id": "Deck-1",
-      "width": 4,
-      "length": 6,
-      "max_capacity": 13
+      "width": 6,
+      "length": 8,
+      "max_capacity": 34
     }
   ],
   "vehicles": [
     {
-      "id": "V1",
+      "id": "V01",
+      "type": "sedan",
+      "width": 2,
+      "length": 4,
+      "shipping_fee": 48,
+      "weight": 6,
+      "eta": 2
+    },
+    {
+      "id": "V02",
+      "type": "suv",
+      "width": 2,
+      "length": 5,
+      "shipping_fee": 64,
+      "weight": 7,
+      "eta": 6
+    },
+    {
+      "id": "V03",
+      "type": "motor",
+      "width": 1,
+      "length": 2,
+      "shipping_fee": 5,
+      "weight": 1,
+      "eta": 3
+    },
+    {
+      "id": "V04",
+      "type": "sedan",
+      "width": 2,
+      "length": 4,
+      "shipping_fee": 36,
+      "weight": 6,
+      "eta": 4
+    },
+    {
+      "id": "V05",
+      "type": "pickup",
+      "width": 2,
+      "length": 6,
+      "shipping_fee": 62,
+      "weight": 8,
+      "eta": 2
+    },
+    {
+      "id": "V06",
+      "type": "sedan",
+      "width": 2,
+      "length": 4,
+      "shipping_fee": 46,
+      "weight": 5,
+      "eta": 6
+    },
+    {
+      "id": "V07",
       "type": "motor",
       "width": 1,
       "length": 2,
       "shipping_fee": 6,
       "weight": 1,
-      "eta": 3
+      "eta": 7
     },
     {
-      "id": "V2",
+      "id": "V08",
       "type": "motor",
       "width": 1,
       "length": 2,
       "shipping_fee": 9,
       "weight": 1,
-      "eta": 5
+      "eta": 7
     },
     {
-      "id": "V3",
+      "id": "V09",
+      "type": "suv",
+      "width": 2,
+      "length": 5,
+      "shipping_fee": 60,
+      "weight": 8,
+      "eta": 6
+    },
+    {
+      "id": "V10",
+      "type": "pickup",
+      "width": 2,
+      "length": 6,
+      "shipping_fee": 72,
+      "weight": 10,
+      "eta": 4
+    },
+    {
+      "id": "V11",
+      "type": "pickup",
+      "width": 2,
+      "length": 6,
+      "shipping_fee": 80,
+      "weight": 8,
+      "eta": 3
+    },
+    {
+      "id": "V12",
       "type": "motor",
       "width": 1,
       "length": 2,
       "shipping_fee": 5,
       "weight": 1,
       "eta": 4
-    },
-    {
-      "id": "V4",
-      "type": "suv",
-      "width": 2,
-      "length": 5,
-      "shipping_fee": 57,
-      "weight": 8,
-      "eta": 7
-    },
-    {
-      "id": "V5",
-      "type": "suv",
-      "width": 2,
-      "length": 5,
-      "shipping_fee": 56,
-      "weight": 8,
-      "eta": 4
-    },
-    {
-      "id": "V6",
-      "type": "suv",
-      "width": 2,
-      "length": 5,
-      "shipping_fee": 53,
-      "weight": 6,
-      "eta": 7
-    },
-    {
-      "id": "V7",
-      "type": "motor",
-      "width": 1,
-      "length": 2,
-      "shipping_fee": 10,
-      "weight": 1,
-      "eta": 3
     }
   ]
 }
