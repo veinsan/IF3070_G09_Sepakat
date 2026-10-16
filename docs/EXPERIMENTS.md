@@ -4,7 +4,7 @@ Semua run **harus reproducible**: instance tetap, seed tercatat, output mentah d
 
 ## 1. Protokol
 
-- **Instance utama:** `src/data/main.json` (isi setelah dibuat: n kendaraan = __, deck = __×__, C = __).
+- **Instance utama:** `src/data/main.json` (n kendaraan = 30, deck = 10×20, C = 131, generator seed 1; lihat DESIGN §2).
   Semua eksperimen wajib memakai instance ini supaya antar-algoritma bisa dibandingkan.
 - **Upper bound (UB):** __ (lihat DESIGN §6). `gap = (UB − f) / UB`.
 - **Seeds:** run 1/2/3 = seed `1`, `2`, `3` untuk semua algoritma.

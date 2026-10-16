@@ -54,8 +54,8 @@ makan Rabu** (hari laporan).
 - [x] Tonton ulang / baca salindia Khodra: HC, SA, GA
 
 ### M1 — Core Model (Jum 16 – Sab 17 Okt)
-- [ ] `[L]` Format input JSON + loader + validasi (DESIGN §2)
-- [ ] `[L]` Generator instance random (seeded) + `src/data/main.json` + 1 instance kecil untuk brute force
+- [x] `[L]` Format input JSON + loader + validasi (DESIGN §2)
+- [x] `[L]` Generator instance random (seeded) + `src/data/main.json` + 1 instance kecil untuk brute force
 - [ ] `[R]` State + occupancy grid + objective dengan penalty (DESIGN §4)
 - [ ] `[R]` Delta evaluation + 1 self-check (hasil delta = hasil full recompute di ribuan random move)
 - [ ] `[R]` 3 move: move (termasuk ke luar), swap, rotate + random neighbor + full neighborhood
