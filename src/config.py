@@ -23,3 +23,13 @@ INITIAL_P_INSIDE = 0.5
 # Steepest Ascent berhenti sendiri di local optimum. Batas ini hanya pengaman agar run tidak pernah
 # berjalan tanpa akhir; bila tercapai, `extra["stop_reason"]` bernilai "max_iterations".
 HC_MAX_ITERATIONS = 10_000
+
+# Sideways Move: total sideways move maksimum sepanjang run (spesifikasi, DESIGN §7.1)
+HC_MAX_SIDEWAYS = 100
+
+# Random Restart: banyak restart setelah percobaan pertama (total percobaan = HC_MAX_RESTART + 1)
+HC_MAX_RESTART = 10
+
+# Stochastic: berhenti setelah sekian neighbor acak berturut-turut tidak lebih baik
+HC_MAX_NO_IMPROVE = 20_000
+HC_STOCHASTIC_MAX_ITERATIONS = 200_000
