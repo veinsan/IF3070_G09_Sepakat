@@ -77,6 +77,8 @@ Total wajib: **24 run**. Dengan bonus: **39 run** (dijalankan Rab 21 pagi, lihat
 
 ### 4.1 Hill-Climbing — Steepest Ascent
 
+Params: `max_iterations = 10000` (hanya pengaman, tidak pernah tercapai), tie-break acak, `initial_p_inside = 0.5`
+
 | Run | Seed | Obj awal | Obj akhir | Fee | Feasible | Gap UB | Iterasi | Evals | Durasi (s) |
 |---|---|---|---|---|---|---|---|---|---|
 | 1 | 1 | | | | | | | | |
@@ -175,3 +177,9 @@ Plot ringkasan yang disarankan: box plot objective akhir per algoritma, dan over
 ## 6. Catatan / Anomali
 
 <!-- Tulis di sini kalau ada run aneh, bug yang ketemu saat eksperimen, atau run yang harus diulang (beserta alasannya). -->
+
+- **Sen 19, sanity run Steepest Ascent** (bukan hasil resmi; hasil resmi dari `experiments.py`):
+  `main.json` seed 1/2/3 → 982 / 978 / 902 (gap UB 5.1% / 5.5% / 12.9%), 16–20 iterasi, ~1.3 s, semua
+  feasible. `small.json` seed 1/2/3 → 199 / 199 / 272, padahal global optimum 287. Dua run terjebak di local
+  optimum yang sama (gap 31% dari optimum). Ini contoh bagus untuk analisis kelemahan Steepest Ascent dan
+  motivasi Sideways / Random Restart / SA.
