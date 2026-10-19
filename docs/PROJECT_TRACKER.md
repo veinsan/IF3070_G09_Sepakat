@@ -85,7 +85,8 @@ Target tetap **semua spek wajib + Bonus 1, 2, 3**. Kolom "Gate" = kondisi yang h
 ### M4 — Laporan, Bonus, Release (Sel 20 – Kam 22 Okt)
 - [ ] `[L]` Laporan PDF (koordinator; isi per bab oleh pemilik bagian, lihat checklist di bawah)
 - [ ] `[T]` Bonus 1 (objective ETA, 3 run)
-- [ ] `[R]` Bonus 3: generator multi-kapal + instance `multi.json` + test (state, neighbor, UB sudah mendukung banyak kapal) + `[L]` visualisasi multi-kapal
+- [x] `[R]` Bonus 3: generator multi-kapal + instance `multi.json` + test (state, neighbor, UB sudah mendukung banyak kapal)
+- [ ] `[L]` Bonus 3: visualisasi multi-kapal (`final_state.decks` berisi grid tiap kapal)
 - [ ] `[L]` README final (setup, run, pembagian tugas)
 - [ ] `[R]` Repo **public**, tag `v1.0`, buat GitHub Release (repo di akun Riantama), submit di Edunex
 - [ ] `[L]` Clone ulang repo di folder bersih, ikuti README dari nol, pastikan jalan
@@ -184,7 +185,8 @@ Tanya **hanya** lewat komentar di unggahan Tubes di Teams (DM ke asisten tidak d
 | 10 | `feat/hc-variants` | Stochastic, Sideways, Random Restart (Bonus 2) | R | ✅ |
 | 11 | `feat/genetic-algorithm` | `search/genetic_algorithm.py` (roulette) | T | Sel 20 |
 | 12 | `feat/cli` | `main.py` | L | Sel 20 |
-| 13 | `feat/multi-ship` | Generator multi-kapal + `multi.json` + test (Bonus 3), visualisasi multi-kapal | R, L | Sel 20 |
+| 13 | `feat/multi-ship` | Generator multi-kapal + `multi.json` + test (Bonus 3) | R | ✅ |
+| 13b | `feat/visualization` (lanjutan) | Visualisasi multi-kapal (Bonus 3) | L | Sel 20 |
 | 14 | `feat/eta-objective` | Objective ETA (Bonus 1) | T | Sel 20 |
 | 15 | `exp/main-experiments` | `experiments.py`, `output/`, `notebooks/experiments.ipynb` | L | Sel 20 – Rab 21 |
 | 16 | `docs/report` | Laporan PDF + README final | L | Rab 21 |

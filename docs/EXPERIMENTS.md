@@ -5,6 +5,7 @@ Semua run **harus reproducible**: instance tetap, seed tercatat, output mentah d
 ## 1. Protokol
 
 - **Instance utama:** `src/data/main.json` (n kendaraan = 30, deck = 10×20, C = 131, generator seed 1; lihat DESIGN §2).
+- **Instance Bonus 3:** `src/data/multi.json` (40 kendaraan, 3 kapal: 10×12 / 8×10 / 6×8, C = 80 / 54 / 32, UB = 1318).
   Semua eksperimen wajib memakai instance ini supaya antar-algoritma bisa dibandingkan.
 - **Upper bound (UB):** 1035 (lihat DESIGN §6). `gap = (UB − f) / UB`.
 - **Seeds:** run 1/2/3 = seed `1`, `2`, `3` untuk semua algoritma.
@@ -151,7 +152,17 @@ Saran awal: pop = 50, iterasi ∈ {100, 300, 1000}. Sesuaikan dengan runtime.
 Saran awal: iter = 300, pop ∈ {20, 50, 100}.
 Plot per run: **max** dan **mean** objective populasi vs generasi.
 
-### 4.8 Ringkasan Antar-Algoritma
+### 4.8 Bonus 3 — Multi-kapal (`multi.json`)
+
+Algoritma: Steepest Ascent, seed 1/2/3 (SA dan GA bisa dijalankan pada instance yang sama tanpa perubahan kode).
+
+| Run | Seed | Obj awal | Obj akhir | Fee | Feasible | Gap UB | Berat per kapal | Kendaraan per kapal | Durasi (s) |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | 1 | | | | | | | | |
+| 2 | 2 | | | | | | | | |
+| 3 | 3 | | | | | | | | |
+
+### 4.9 Ringkasan Antar-Algoritma
 
 | Algoritma | Best | Mean ± std | Gap UB (mean) | Durasi mean (s) | Evals mean |
 |---|---|---|---|---|---|
@@ -195,3 +206,14 @@ Plot ringkasan yang disarankan: box plot objective akhir per algoritma, dan over
   Semua feasible. Random Restart terbaik di `main.json` (993, gap UB 4.1%), Stochastic terlemah: di geladak yang
   hampir penuh hampir semua neighbor acak overlap, sehingga hanya 38–53 langkah yang diterima dari ~30 ribu
   iterasi. Sideways baru membantu bila local optimum Steepest berada di plateau (seed 3: 902 → 960).
+- **Sel 20, sanity run multi-kapal (Bonus 3)** pada `multi.json`, seed 1 (bukan hasil resmi):
+
+  | Varian | Objective | Gap UB | Durasi | Kendaraan per kapal | Berat per kapal (C = 80 / 54 / 32) |
+  |---|---|---|---|---|---|
+  | Steepest | 1170 | 11.2% | 3.5 s | 10 / 6 / 5 | 70 / 51 / 30 |
+  | Sideways (100) | 1231 | 6.6% | 17.1 s | 9 / 8 / 5 | 78 / 53 / 30 |
+  | Random Restart (10) | 1188 | 9.9% | 34.8 s | 8 / 6 / 7 | 80 / 50 / 25 |
+  | Stochastic | 974 | 26.1% | 0.2 s | 5 / 6 / 6 | 61 / 50 / 17 |
+
+  Semua feasible dan memakai ketiga kapal. Steepest seed 2/3: 1072 / 1078. Gap UB lebih besar daripada
+  `main.json` karena UB armada menggabungkan kapasitas dan luas semua kapal (DESIGN §8).
