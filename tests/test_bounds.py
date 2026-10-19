@@ -18,7 +18,7 @@ DATA = Path(__file__).resolve().parent.parent / "src" / "data"
 def random_problems(count, n, width, length, seed, types=("motor", "sedan", "suv")):
     rng = random.Random(seed)
     for _ in range(count):
-        data = generate_instance(rng, n, width, length, rng.choice([0.6, 1.0, 3.0]), list(types))
+        data = generate_instance(rng, n, [(width, length)], rng.choice([0.6, 1.0, 3.0]), list(types))
         yield parse_problem(data)
 
 
