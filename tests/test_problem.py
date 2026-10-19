@@ -81,16 +81,16 @@ class TestDataFiles(unittest.TestCase):
 
 class TestGenerator(unittest.TestCase):
     def test_deterministic_and_valid(self):
-        a = generate_instance(random.Random(7), 12, 8, 10)
-        b = generate_instance(random.Random(7), 12, 8, 10)
-        c = generate_instance(random.Random(8), 12, 8, 10)
+        a = generate_instance(random.Random(7), 12, [(8, 10)])
+        b = generate_instance(random.Random(7), 12, [(8, 10)])
+        c = generate_instance(random.Random(8), 12, [(8, 10)])
         self.assertEqual(a, b)
         self.assertNotEqual(a, c)
         self.assertEqual(len(parse_problem(a).vehicles), 12)
 
     def test_unknown_type(self):
         with self.assertRaises(ValueError):
-            generate_instance(random.Random(0), 3, 4, 4, types=["kapal selam"])
+            generate_instance(random.Random(0), 3, [(4, 4)], types=["kapal selam"])
 
 
 if __name__ == "__main__":

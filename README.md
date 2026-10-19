@@ -67,6 +67,9 @@ IF3070_G09_Sepakat/
 │   ├── experiments.py              # jalankan seluruh eksperimen → output/
 │   ├── config.py                   # parameter default algoritma (HC, SA, GA)
 │   ├── data/                       # instance persoalan (JSON)
+│   │   ├── main.json               # instance utama eksperimen (30 kendaraan, deck 10x20)
+│   │   ├── small.json              # instance kecil untuk brute force global optimum
+│   │   └── multi.json              # armada 3 kapal untuk Bonus 3 (multi-kapal)
 │   ├── core/                       # model persoalan
 │   │   ├── problem.py              # Vehicle, Ship, Problem + load & validasi JSON
 │   │   ├── generator.py            # generator instance random (seeded)
@@ -102,6 +105,11 @@ pip install -r requirements.txt
 ```bash
 # satu algoritma pada satu instance
 python src/main.py --algo sa --instance src/data/main.json --seed 1
+
+# buat instance baru (parameter tersimpan di "meta" file output)
+python src/core/generator.py --seed 1 --vehicles 30 --width 10 --length 20 --out src/data/main.json
+# armada beberapa kapal: pasangan --width/--length ke-k = geladak kapal ke-k
+python src/core/generator.py --seed 1 --vehicles 40 --width 10 8 6 --length 12 10 8 --out src/data/multi.json
 
 # seluruh eksperimen → output/
 python src/experiments.py

@@ -33,3 +33,7 @@ HC_MAX_RESTART = 10
 # Stochastic: berhenti setelah sekian neighbor acak berturut-turut tidak lebih baik
 HC_MAX_NO_IMPROVE = 20_000
 HC_STOCHASTIC_MAX_ITERATIONS = 200_000
+
+# --- Multi-kapal (Bonus 3, DESIGN §8) -----------------------------------------------------------
+# armada 3 kapal dengan geladak 10x12, 8x10, 6x8 dan 40 kendaraan
+MULTI_INSTANCE = DATA_DIR / "multi.json"

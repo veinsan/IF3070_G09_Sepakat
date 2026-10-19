@@ -55,6 +55,10 @@ hampir tidak pernah aktif karena luas habis duluan). Parameter generator disimpa
 |---|---|---|
 | `src/data/main.json` | `--seed 1 --vehicles 30 --width 10 --length 20` | luas 466/200 (2.33×), berat 382/131 (2.92×), fee total 2351 |
 | `src/data/small.json` | `--seed 3 --vehicles 12 --width 6 --length 8 --capacity-ratio 1.0 --types motor sedan suv pickup` | luas 88/48 (1.83×), berat 62/34 (1.82×), fee total 493, untuk brute force (§6) |
+| `src/data/multi.json` | `--seed 1 --vehicles 40 --width 10 8 6 --length 12 10 8` | armada 3 kapal: 10×12 (C=80), 8×10 (C=54), 6×8 (C=32); luas 640/248 (2.58×), berat 535/166 (3.22×), fee total 3241 (Bonus 3) |
+
+Generator menerima beberapa geladak: `--width` dan `--length` diisi beberapa nilai, pasangan ke-k = kapal ke-k
+(`Deck-k`). Kapasitas tiap kapal dihitung dengan rumus di atas dari luas geladaknya sendiri.
 
 ## 3. Representasi State ✅ (`core/state.py`)
 
@@ -162,6 +166,7 @@ Global optimum `main.json` (30 kendaraan) terlalu mahal untuk dihitung persis. K
 |---|---|---|---|---|
 | `main.json` | **1035** | tidak dihitung | – | UB 0.02 s |
 | `small.json` | 298 | **287** (brute force) | 3.7% | brute force 0.2 s |
+| `multi.json` | 1318 | tidak dihitung | – | UB 0.03 s |
 
 **Temuan untuk laporan (seberapa longgar UB):** pada instance kecil acak, UB = optimum persis bila yang
 membatasi adalah berat (kendaraan kecil mudah disusun rapat). Bila kapasitas berat dibuat longgar sehingga
@@ -264,11 +269,24 @@ loop pendakian yang sama (`_climb`). Steepest Ascent = Sideways dengan `max_side
 | 2. Semua varian HC | 7 | Tabel 7.1, masing-masing 3 run |
 | 3. Multi-kapal | 10 | `pos` sudah punya `ship`; constraint per kapal; `move` boleh ke kapal lain; `swap` lintas kapal; UB pakai total kapasitas & luas |
 
-**Status Bonus 3 (per Sen 19):** core sudah mendukung banyak kapal sejak fondasi: occupancy dan berat per
-kapal (`State`), `all_placements`/`random_placement` mencakup semua kapal sehingga `move` dan `swap` bisa lintas
-kapal, UB memakai total kapasitas dan luas, dan `brute_force` menangani banyak kapal. Semua itu sudah teruji
-dengan instance 2 kapal di `tests/test_state.py`. Yang tersisa: opsi multi-kapal di generator, instance
-`src/data/multi.json`, test end-to-end, dan visualisasi beberapa geladak.
+**Bonus 3 — Multi-kapal ✅ (bagian core, `[R]`):** spesifikasi meminta program "dapat menerima jumlah kapal lebih
+dari satu dan memaksimalkan *value* total yang diangkut armada".
+
+- **Menerima > 1 kapal:** input `ships` berupa list (§2), generator bisa membuat armada, `src/data/multi.json`
+  berisi 3 kapal berbeda ukuran dan kapasitas.
+- **Constraint per kapal:** occupancy dan berat dihitung per kapal (`State`), jadi overlap hanya terjadi antar
+  kendaraan di kapal yang sama, dan tiap kapal punya batas berat sendiri (`weight_units` per kapal, §4).
+- **Value total armada:** objective = Σ fee semua kendaraan yang dimuat di kapal mana pun, dikurangi penalty
+  semua kapal. Properti "state infeasible selalu punya cara keluar" (§4) tetap berlaku per kapal.
+- **Neighbor lintas kapal:** `move` bisa ke anchor di kapal mana pun (`all_placements` / `random_placement`
+  mencakup semua kapal), `swap` menukar anchor termasuk kapalnya. Semua algoritma (HC, SA, GA) otomatis
+  mendukung armada tanpa perubahan kode, karena hanya memakai API `State` + `search/neighbors.py`.
+- **UB armada:** knapsack dengan total kapasitas dan total luas armada (§6). Lebih longgar dibanding satu kapal
+  karena tidak memperhitungkan bahwa satu kendaraan harus muat utuh di satu kapal.
+- **Teruji** di `tests/test_multi_ship.py`: generator armada, objective = total fee armada (dua kendaraan yang
+  terlalu berat untuk satu kapal feasible bila dibagi ke dua kapal), move/swap lintas kapal, brute force armada
+  = enumerasi semua state, dan keempat varian HC menghasilkan state feasible yang memakai lebih dari satu kapal.
+- **Sisa `[L]`:** visualisasi beberapa geladak (`final_state.decks` sudah berisi grid tiap kapal).
 
 Urutan pengerjaan dan pemotongan bila waktu kurang ada di PROJECT_TRACKER §Jadwal.
 
