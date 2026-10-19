@@ -20,28 +20,32 @@
 Kode `[R]`/`[T]`/`[L]` di milestone = penanggung jawab task. `[All]` = dikerjakan bersama.
 Semua anggota menulis bagian laporan untuk algoritma masing-masing dan ikut analisis.
 
-**Fondasi dulu, lalu sesuai pembagian.** Fondasi (branch #1–#5: setup, instance-io, core-state,
-neighbors, upper-bound) dikerjakan `[R]` karena SA, GA, visualisasi, dan runner bergantung ke API
+**Fondasi dulu, lalu sesuai pembagian.** Fondasi (branch #1–#6: setup, instance-io, core-state,
+neighbors, upper-bound, result-format) dikerjakan `[R]` karena SA, GA, visualisasi, dan runner bergantung ke API
 state/objective/move. Setelah fondasi selesai, **setiap anggota hanya mengerjakan task miliknya sendiri**
 (tidak mengambil task anggota lain). Kontrak API ada di DESIGN §3–§5.
 
 ---
 
-## Jadwal Ulang (Jum 16 – Kam 22 Okt)
+## Jadwal (Sen 19 – Kam 22 Okt)
 
-Target: **semua spek wajib + Bonus 1, 2, 3 selesai**. Kolom "Gate" = kondisi yang harus tercapai di akhir
-hari. Kalau gate meleset, yang wajib didahulukan. Bonus boleh geser ke Senin/Selasa, tapi **tidak boleh
-makan Rabu** (hari laporan).
+**Status per Sen 19 pagi:** fondasi #1–#5 selesai dan sudah di `main` (31 unit test lulus). Semua task lain
+belum dimulai. Jadwal Jum 16 – Min 18 sebelumnya diganti dengan jadwal di bawah.
+
+Target tetap **semua spek wajib + Bonus 1, 2, 3**. Kolom "Gate" = kondisi yang harus tercapai di akhir hari.
 
 | Hari | R (Riantama) | T (Tiara) | L (Levina) | Gate |
 |---|---|---|---|---|
-| **Jum 16** | Setup repo, loader + validasi, generator + `main.json`/`small.json`, state + occupancy + objective + delta eval + test, 3 move, random init ✅ | Review salindia SA/GA, tulis SA & GA terhadap kontrak API (DESIGN §3–§5) | Mulai visualisasi state (dimajukan dari Sab 17) | Core API jalan, `main.json` ada ✅ |
-| **Sab 17** | UB (DP knapsack) + brute force ✅, Steepest HC | SA selesai: T0 otomatis, cooling, history `e^(ΔE/T)`, stuck count | Visualisasi state + writer result JSON (EXPERIMENTS §2) | HC & SA run end-to-end + bisa divisualisasi |
-| **Min 18** | Bonus 2: Stochastic, Sideways, Random Restart HC | GA selesai: roulette, crossover, mutation, elitism, history max/mean | CLI `main.py` + `experiments.py` + fungsi plot | **Code freeze spek wajib**, semua algoritma jalan via CLI |
-| **Sen 19** | Bonus 3: multi-kapal di core (constraint per kapal, move/swap lintas kapal, UB total) | Bonus 1: objective ETA, dibuat sebagai bobot per kendaraan supaya delta eval tidak berubah | Jalankan 24 run wajib + 9 run Bonus 2, generate plot, isi tabel EXPERIMENTS. Skeleton laporan + cover + deskripsi persoalan | Semua hasil wajib + Bonus 2 ada di `output/` |
-| **Sel 20** | Bonus 3 selesai + 3 run, tulis bab core + HC | 3 run Bonus 1, tulis bab SA + GA | Visualisasi multi-kapal, plot ringkasan (box plot, overlay konvergensi), tulis bab eksperimen | Semua run bonus selesai, draf laporan per bab |
-| **Rab 21** | `[All]` analisis (EXPERIMENTS §5), kesimpulan & saran, referensi, form AI | `[All]` (sama) | Compile PDF, README final, uji clone bersih | **Freeze internal 23.59**: PDF + README final |
-| **Kam 22** | Fix minor saja. Repo public, tag `v1.0`, GitHub Release, submit Edunex **≤ 20.00** | Latihan demo | Latihan demo | Tersubmit sebelum 22.22 |
+| **Sen 19** | `feat/result-format` (`config.py` + `search/result.py`) **di-merge paling lambat siang**, lalu Steepest HC (`feat/hill-climbing`), lalu mulai varian HC | SA (`feat/simulated-annealing`): T0 otomatis, geometric cooling, history `e^(ΔE/T)`, stuck count | Visualisasi state + plot (`feat/visualization`), input dari dict hasil `search/result.py` | Format hasil ada di `main`; Steepest + SA jalan; state bisa digambar |
+| **Sel 20** | Varian HC (Bonus 2) selesai. Bonus 3: generator multi-kapal + instance `multi.json` + test | GA (`feat/genetic-algorithm`): roulette, crossover, mutation, elitism, history max/mean. Bonus 1: objective ETA | CLI `main.py`, `experiments.py`, skeleton notebook, visualisasi multi-kapal | **Code freeze 23.59**: semua algoritma + bonus jalan via CLI |
+| **Rab 21** | Tulis bab desain (state, objective, neighbor, UB), HC, dan multi-kapal. Review hasil run HC | Tulis bab SA, GA, dan Bonus 1. Review hasil run SA/GA | Pagi: jalankan semua run (24 wajib + 9 Bonus 2 + 3 Bonus 1 + 3 Bonus 3), plot, isi tabel EXPERIMENTS, notebook. Siang: skeleton laporan, cover, deskripsi persoalan, compile PDF | Sore `[All]`: analisis (EXPERIMENTS §5), kesimpulan & saran, referensi, form AI. **Freeze internal 23.59**: PDF + README final |
+| **Kam 22** | Fix minor saja. Repo public, tag `v1.0`, GitHub Release, submit Edunex **≤ 20.00** | Latihan demo | Uji clone bersih dari README, latihan demo | Tersubmit sebelum 22.22 |
+
+- **Sen 19 `[All]`:** kirim pertanyaan Q&A #1–#8 di Teams hari ini. Jawabannya dibutuhkan sebelum laporan
+  ditulis Rabu (terutama #5, #6, #8).
+- **Kalau gate meleset:** spek wajib tidak boleh mundur. Bonus dipotong dengan urutan **Bonus 1 (3 poin)
+  dulu, lalu Bonus 3 (10 poin)**. Bonus 2 (7 poin) dipertahankan karena hanya varian dari Steepest HC.
+  Core sudah mendukung banyak kapal (DESIGN §8), jadi sisa Bonus 3 relatif kecil.
 
 ---
 
@@ -51,10 +55,10 @@ makan Rabu** (hari laporan).
 - [x] Isi sheet kelompok (**batas Minggu 27 Sep 23.59**) → dapat nomor kelompok final (G09)
 - [x] Rename repo/folder sesuai format `IF3070_GXX_NamaKelompok`, invite anggota
 - [x] Struktur folder: `src/`, `docs/`, `output/`, `README.md`, `.gitignore` (`__pycache__/`, `.venv/`)
-- [ ] Baca Q&A di unggahan Teams, lalu kirim pertanyaan terbuka (lihat §Q&A) — ditunda
+- [ ] Baca Q&A di unggahan Teams, lalu kirim pertanyaan terbuka (lihat §Q&A) — **kirim Sen 19**
 - [x] Tonton ulang / baca salindia Khodra: HC, SA, GA
 
-### M1 — Core Model (Jum 16 – Sab 17 Okt)
+### M1 — Core Model (Jum 16 – Min 18 Okt) ✅ (visualisasi pindah ke Sen 19)
 - [x] `[R]` Format input JSON + loader + validasi (DESIGN §2)
 - [x] `[R]` Generator instance random (seeded) + `src/data/main.json` + 1 instance kecil untuk brute force
 - [x] `[R]` State + occupancy grid + objective dengan penalty (DESIGN §4)
@@ -64,24 +68,24 @@ makan Rabu** (hari laporan).
 - [x] `[R]` Upper bound (DP knapsack berat+luas) + brute force instance kecil
 - [ ] `[L]` Visualisasi state: grid deck, kendaraan berwarna + label id, daftar kendaraan di luar, nilai objective/fee/berat
 
-### M2 — Algoritma (Sab 17 – Min 18 Okt)
+### M2 — Algoritma (Sen 19 – Sel 20 Okt)
 - [ ] `[R]` Steepest Ascent HC
 - [ ] `[T]` SA: T0 otomatis, geometric cooling, catat `e^(ΔE/T)` dan stuck count
 - [ ] `[T]` GA: **roulette wheel selection eksplisit** (cumsum + spin), one-point crossover, mutation, elitism
-- [ ] `[All]` Semua algoritma return format hasil yang sama (EXPERIMENTS §2)
+- [ ] `[R]` `config.py` + `search/result.py`: format hasil seragam (EXPERIMENTS §2), dipakai semua algoritma
 - [ ] `[L]` CLI: `python src/main.py --algo <hc|sa|ga|...> --instance ... --seed ...`
 - [ ] `[R]` (Bonus 2) Stochastic, Sideways, Random Restart HC
 
-### M3 — Eksperimen (Sen 19 – Sel 20 Okt)
-- [ ] `[L]` Script `experiments.py` untuk menjalankan semua run wajib (24) + Bonus 2 (9) → `output/`
+### M3 — Eksperimen (Sel 20 – Rab 21 Okt)
+- [ ] `[L]` Script `experiments.py` untuk menjalankan semua run wajib (24) + Bonus 2 (9) + Bonus 1 (3) + Bonus 3 (3) → `output/`
 - [ ] `[L]` Generate semua plot dari JSON
 - [ ] `[All]` Isi tabel di `EXPERIMENTS.md` (masing-masing untuk algoritmanya)
 - [ ] `[All]` Sanity check: semua hasil akhir feasible? durasi masuk akal?
 
-### M4 — Laporan, Bonus, Release (Sen 19 – Kam 22 Okt)
+### M4 — Laporan, Bonus, Release (Sel 20 – Kam 22 Okt)
 - [ ] `[L]` Laporan PDF (koordinator; isi per bab oleh pemilik bagian, lihat checklist di bawah)
 - [ ] `[T]` Bonus 1 (objective ETA, 3 run)
-- [ ] `[R]` Bonus 3 (multi-kapal di core, 3 run) + `[L]` visualisasi multi-kapal
+- [ ] `[R]` Bonus 3: generator multi-kapal + instance `multi.json` + test (state, neighbor, UB sudah mendukung banyak kapal) + `[L]` visualisasi multi-kapal
 - [ ] `[L]` README final (setup, run, pembagian tugas)
 - [ ] `[R]` Repo **public**, tag `v1.0`, buat GitHub Release (repo di akun Riantama), submit di Edunex
 - [ ] `[L]` Clone ulang repo di folder bersih, ikuti README dari nol, pastikan jalan
@@ -166,20 +170,21 @@ Tanya **hanya** lewat komentar di unggahan Tubes di Teams (DM ke asisten tidak d
 
 ### Rencana Branch (urutan merge)
 
-| # | Branch | Isi | PJ |
-|---|---|---|---|
-| 1 | `chore/project-setup` | Struktur repo, `requirements.txt`, README, konvensi kode (DESIGN §10) | R |
-| 2 | `feat/instance-io` | `core/problem.py`, `core/generator.py`, `data/main.json`, `data/small.json` | R |
-| 3 | `feat/core-state` | `core/state.py`, `core/objective.py` + test delta = full recompute | R |
-| 4 | `feat/neighbors` | `search/neighbors.py` + test | R |
-| 5 | `feat/upper-bound` | `core/bounds.py` (DP knapsack + brute force) | R |
-| 6 | `feat/visualization` | `visualization/state_view.py`, `visualization/plots.py` | L |
-| 7 | `feat/hill-climbing` | `config.py`, `search/result.py`, Steepest Ascent | R |
-| 8 | `feat/simulated-annealing` | `search/simulated_annealing.py` | T |
-| 9 | `feat/genetic-algorithm` | `search/genetic_algorithm.py` (roulette) | T |
-| 10 | `feat/cli` | `main.py` | L |
-| 11 | `feat/hc-variants` | Stochastic, Sideways, Random Restart (Bonus 2) | R |
-| 12 | `exp/main-experiments` | `experiments.py`, `output/`, `notebooks/experiments.ipynb` | L |
-| 13 | `feat/eta-objective` | Objective ETA (Bonus 1) | T |
-| 14 | `feat/multi-ship` | Multi-kapal di core + visualisasi (Bonus 3) | R, L |
-| 15 | `docs/report` | Laporan PDF + README final | L |
+| # | Branch | Isi | PJ | Status |
+|---|---|---|---|---|
+| 1 | `chore/project-setup` | Struktur repo, `requirements.txt`, README, konvensi kode (DESIGN §10) | R | ✅ |
+| 2 | `feat/instance-io` | `core/problem.py`, `core/generator.py`, `data/main.json`, `data/small.json` | R | ✅ |
+| 3 | `feat/core-state` | `core/state.py`, `core/objective.py` + test delta = full recompute | R | ✅ |
+| 4 | `feat/neighbors` | `search/neighbors.py` + test | R | ✅ |
+| 5 | `feat/upper-bound` | `core/bounds.py` (DP knapsack + brute force) | R | ✅ |
+| 6 | `feat/result-format` | `config.py`, `search/result.py` (format hasil seragam, EXPERIMENTS §2) | R | Sen 19 siang |
+| 7 | `feat/hill-climbing` | Steepest Ascent | R | Sen 19 |
+| 8 | `feat/visualization` | `visualization/state_view.py`, `visualization/plots.py` | L | Sen 19 |
+| 9 | `feat/simulated-annealing` | `search/simulated_annealing.py` | T | Sen 19 |
+| 10 | `feat/hc-variants` | Stochastic, Sideways, Random Restart (Bonus 2) | R | Sen 19 – Sel 20 |
+| 11 | `feat/genetic-algorithm` | `search/genetic_algorithm.py` (roulette) | T | Sel 20 |
+| 12 | `feat/cli` | `main.py` | L | Sel 20 |
+| 13 | `feat/multi-ship` | Generator multi-kapal + `multi.json` + test (Bonus 3), visualisasi multi-kapal | R, L | Sel 20 |
+| 14 | `feat/eta-objective` | Objective ETA (Bonus 1) | T | Sel 20 |
+| 15 | `exp/main-experiments` | `experiments.py`, `output/`, `notebooks/experiments.ipynb` | L | Sel 20 – Rab 21 |
+| 16 | `docs/report` | Laporan PDF + README final | L | Rab 21 |

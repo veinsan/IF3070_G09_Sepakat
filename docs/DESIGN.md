@@ -215,11 +215,17 @@ Cek definisinya lagi ke salindia Khodra (spec: "utamakan implementasi yang menga
 
 | Bonus | Poin | Desain |
 |---|---|---|
-| 1. Objective alternatif (tanpa variabel baru) | 3 | Prioritas ETA: `Σ fee_i · (1 + 1/eta_i)` (makin mendesak, makin berbobot). Jalankan ulang 1 set eksperimen untuk dibandingkan |
+| 1. Objective alternatif (tanpa variabel baru) | 3 | Prioritas ETA: `Σ fee_i · (1 + 1/eta_i)` (makin mendesak, makin berbobot). Jalankan ulang 1 set eksperimen untuk dibandingkan. ⚠ `eta` boleh 0 (§2), jadi rumusnya perlu dijaga dari pembagian nol (misalnya `1/(eta_i + 1)`). `P` juga harus memakai bobot maksimum, bukan fee maksimum, supaya properti §4 tetap berlaku |
 | 2. Semua varian HC | 7 | Tabel 7.1, masing-masing 3 run |
 | 3. Multi-kapal | 10 | `pos` sudah punya `ship`; constraint per kapal; `move` boleh ke kapal lain; `swap` lintas kapal; UB pakai total kapasitas & luas |
 
-Urutan pengerjaan yang disarankan: Bonus 2 → Bonus 1 → Bonus 3, **setelah** semua spek wajib selesai.
+**Status Bonus 3 (per Sen 19):** core sudah mendukung banyak kapal sejak fondasi: occupancy dan berat per
+kapal (`State`), `all_placements`/`random_placement` mencakup semua kapal sehingga `move` dan `swap` bisa lintas
+kapal, UB memakai total kapasitas dan luas, dan `brute_force` menangani banyak kapal. Semua itu sudah teruji
+dengan instance 2 kapal di `tests/test_state.py`. Yang tersisa: opsi multi-kapal di generator, instance
+`src/data/multi.json`, test end-to-end, dan visualisasi beberapa geladak.
+
+Urutan pengerjaan dan pemotongan bila waktu kurang ada di PROJECT_TRACKER §Jadwal.
 
 ## 9. Keputusan Terbuka
 

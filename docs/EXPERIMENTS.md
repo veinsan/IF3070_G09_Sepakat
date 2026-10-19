@@ -36,7 +36,7 @@ nama yang sama: `output/<algo>/<run_id>_{initial,final,plot}.png`.
 
 | Eksperimen | Konfigurasi | Run | Wajib? |
 |---|---|---|---|
-| Hill-Climbing (varian utama: ______) | 1 | 3 | ✅ |
+| Hill-Climbing (varian utama: Steepest Ascent) | 1 | 3 | ✅ |
 | Simulated Annealing | 1 | 3 | ✅ |
 | GA: kontrol populasi, variasi iterasi | 3 | 9 | ✅ |
 | GA: kontrol iterasi, variasi populasi | 3 | 9 | ✅ |
@@ -44,7 +44,7 @@ nama yang sama: `output/<algo>/<run_id>_{initial,final,plot}.png`.
 | Objective alternatif (Bonus 1) | ≥1 | 3 | Bonus |
 | Multi-kapal (Bonus 3) | ≥1 | 3 | Bonus |
 
-Total wajib: **24 run**.
+Total wajib: **24 run**. Dengan bonus: **39 run** (dijalankan Rab 21 pagi, lihat PROJECT_TRACKER §Jadwal).
 
 ---
 
