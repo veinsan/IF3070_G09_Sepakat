@@ -86,9 +86,9 @@ Params: `max_iterations = 10000` (hanya pengaman, tidak pernah tercapai), tie-br
 | 3 | 3 | | | | | | | | |
 | **mean ± std** | | | | | | | | | |
 
-### 4.2 Hill-Climbing — Stochastic (Bonus 2 jika bukan varian utama)
+### 4.2 Hill-Climbing — Stochastic (Bonus 2)
 
-Params: `max_iter = __`, `max_no_improve = __`
+Params: `max_iterations = 200000`, `max_no_improve = 20000`
 
 | Run | Seed | Obj awal | Obj akhir | Fee | Feasible | Gap UB | Iterasi | Evals | Durasi (s) |
 |---|---|---|---|---|---|---|---|---|---|
@@ -98,7 +98,7 @@ Params: `max_iter = __`, `max_no_improve = __`
 
 ### 4.3 Hill-Climbing — Sideways Move
 
-Params: `max_sideways = __`
+Params: `max_sideways = 100` (total, DESIGN §7.1), `max_iterations = 10000` (pengaman)
 
 | Run | Seed | Obj awal | Obj akhir | Fee | Feasible | Gap UB | Iterasi | #Sideways | Durasi (s) |
 |---|---|---|---|---|---|---|---|---|---|
@@ -108,7 +108,7 @@ Params: `max_sideways = __`
 
 ### 4.4 Hill-Climbing — Random Restart
 
-Params: `max_restart = __`
+Params: `max_restart = 10` (total 11 percobaan Steepest Ascent)
 
 | Run | Seed | Obj akhir | Fee | Feasible | Gap UB | #Restart | Iterasi per restart | Durasi (s) |
 |---|---|---|---|---|---|---|---|---|
@@ -183,3 +183,15 @@ Plot ringkasan yang disarankan: box plot objective akhir per algoritma, dan over
   feasible. `small.json` seed 1/2/3 → 199 / 199 / 272, padahal global optimum 287. Dua run terjebak di local
   optimum yang sama (gap 31% dari optimum). Ini contoh bagus untuk analisis kelemahan Steepest Ascent dan
   motivasi Sideways / Random Restart / SA.
+- **Sen 19, sanity run varian HC (Bonus 2)**, default params, seed 1/2/3 (bukan hasil resmi):
+
+  | Varian | `main.json` | Durasi | `small.json` (optimum 287) |
+  |---|---|---|---|
+  | Steepest | 982 / 978 / 902 | ~1.3 s | 199 / 199 / 272 |
+  | Sideways (100) | 982 / 978 / 960 | ~9.4 s | 225 / 271 / 277 |
+  | Random Restart (10) | 982 / 993 / 946 | ~14.5 s | 277 / 277 / 272 |
+  | Stochastic | 778 / 876 / 771 | ~0.3 s | 177 / 155 / 137 |
+
+  Semua feasible. Random Restart terbaik di `main.json` (993, gap UB 4.1%), Stochastic terlemah: di geladak yang
+  hampir penuh hampir semua neighbor acak overlap, sehingga hanya 38–53 langkah yang diterima dari ~30 ribu
+  iterasi. Sideways baru membantu bila local optimum Steepest berada di plateau (seed 3: 902 → 960).

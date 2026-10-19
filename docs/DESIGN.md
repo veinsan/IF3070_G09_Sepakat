@@ -182,9 +182,9 @@ Cek definisinya lagi ke salindia Khodra (spec: "utamakan implementasi yang menga
 | Varian | Aturan | Stop | Yang dicatat (spec) |
 |---|---|---|---|
 | Steepest Ascent | ambil neighbor terbaik, pindah kalau `>` current | tidak ada neighbor lebih baik | iterasi |
-| Stochastic | ambil neighbor random, pindah kalau `>` current | `max_iter` atau `max_no_improve` berturut | iterasi |
-| Sideways Move | Steepest, tapi boleh pindah kalau `==` | `max_sideways` tercapai 🟡 (berturut-turut vs total, konfirmasi) | iterasi, `max_sideways` |
-| Random Restart | Steepest dari initial random baru | `max_restart` tercapai | jumlah restart, iterasi per restart, `max_restart` |
+| Stochastic | ambil neighbor random, pindah kalau `>` current | `max_no_improve` neighbor berturut-turut tidak lebih baik, atau `max_iterations` | iterasi |
+| Sideways Move | Steepest, tapi boleh pindah kalau `==` | semua neighbor `<` current, atau **total** sideways move mencapai `max_sideways` | iterasi, `max_sideways` |
+| Random Restart | Steepest dari initial random baru | banyak restart mencapai `max_restart` | jumlah restart, iterasi per restart, `max_restart` |
 
 **Steepest Ascent ✅ (`search/hill_climbing.py`):**
 - Sesuai salindia: tiap iterasi mengevaluasi seluruh neighborhood (§5) dengan `State.delta`, lalu pindah ke
@@ -199,6 +199,35 @@ Cek definisinya lagi ke salindia Khodra (spec: "utamakan implementasi yang menga
 - Karena neighborhood lengkap dan `P > max fee` (§4), state akhir **selalu feasible**. Ini diuji di
   `tests/test_hill_climbing.py`, beserta pengecekan bahwa state akhir memang local optimum.
 - `best_neighbor()` dipisah supaya bisa dipakai ulang oleh Sideways Move dan Random Restart (Bonus 2).
+
+**Varian lain ✅ (Bonus 2, `search/hill_climbing.py`):** Steepest, Sideways, dan Random Restart memakai satu
+loop pendakian yang sama (`_climb`). Steepest Ascent = Sideways dengan `max_sideways = 0`.
+
+- **Sideways Move** (`sideways_move`, default `max_sideways = 100`):
+  - Pindah ke neighbor terbaik bila `Δ > 0` (naik) atau `Δ = 0` (sideways, untuk keluar dari shoulder/plateau).
+    Sideways move dipilih acak di antara neighbor terbaik yang setara (tie-break §7.1).
+  - **`max_sideways` dihitung total sepanjang run**, bukan berturut-turut. Alasannya kalimat spesifikasi:
+    "ketika banyak *sideways move* yang dilakukan sudah mencapai maksimum, pencarian dihentikan". Yang dihitung
+    adalah banyaknya sideways move yang **sudah dilakukan**, tanpa syarat berturut-turut, dan pencarian
+    **langsung berhenti** saat jumlahnya mencapai maksimum (`stop_reason = "max_sideways"`). Selain itu berhenti
+    di local optimum ketat, yaitu semua neighbor `< current` (`"local_optimum"`).
+  - Dicatat: `iterations` (langkah naik + sideways), `params.max_sideways`, `extra.sideways_moves`.
+- **Random Restart** (`random_restart`, default `max_restart = 10`):
+  - 1 percobaan awal + `max_restart` restart, masing-masing Steepest Ascent dari initial state acak baru (RNG
+    yang sama, jadi tetap reproducible). Percobaan pertama identik dengan Steepest Ascent seed yang sama, sehingga
+    hasilnya **selalu ≥** Steepest Ascent. Hasil akhir = state terbaik dari semua percobaan.
+  - `history.objective` = semua percobaan disambung (pola gigi gergaji), `history.best` = terbaik sejauh ini.
+    Lompatan ke initial state baru dihitung satu iterasi, jadi `iterations = Σ iters_per_restart + restarts`.
+  - Dicatat: `extra.restarts`, `extra.iters_per_restart`, `extra.final_objective_per_restart`,
+    `extra.best_restart`, `params.max_restart`.
+- **Stochastic** (`stochastic`, default `max_no_improve = 20 000`, `max_iterations = 200 000`):
+  - Tiap iterasi mengambil satu neighbor acak (`random_neighbor`, §5) dan pindah hanya bila `Δ > 0`.
+    1 iterasi = 1 neighbor dievaluasi, jadi `evaluations = iterations`.
+  - `max_no_improve` ≈ 1.6 × ukuran neighborhood `main.json` (~12.3 ribu), supaya peluang melewatkan neighbor
+    yang lebih baik kecil sebelum dianggap local optimum.
+  - State akhir **tidak dijamin** feasible (berbeda dengan Steepest), karena neighbor yang memperbaiki pelanggaran
+    bisa saja tidak pernah terambil. Di semua sanity run hasilnya tetap feasible.
+  - Dicatat: `iterations`, `extra.improvements` (banyak langkah yang diterima), `extra.stop_reason`.
 
 ### 7.2 Simulated Annealing
 
@@ -246,7 +275,7 @@ Urutan pengerjaan dan pemotongan bila waktu kurang ada di PROJECT_TRACKER §Jadw
 ## 9. Keputusan Terbuka
 
 - [x] Konstanta penalty `P` final (`max fee + 1`, berat via `weight_units`)
-- [ ] `max_sideways` berturut-turut atau total
+- [x] `max_sideways` berturut-turut atau total → **total**, langsung berhenti saat tercapai (§7.1)
 - [ ] Definisi "stuck" SA disepakati
 - [ ] Nilai default SA (`α`, `T_min`, `max_iter`) dan GA (`p_c`, `p_m`, elitism)
 - [ ] Format input dikonfirmasi (apakah asisten kasih test case sendiri saat demo?)

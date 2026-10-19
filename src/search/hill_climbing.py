@@ -1,32 +1,42 @@
-"""Hill-Climbing (DESIGN §7.1).
+"""Hill-Climbing: Steepest Ascent, Sideways Move, Random Restart, dan Stochastic (DESIGN §7.1).
 
-Steepest Ascent mengikuti salindia kuliah: di setiap iterasi seluruh neighbor dievaluasi, lalu pindah ke
-neighbor terbaik hanya bila nilainya lebih besar dari state sekarang. Bila tidak ada neighbor yang lebih
-baik, state sekarang adalah local optimum dan pencarian berhenti.
+Semua varian mengikuti salindia kuliah. Sumber: M. L. Khodra, "Beyond Classical Search: Hill-climbing
+Search", 2021, https://www.youtube.com/watch?v=L0b0CN3Fds8 (referensi [3] spesifikasi).
 
-    current <- initial state
-    loop:
-        neighbor <- successor dengan value tertinggi
-        if value(neighbor) <= value(current): return current
-        current <- neighbor
+- Steepest Ascent : evaluasi seluruh neighbor, pindah ke yang terbaik bila lebih baik (Δ > 0).
+                    Berhenti di local optimum.
+- Sideways Move   : seperti Steepest, tapi boleh pindah ke neighbor terbaik yang sama nilainya (Δ = 0) untuk
+                    keluar dari shoulder/plateau. Berhenti di local optimum ketat (semua Δ < 0) atau ketika
+                    total sideways move yang sudah dilakukan mencapai `max_sideways`.
+- Random Restart  : Steepest Ascent berulang dari initial state acak baru. Berhenti ketika banyak restart
+                    mencapai `max_restart`; hasil = state terbaik dari semua percobaan.
+- Stochastic      : ambil satu neighbor acak, pindah bila lebih baik. Berhenti setelah `max_no_improve`
+                    neighbor berturut-turut tidak lebih baik, atau `max_iterations` tercapai.
 
-Sumber: M. L. Khodra, "Beyond Classical Search: Hill-climbing Search", 2021,
-https://www.youtube.com/watch?v=L0b0CN3Fds8 (referensi [3] spesifikasi).
-
-Satu iterasi = satu langkah pindah ke neighbor yang lebih baik, sehingga `history["objective"]` berisi
-`iterations + 1` nilai (indeks 0 = state awal). Evaluasi neighbor memakai delta evaluation (`State.delta`).
+Definisi iterasi (dicatat di `RunResult.iterations`, `history["objective"]` berisi `iterations + 1` nilai):
+Steepest/Sideways = satu langkah pindah, Stochastic = satu neighbor acak yang dievaluasi, Random Restart =
+total iterasi Steepest di semua percobaan + satu iterasi per restart (lompatan ke initial state baru).
+Rincian per percobaan ada di `extra["iters_per_restart"]`.
 """
 
 from __future__ import annotations
 
 import random
 import time
+from dataclasses import dataclass, field
 
-from config import HC_MAX_ITERATIONS, INITIAL_P_INSIDE
+from config import (
+    HC_MAX_ITERATIONS,
+    HC_MAX_NO_IMPROVE,
+    HC_MAX_RESTART,
+    HC_MAX_SIDEWAYS,
+    HC_STOCHASTIC_MAX_ITERATIONS,
+    INITIAL_P_INSIDE,
+)
 from core.objective import EPS
 from core.problem import Problem
 from core.state import State, random_state
-from search.neighbors import Move, all_neighbors
+from search.neighbors import Move, all_neighbors, random_neighbor
 from search.result import RunResult
 
 
@@ -35,6 +45,7 @@ def best_neighbor(state: State, rng: random.Random) -> tuple[float, Move | None,
 
     Bila beberapa neighbor sama-sama terbaik, salah satunya dipilih acak dengan peluang sama (reservoir
     sampling), supaya hasil tidak bias ke urutan enumerasi (move selalu dienumerasi sebelum swap/rotate).
+    Untuk Sideways Move ini juga berarti sideways move dipilih acak di antara neighbor yang setara.
     """
     best_delta, best_move, ties, evaluated = float("-inf"), None, 0, 0
     for move in all_neighbors(state):
@@ -49,6 +60,44 @@ def best_neighbor(state: State, rng: random.Random) -> tuple[float, Move | None,
     return best_delta, best_move, evaluated
 
 
+@dataclass
+class _Climb:
+    """Jejak satu kali pendakian Steepest/Sideways pada `state` (state diubah in-place)."""
+
+    state: State
+    history: list[float] = field(default_factory=list)
+    evaluations: int = 0
+    sideways_moves: int = 0
+    stop_reason: str = "max_iterations"
+
+    @property
+    def iterations(self) -> int:
+        return len(self.history) - 1
+
+
+def _climb(state: State, rng: random.Random, max_iterations: int, max_sideways: int) -> _Climb:
+    """Pendakian dengan neighbor terbaik. `max_sideways = 0` adalah Steepest Ascent murni."""
+    climb = _Climb(state, history=[state.objective])
+    for _ in range(max_iterations):
+        delta, move, evaluated = best_neighbor(state, rng)
+        climb.evaluations += evaluated
+        if move is None or delta < -EPS or (delta <= EPS and climb.sideways_moves >= max_sideways):
+            climb.stop_reason = "local_optimum"
+            break
+        state.apply(move)
+        climb.history.append(state.objective)
+        if delta <= EPS:  # sideways move: nilai sama, state berbeda
+            climb.sideways_moves += 1
+            if climb.sideways_moves >= max_sideways:
+                climb.stop_reason = "max_sideways"
+                break
+    return climb
+
+
+def _initial(problem: Problem, rng: random.Random, initial: State | None) -> State:
+    return initial.copy() if initial is not None else random_state(problem, rng, INITIAL_P_INSIDE)
+
+
 def steepest_ascent(
     problem: Problem,
     seed: int | None = None,
@@ -60,32 +109,151 @@ def steepest_ascent(
     `extra["stop_reason"]` = "local_optimum" (tidak ada neighbor yang lebih baik) atau "max_iterations".
     """
     rng = random.Random(seed)
-    initial = initial.copy() if initial is not None else random_state(problem, rng, INITIAL_P_INSIDE)
-    current = initial.copy()
-    history = [current.objective]
-    evaluations = 0
-    stop_reason = "max_iterations"
-
+    initial = _initial(problem, rng, initial)
     start = time.perf_counter()
-    for _ in range(max_iterations):
-        delta, move, evaluated = best_neighbor(current, rng)
-        evaluations += evaluated
-        if move is None or delta <= EPS:
-            stop_reason = "local_optimum"
-            break
-        current.apply(move)
-        history.append(current.objective)
+    climb = _climb(initial.copy(), rng, max_iterations, max_sideways=0)
     duration = time.perf_counter() - start
-
     return RunResult(
         algorithm="steepest",
         seed=seed,
         params={"max_iterations": max_iterations, "initial_p_inside": INITIAL_P_INSIDE},
         initial_state=initial,
+        final_state=climb.state,
+        duration_s=duration,
+        iterations=climb.iterations,
+        evaluations=climb.evaluations,
+        history={"objective": climb.history},
+        extra={"stop_reason": climb.stop_reason},
+    )
+
+
+def sideways_move(
+    problem: Problem,
+    seed: int | None = None,
+    initial: State | None = None,
+    max_sideways: int = HC_MAX_SIDEWAYS,
+    max_iterations: int = HC_MAX_ITERATIONS,
+) -> RunResult:
+    """Hill-Climbing with Sideways Move.
+
+    `max_sideways` dihitung **total** sepanjang run, sesuai spesifikasi: "ketika banyak sideways move yang
+    dilakukan sudah mencapai maksimum, pencarian dihentikan". `extra["stop_reason"]` = "local_optimum"
+    (semua neighbor lebih buruk), "max_sideways", atau "max_iterations".
+    """
+    if max_sideways < 1:
+        raise ValueError("max_sideways harus >= 1 (max_sideways = 0 adalah Steepest Ascent)")
+    rng = random.Random(seed)
+    initial = _initial(problem, rng, initial)
+    start = time.perf_counter()
+    climb = _climb(initial.copy(), rng, max_iterations, max_sideways)
+    duration = time.perf_counter() - start
+    return RunResult(
+        algorithm="sideways",
+        seed=seed,
+        params={"max_sideways": max_sideways, "max_iterations": max_iterations, "initial_p_inside": INITIAL_P_INSIDE},
+        initial_state=initial,
+        final_state=climb.state,
+        duration_s=duration,
+        iterations=climb.iterations,
+        evaluations=climb.evaluations,
+        history={"objective": climb.history},
+        extra={"stop_reason": climb.stop_reason, "sideways_moves": climb.sideways_moves},
+    )
+
+
+def random_restart(
+    problem: Problem,
+    seed: int | None = None,
+    initial: State | None = None,
+    max_restart: int = HC_MAX_RESTART,
+    max_iterations: int = HC_MAX_ITERATIONS,
+) -> RunResult:
+    """Random-Restart Hill-Climbing: 1 percobaan awal + `max_restart` restart, masing-masing Steepest Ascent.
+
+    Initial state percobaan pertama = `initial` (atau acak dari `seed`), restart memakai state acak baru dari
+    RNG yang sama. `history["objective"]` = objective tiap iterasi semua percobaan disambung (pola gigi gergaji),
+    `history["best"]` = objective terbaik sejauh ini pada iterasi yang sama.
+    """
+    if max_restart < 0:
+        raise ValueError("max_restart harus >= 0")
+    rng = random.Random(seed)
+    initial = _initial(problem, rng, initial)
+
+    start = time.perf_counter()
+    climbs = [_climb(initial.copy(), rng, max_iterations, max_sideways=0)]
+    for _ in range(max_restart):
+        climbs.append(_climb(random_state(problem, rng, INITIAL_P_INSIDE), rng, max_iterations, max_sideways=0))
+    duration = time.perf_counter() - start
+
+    best_climb = max(climbs, key=lambda c: c.state.objective)  # percobaan terawal yang menang bila seri
+    # disambung per percobaan: lompatan ke initial state acak berikutnya tercatat sebagai satu iterasi
+    history = [value for climb in climbs for value in climb.history]
+    best_so_far, best = [], float("-inf")
+    for value in history:
+        best = max(best, value)
+        best_so_far.append(best)
+
+    return RunResult(
+        algorithm="random_restart",
+        seed=seed,
+        params={"max_restart": max_restart, "max_iterations": max_iterations, "initial_p_inside": INITIAL_P_INSIDE},
+        initial_state=initial,
+        final_state=best_climb.state,
+        duration_s=duration,
+        iterations=len(history) - 1,
+        evaluations=sum(c.evaluations for c in climbs),
+        history={"objective": history, "best": best_so_far},
+        extra={
+            "restarts": len(climbs) - 1,
+            "iters_per_restart": [c.iterations for c in climbs],
+            "final_objective_per_restart": [c.state.objective for c in climbs],
+            "best_restart": climbs.index(best_climb),
+            "stop_reasons": [c.stop_reason for c in climbs],
+        },
+    )
+
+
+def stochastic(
+    problem: Problem,
+    seed: int | None = None,
+    initial: State | None = None,
+    max_no_improve: int = HC_MAX_NO_IMPROVE,
+    max_iterations: int = HC_STOCHASTIC_MAX_ITERATIONS,
+) -> RunResult:
+    """Stochastic Hill-Climbing: satu neighbor acak per iterasi, diterima hanya bila lebih baik (Δ > 0).
+
+    `extra["stop_reason"]` = "max_no_improve" atau "max_iterations".
+    """
+    rng = random.Random(seed)
+    initial = _initial(problem, rng, initial)
+    current = initial.copy()
+    history = [current.objective]
+    no_improve = 0
+    stop_reason = "max_iterations"
+
+    start = time.perf_counter()
+    for _ in range(max_iterations):
+        move = random_neighbor(current, rng)
+        if current.delta(move) > EPS:
+            current.apply(move)
+            no_improve = 0
+        else:
+            no_improve += 1
+        history.append(current.objective)
+        if no_improve >= max_no_improve:
+            stop_reason = "max_no_improve"
+            break
+    duration = time.perf_counter() - start
+
+    return RunResult(
+        algorithm="stochastic",
+        seed=seed,
+        params={"max_no_improve": max_no_improve, "max_iterations": max_iterations, "initial_p_inside": INITIAL_P_INSIDE},
+        initial_state=initial,
         final_state=current,
         duration_s=duration,
         iterations=len(history) - 1,
-        evaluations=evaluations,
+        evaluations=len(history) - 1,
         history={"objective": history},
-        extra={"stop_reason": stop_reason},
+        extra={"stop_reason": stop_reason, "improvements": sum(b > a for a, b in zip(history, history[1:]))},
     )
