@@ -24,6 +24,7 @@ from core.objective import (
     Placement,
     dimensions,
     evaluate,
+    footprint,
     min_weight,
     penalty_coefficient,
     weight_units,
@@ -126,6 +127,10 @@ class State:
     # --- serialisasi (format output JSON, EXPERIMENTS §2) ----------------------------------
 
     def to_dict(self) -> dict:
+        """Pemetaan semua kendaraan (di dalam dan di luar) + pemetaan sel tiap geladak (`decks`).
+
+        `decks` hanya turunan dari `vehicles` untuk dibaca manusia/visualisasi, diabaikan oleh `from_dict`.
+        """
         ships = self.problem.ships
         vehicles = []
         for vehicle, placement in zip(self.problem.vehicles, self._positions):
@@ -134,7 +139,21 @@ class State:
             else:
                 s, x, y, orientation = placement
                 vehicles.append({"id": vehicle.id, "ship": ships[s].id, "x": x, "y": y, "orientation": orientation})
-        return {"vehicles": vehicles}
+        decks = [{"id": ship.id, "grid": grid} for ship, grid in zip(ships, self.deck_grids())]
+        return {"vehicles": vehicles, "decks": decks}
+
+    def deck_grids(self) -> list[list[list[str]]]:
+        """Per kapal, grid `[y][x]` berisi id kendaraan di sel itu: "" kosong, "A+B" bila overlap."""
+        grids = [[[""] * ship.width for _ in range(ship.length)] for ship in self.problem.ships]
+        for vehicle, placement in zip(self.problem.vehicles, self._positions):
+            if placement is None:
+                continue
+            s, x, y, orientation = placement
+            ship, grid = self.problem.ships[s], grids[s]
+            for cx, cy in footprint(vehicle, x, y, orientation):
+                if 0 <= cx < ship.width and 0 <= cy < ship.length:
+                    grid[cy][cx] = f"{grid[cy][cx]}+{vehicle.id}" if grid[cy][cx] else vehicle.id
+        return grids
 
     @classmethod
     def from_dict(cls, problem: Problem, data: dict) -> State:
