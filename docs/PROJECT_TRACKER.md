@@ -74,7 +74,7 @@ Target tetap **semua spek wajib + Bonus 1, 2, 3**. Kolom "Gate" = kondisi yang h
 - [ ] `[T]` GA: **roulette wheel selection eksplisit** (cumsum + spin), one-point crossover, mutation, elitism
 - [x] `[R]` `config.py` + `search/result.py`: format hasil seragam (EXPERIMENTS §2), dipakai semua algoritma
 - [ ] `[L]` CLI: `python src/main.py --algo <hc|sa|ga|...> --instance ... --seed ...`
-- [ ] `[R]` (Bonus 2) Stochastic, Sideways, Random Restart HC
+- [x] `[R]` (Bonus 2) Stochastic, Sideways, Random Restart HC
 
 ### M3 — Eksperimen (Sel 20 – Rab 21 Okt)
 - [ ] `[L]` Script `experiments.py` untuk menjalankan semua run wajib (24) + Bonus 2 (9) + Bonus 1 (3) + Bonus 3 (3) → `output/`
@@ -156,8 +156,8 @@ Tanya **hanya** lewat komentar di unggahan Tubes di Teams (DM ke asisten tidak d
 | 3 | Apakah ada format input / test case resmi dari asisten (misalnya saat demo)? | open | |
 | 4 | Boleh pakai objective dengan penalty (state sementara boleh infeasible) asalkan hasil akhir feasible? | open | |
 | 5 | Definisi "frekuensi stuck di local optima" pada SA dibebaskan? | open | |
-| 6 | `max_sideways`: dihitung berturut-turut atau total? | open | |
-| 7 | Bonus 2 "seluruh HC" = Steepest, Stochastic, Sideways, Random Restart saja? | open | |
+| 6 | `max_sideways`: dihitung berturut-turut atau total? | open | Dipakai: **total**, langsung berhenti saat tercapai (paling literal dengan kalimat spek, DESIGN §7.1) |
+| 7 | Bonus 2 "seluruh HC" = Steepest, Stochastic, Sideways, Random Restart saja? | open | Dipakai: keempatnya (sesuai varian yang disebut di bagian Cakupan spek) |
 | 8 | Eksperimen GA: konfigurasi kontrol boleh dipakai bersama di dua set variasi (15 run), atau harus 18 run terpisah? | open | |
 
 ## Konvensi Git
@@ -181,7 +181,7 @@ Tanya **hanya** lewat komentar di unggahan Tubes di Teams (DM ke asisten tidak d
 | 7 | `feat/hill-climbing` | Steepest Ascent | R | ✅ |
 | 8 | `feat/visualization` | `visualization/state_view.py`, `visualization/plots.py` | L | Sen 19 |
 | 9 | `feat/simulated-annealing` | `search/simulated_annealing.py` | T | Sen 19 |
-| 10 | `feat/hc-variants` | Stochastic, Sideways, Random Restart (Bonus 2) | R | Sen 19 – Sel 20 |
+| 10 | `feat/hc-variants` | Stochastic, Sideways, Random Restart (Bonus 2) | R | ✅ |
 | 11 | `feat/genetic-algorithm` | `search/genetic_algorithm.py` (roulette) | T | Sel 20 |
 | 12 | `feat/cli` | `main.py` | L | Sel 20 |
 | 13 | `feat/multi-ship` | Generator multi-kapal + `multi.json` + test (Bonus 3), visualisasi multi-kapal | R, L | Sel 20 |
