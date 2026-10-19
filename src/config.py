@@ -18,3 +18,8 @@ SEEDS = (1, 2, 3)
 
 # initial state acak: peluang tiap kendaraan langsung ditempatkan di dalam kapal (DESIGN §3)
 INITIAL_P_INSIDE = 0.5
+
+# --- Hill-Climbing (DESIGN §7.1) ---------------------------------------------------------------
+# Steepest Ascent berhenti sendiri di local optimum. Batas ini hanya pengaman agar run tidak pernah
+# berjalan tanpa akhir; bila tercapai, `extra["stop_reason"]` bernilai "max_iterations".
+HC_MAX_ITERATIONS = 10_000

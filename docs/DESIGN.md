@@ -186,6 +186,20 @@ Cek definisinya lagi ke salindia Khodra (spec: "utamakan implementasi yang menga
 | Sideways Move | Steepest, tapi boleh pindah kalau `==` | `max_sideways` tercapai 🟡 (berturut-turut vs total, konfirmasi) | iterasi, `max_sideways` |
 | Random Restart | Steepest dari initial random baru | `max_restart` tercapai | jumlah restart, iterasi per restart, `max_restart` |
 
+**Steepest Ascent ✅ (`search/hill_climbing.py`):**
+- Sesuai salindia: tiap iterasi mengevaluasi seluruh neighborhood (§5) dengan `State.delta`, lalu pindah ke
+  neighbor terbaik hanya bila `Δ > 0`. Berhenti di local optimum (`extra.stop_reason = "local_optimum"`).
+- **1 iterasi = 1 langkah pindah**, jadi `history.objective` berisi `iterations + 1` nilai (indeks 0 = state
+  awal). Evaluasi neighborhood terakhir yang tidak menemukan perbaikan tidak dihitung sebagai iterasi, tapi
+  ikut dihitung di `evaluations`.
+- **Tie-breaking acak (heuristik):** bila beberapa neighbor sama-sama terbaik, dipilih acak dengan peluang sama
+  (reservoir sampling). Tanpa ini, `move` selalu menang karena dienumerasi lebih dulu dari `swap`/`rotate`.
+- `max_iterations` (default 10 000, `config.HC_MAX_ITERATIONS`) hanya pengaman, bukan bagian algoritma. Di
+  `main.json` Steepest berhenti sendiri setelah ~20 iterasi.
+- Karena neighborhood lengkap dan `P > max fee` (§4), state akhir **selalu feasible**. Ini diuji di
+  `tests/test_hill_climbing.py`, beserta pengecekan bahwa state akhir memang local optimum.
+- `best_neighbor()` dipisah supaya bisa dipakai ulang oleh Sideways Move dan Random Restart (Bonus 2).
+
 ### 7.2 Simulated Annealing
 
 - Terima neighbor lebih baik; kalau lebih buruk, terima dengan peluang `e^(ΔE/T)` (ΔE < 0).
