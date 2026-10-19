@@ -13,8 +13,8 @@ Status keputusan: ✅ final · 🟡 usulan (perlu disepakati / dikonfirmasi asis
 - Maksimalkan `Σ fee_i` kendaraan yang dimuat.
 - Constraint: (1) no overlap, (2) di dalam batas geladak, (3) `Σ weight_i ≤ C`.
 
-> Catatan: spec masih menyebut "truk", "peti kemas", "paket" (sisa spec tahun lalu). Kita anggap
-> truk = kapal, peti kemas = geladak, paket = kendaraan. 🟡 Konfirmasi di Teams.
+> Catatan: spec v1.1 (07/10/2026) sudah mengganti "truk" menjadi "kapal". Sisa istilah "peti kemas" dan
+> "paket" (dari spec tahun lalu) kita anggap peti kemas = geladak, paket = kendaraan. 🟡 Konfirmasi di Teams.
 > `ETA` tidak dipakai di objective wajib, jadi kita pakai untuk **Bonus 1**.
 
 ## 2. Format Input (JSON) 🟡

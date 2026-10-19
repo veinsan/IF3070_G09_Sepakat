@@ -147,7 +147,7 @@ Tanya **hanya** lewat komentar di unggahan Tubes di Teams (DM ke asisten tidak d
 
 | # | Pertanyaan | Status | Jawaban |
 |---|---|---|---|
-| 1 | "Truk / peti kemas / paket" di spec maksudnya kapal / geladak / kendaraan? | open | |
+| 1 | "Peti kemas / paket" di spec maksudnya geladak / kendaraan? | open | "Truk" → "kapal" sudah dikoreksi di spec v1.1 (07/10/2026) |
 | 2 | Apakah ETA dipakai di objective wajib, atau hanya informasi (boleh dipakai untuk bonus)? | open | |
 | 3 | Apakah ada format input / test case resmi dari asisten (misalnya saat demo)? | open | |
 | 4 | Boleh pakai objective dengan penalty (state sementara boleh infeasible) asalkan hasil akhir feasible? | open | |

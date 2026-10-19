@@ -10,7 +10,7 @@ Dr. Nur Ulfa Maulidevi, S.T, M.Sc.
 
 *Dipersiapkan oleh Tim Asisten Laboratorium Inteligensi Artifisial 2023*
 
-*Versi: 1.0 24/09/2026*
+*Versi: 1.1 07/10/2026*
 
 *Sistem pengerjaan:* ***Take Home Berkelompok***
 
@@ -19,6 +19,11 @@ Dr. Nur Ulfa Maulidevi, S.T, M.Sc.
 #
 
 # Log Perubahan Dokumen
+
+| **Versi** | **Tanggal** | **Perubahan** |
+| --- | --- | --- |
+| 1.0 | 24/09/2026 | Rilis awal. |
+| 1.1 | 07/10/2026 | Mengganti kata “Truk” menjadi “Kapal”. |
 
 #
 
@@ -141,7 +146,7 @@ Tugas ini bertujuan untuk membuat konfigurasi penempatan kendaraan paling optima
 | Weight | 5 | Berat kendaraan (satuan unit) |
 | ETA | 3 | [Estimated Time of Arrival](https://www.shippeo.com/resources/explore/blog-newsletter/eta-meaning-in-business-a-critical-metric-for-supply-chain-success), perkiraan waktu kedatangan kendaraan (dalam sisa hari) |
 | Ship | Dimensions | {w:10, l:20} | Ukuran geladak pada kapal, terdiri atas *width* dan *length* (satuan grid) |
-| MaxCapacity | 500 | Kapasitas angkut maksimum suatu truk  (satuan unit) |
+| MaxCapacity | 500 | Kapasitas angkut maksimum suatu kapal (satuan unit) |
 
 ###
 
@@ -150,17 +155,17 @@ Tugas ini bertujuan untuk membuat konfigurasi penempatan kendaraan paling optima
 Berikut prosedur bagaimana dalam merepresentasikan permasalahan ini:
 
 * Kendaraan dan geladak kapal direpresentasikan sebagai grid dua dimensi berbentuk persegi atau persegi panjang.
-* Kendaraan dapat berbeda ukuran satu sama lain dan tidak semua harus dimasukkan ke dalam peti kemas pada truk sehingga suatu kendaraan dapat berada di luar **(seluruh bagian kendaraan di luar kapal)**
+* Kendaraan dapat berbeda ukuran satu sama lain dan tidak semua harus dimasukkan ke dalam peti kemas pada kapal sehingga suatu kendaraan dapat berada di luar **(seluruh bagian kendaraan di luar kapal)**
 * Koordinat berupa bilangan bulat. Cara representasi koordinat dibebaskan.
 * Struktur data yang digunakan untuk representasi dibebaskan. Misalnya menggunakan *key-value* seperti JSON.
 * Inisialisasi (***initial state***) random.
 * Langkah neighbor (***move***) yang diperbolehkan tiap iterasi:
 
-1. Menukar dua kendaraan, baik di dalam maupun di luar truk
+1. Menukar dua kendaraan, baik di dalam maupun di luar kapal
 2. Memindahkan sebuah kendaraan ke suatu koordinat yang berbeda
 3. Mengubah orientasi kendaraan
 
-* Representasi solusi (***final state***) adalah pemetaan semua paket yang ada dan juga pemetaan semua koordinat dalam peti kemas pada truk. Secara detail yang harus dapat ditunjukkan oleh state dan visualisasi adalah:
+* Representasi solusi (***final state***) adalah pemetaan semua paket yang ada dan juga pemetaan semua koordinat dalam peti kemas pada kapal. Secara detail yang harus dapat ditunjukkan oleh state dan visualisasi adalah:
   1. Bagaimana keadaan semua kendaraan yang di dalam maupun yang di luar
   2. Bagaimana keadaan geladak pada kapal
   3. *Value* pada *state* tersebut
@@ -181,7 +186,7 @@ Tidak boleh ada satu sel grid geladak yang ditempati oleh lebih dari satu kendar
 
 Seluruh sel grid yang ditempati suatu kendaraan harus berada di dalam dimensi geladak kapal.
 
-* **Truk tidak boleh mengangkut melebihi kapasitasnya.**
+* **Kapal tidak boleh mengangkut melebihi kapasitasnya.**
 
 # Cakupan
 
