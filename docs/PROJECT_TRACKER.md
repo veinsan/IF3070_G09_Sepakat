@@ -72,7 +72,7 @@ Target tetap **semua spek wajib + Bonus 1, 2, 3**. Kolom "Gate" = kondisi yang h
 - [ ] `[R]` Steepest Ascent HC
 - [ ] `[T]` SA: T0 otomatis, geometric cooling, catat `e^(ΔE/T)` dan stuck count
 - [ ] `[T]` GA: **roulette wheel selection eksplisit** (cumsum + spin), one-point crossover, mutation, elitism
-- [ ] `[R]` `config.py` + `search/result.py`: format hasil seragam (EXPERIMENTS §2), dipakai semua algoritma
+- [x] `[R]` `config.py` + `search/result.py`: format hasil seragam (EXPERIMENTS §2), dipakai semua algoritma
 - [ ] `[L]` CLI: `python src/main.py --algo <hc|sa|ga|...> --instance ... --seed ...`
 - [ ] `[R]` (Bonus 2) Stochastic, Sideways, Random Restart HC
 
@@ -177,7 +177,7 @@ Tanya **hanya** lewat komentar di unggahan Tubes di Teams (DM ke asisten tidak d
 | 3 | `feat/core-state` | `core/state.py`, `core/objective.py` + test delta = full recompute | R | ✅ |
 | 4 | `feat/neighbors` | `search/neighbors.py` + test | R | ✅ |
 | 5 | `feat/upper-bound` | `core/bounds.py` (DP knapsack + brute force) | R | ✅ |
-| 6 | `feat/result-format` | `config.py`, `search/result.py` (format hasil seragam, EXPERIMENTS §2) | R | Sen 19 siang |
+| 6 | `feat/result-format` | `config.py`, `search/result.py` (format hasil seragam, EXPERIMENTS §2) | R | ✅ |
 | 7 | `feat/hill-climbing` | Steepest Ascent | R | Sen 19 |
 | 8 | `feat/visualization` | `visualization/state_view.py`, `visualization/plots.py` | L | Sen 19 |
 | 9 | `feat/simulated-annealing` | `search/simulated_annealing.py` | T | Sen 19 |

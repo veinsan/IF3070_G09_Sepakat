@@ -74,7 +74,9 @@ pos[i] = (ship, x, y, orient)      # anchor = sel kiri-atas, orient ∈ {H, V}
 - **Initial state** (`random_state`): tiap kendaraan masuk ke kapal/anchor/orientasi acak dengan peluang
   `p_inside` (default 0.5), sisanya di luar. Tidak ada perbaikan greedy, sesuai spek "inisialisasi random".
 - State bisa diserialisasi ke JSON (`to_dict`/`from_dict`): per kendaraan `{id, ship, x, y, orientation}`,
-  `ship = null` untuk kendaraan di luar.
+  `ship = null` untuk kendaraan di luar, ditambah `decks[].grid[y][x]` (id kendaraan per sel, `"A+B"` bila
+  overlap). Grid hanya turunan untuk dibaca dan divisualisasi, `from_dict` mengabaikannya.
+- Hasil satu run dibungkus `RunResult` (`search/result.py`), format lengkapnya di EXPERIMENTS §2.
 
 **Kenapa pakai koordinat eksplisit (bukan permutasi + decoder bottom-left)?** Tiga move di spec
 ("pindah ke koordinat", "tukar", "ubah orientasi") itu operasi terhadap koordinat, jadi

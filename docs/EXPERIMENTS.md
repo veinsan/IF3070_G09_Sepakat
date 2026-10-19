@@ -13,21 +13,46 @@ Semua run **harus reproducible**: instance tetap, seed tercatat, output mentah d
 - Selain iterasi, catat juga **jumlah evaluasi objective**. Perbandingan antar-algoritma lebih
   adil kalau pakai jumlah evaluasi, karena satu "iterasi" Steepest HC ≠ satu iterasi SA.
 
-## 2. Format Output per Run
+## 2. Format Output per Run ✅ (`search/result.py`)
 
-`output/<algo>/<run_id>.json`, contoh `output/ga/pop50_iter300_seed2.json`:
+Setiap algoritma mengembalikan `RunResult`; `RunResult.to_dict()` disimpan sebagai
+`output/<algo>/<run_id>.json`, contoh `output/ga/pop50_iter300_seed2.json`. `RunResult.from_dict(problem, data)`
+membacanya kembali. Penamaan file dan penulisan ke disk ada di runner (`experiments.py`).
 
 ```json
 {
-  "algorithm": "ga", "instance": "main.json", "seed": 2,
+  "algorithm": "ga", "instance": "main", "seed": 2,
   "params": { "population": 50, "iterations": 300, "p_c": 0.8, "p_m": 0.1, "elitism": 2 },
-  "initial_state": { "...": "..." }, "final_state": { "...": "..." },
-  "initial_objective": 0, "final_objective": 0, "total_fee": 0, "is_feasible": true,
-  "duration_s": 0.0, "evaluations": 0,
-  "history": { "objective": [], "mean": [], "prob": [] },
-  "extra": { "iterations": 0, "restarts": 0, "iters_per_restart": [], "stuck_count": 0 }
+  "initial_state": {
+    "vehicles": [ { "id": "V01", "ship": "Deck-1", "x": 3, "y": 0, "orientation": "H" },
+                  { "id": "V02", "ship": null } ],
+    "decks": [ { "id": "Deck-1", "grid": [ ["", "V01", "V01+V07", "..."], ["..."] ] } ]
+  },
+  "final_state": { "vehicles": ["..."], "decks": ["..."] },
+  "initial_objective": -4210, "final_objective": 958, "total_fee": 958, "is_feasible": true,
+  "violations": { "overlap_cells": 0, "out_of_bound_cells": 0, "weight_units": 0 },
+  "used_weight": [130], "capacity": [131], "used_area_pct": 91.5, "loaded": 17,
+  "upper_bound": 1035, "gap_ub": 0.0744,
+  "duration_s": 3.21, "iterations": 300, "evaluations": 15000,
+  "history": { "objective": [], "mean": [] },
+  "extra": {}
 }
 ```
+
+| Field | Isi |
+|---|---|
+| `initial_state`, `final_state` | Pemetaan semua kendaraan (di dalam: kapal + anchor + orientasi, di luar: `ship = null`) dan pemetaan sel tiap geladak (`decks[].grid[y][x]`: `""` kosong, `"A+B"` overlap). Ini memenuhi "pemetaan semua paket dan semua koordinat" di spek |
+| `final_objective`, `total_fee`, `is_feasible`, `violations` | Value state akhir dan rinciannya (DESIGN §4) |
+| `used_weight`, `capacity`, `used_area_pct`, `loaded` | Utilisasi per kapal / total |
+| `upper_bound`, `gap_ub` | UB instance dan `(UB − f) / UB` (DESIGN §6) |
+| `duration_s` | Wall-clock search saja (`time.perf_counter()`), tanpa IO/plot |
+| `iterations` | Iterasi sampai berhenti (GA: generasi; RR HC: total semua restart) |
+| `evaluations` | Satu pemanggilan `State.delta()` atau satu state/individu baru yang dinilai |
+| `history.objective` | Objective per iterasi, indeks 0 = state awal (GA: maksimum populasi) |
+| `history.mean` | GA: rata-rata objective populasi per generasi |
+| `history.prob` | SA: pasangan `[iterasi, e^(ΔE/T)]`, hanya iterasi dengan ΔE < 0 (DESIGN §7.2) |
+| `params` | Parameter algoritma, termasuk `max_sideways`, `max_restart`, populasi, iterasi |
+| `extra` | Data khusus: `restarts`, `iters_per_restart` (RR HC), `sideways_moves` (Sideways), `stuck_count` (SA) |
 
 Plot dan visualisasi state dibuat **dari file JSON ini**, bukan dari run ulang. Gambar disimpan dengan
 nama yang sama: `output/<algo>/<run_id>_{initial,final,plot}.png`.
