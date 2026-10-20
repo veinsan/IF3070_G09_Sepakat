@@ -36,10 +36,10 @@ from search.simulated_annealing import simulated_annealing
 # nama algoritma di CLI -> (fungsi, {opsi CLI: nama parameter fungsi}). Parameter yang tidak diberikan
 # memakai default fungsi, yaitu nilai di config.py.
 ALGORITHMS: dict[str, tuple[Callable[..., RunResult], dict[str, str]]] = {
-    "steepest": (steepest_ascent, {}),
-    "sideways": (sideways_move, {"max_sideways": "max_sideways"}),
-    "random_restart": (random_restart, {"max_restart": "max_restart"}),
-    "stochastic": (stochastic, {"max_no_improve": "max_no_improve"}),
+    "steepest": (steepest_ascent, {"max_iterations": "max_iterations"}),
+    "sideways": (sideways_move, {"max_sideways": "max_sideways", "max_iterations": "max_iterations"}),
+    "random_restart": (random_restart, {"max_restart": "max_restart", "max_iterations": "max_iterations"}),
+    "stochastic": (stochastic, {"max_no_improve": "max_no_improve", "max_iterations": "max_iterations"}),
     "sa": (simulated_annealing, {"iterations": "iterations"}),
     "ga": (genetic_algorithm, {"population": "population_size", "iterations": "iterations"}),
 }
@@ -49,7 +49,7 @@ ALIASES = {"hc": "steepest"}
 # ke algoritma di `run_algorithm`.
 OBJECTIVES = ("fee",)
 
-PARAM_OPTIONS = ("max_sideways", "max_restart", "max_no_improve", "iterations", "population")
+PARAM_OPTIONS = ("max_sideways", "max_restart", "max_no_improve", "max_iterations", "iterations", "population")
 
 
 def run_algorithm(algo: str, problem: Problem, seed: int, **params: Any) -> RunResult:
@@ -149,6 +149,8 @@ def build_parser() -> argparse.ArgumentParser:
     params.add_argument("--max-sideways", type=int, help="sideways")
     params.add_argument("--max-restart", type=int, help="random_restart")
     params.add_argument("--max-no-improve", type=int, help="stochastic")
+    params.add_argument("--max-iterations", type=int,
+                        help="batas pengaman iterasi semua varian HC (per percobaan untuk random_restart)")
     params.add_argument("--iterations", type=int, help="sa (iterasi), ga (generasi)")
     params.add_argument("--population", type=int, help="ga")
     parser.add_argument("--out", type=Path, default=OUTPUT_DIR, help="folder output (default output/)")
