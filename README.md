@@ -101,11 +101,50 @@ pip install -r requirements.txt
 
 ## Cara Menjalankan
 
-<!-- TODO: finalisasi setelah CLI jadi -->
-```bash
-# satu algoritma pada satu instance
-python src/main.py --algo sa --instance src/data/main.json --seed 1
+Semua perintah dijalankan dari root repository.
 
+### Satu algoritma pada satu instance
+
+```bash
+python src/main.py --algo hc --seed 1                      # Steepest Ascent HC pada main.json
+python src/main.py --algo sa --instance multi.json --seed 2 # multi-kapal (Bonus 3)
+python src/main.py --algo ga --population 50 --iterations 300 --seed 3
+python src/main.py --algo random_restart --max-restart 5
+python src/main.py --view output/sa/main_seed1.json        # tampilkan & gambar ulang hasil yang tersimpan
+```
+
+| Opsi | Keterangan |
+|---|---|
+| `--algo` | `steepest` (alias `hc`), `sideways`, `random_restart`, `stochastic` (Bonus 2), `sa`, `ga` |
+| `--instance` | path file instance, atau nama file di `src/data/` (`main.json`, `small.json`, `multi.json`). Default `main.json` |
+| `--seed` | seed random (default 1); eksperimen memakai seed 1, 2, 3 |
+| `--max-sideways`, `--max-restart`, `--max-no-improve` | parameter Sideways Move, Random Restart, Stochastic HC |
+| `--iterations` | iterasi SA / generasi GA |
+| `--population` | ukuran populasi GA |
+| `--objective` | objective yang dioptimasi; saat ini hanya `fee` (objective ETA, Bonus 1, belum tersedia) |
+| `--out` | folder output (default `output/`) |
+| `--no-plot`, `--no-save` | simpan JSON tanpa gambar / tidak menyimpan apa pun |
+| `--view JSON` | baca hasil run yang sudah disimpan tanpa menjalankan search lagi |
+
+Parameter yang tidak diisi memakai nilai default di [`src/config.py`](src/config.py). Parameter yang tidak
+berlaku untuk algoritma yang dipilih (misalnya `--population` untuk `sa`) ditolak.
+
+Program mencetak ringkasan (objective awal dan akhir, total fee, feasibility, gap terhadap upper bound,
+iterasi, durasi) dan final state dalam bentuk teks, lalu menyimpan ke `output/<algo>/`:
+
+| File | Isi |
+|---|---|
+| `<run_id>.json` | hasil lengkap run (format EXPERIMENTS §2): state awal/akhir, objective, history, parameter, durasi |
+| `<run_id>_initial.png`, `<run_id>_final.png` | gambar state awal dan akhir: tiap geladak, kendaraan di luar kapal, value |
+| `<run_id>_plot.png` | plot objective vs iterasi (GA: maksimum dan rata-rata populasi; SA: ditambah e^(ΔE/T)) |
+
+`run_id` = `<instance>_seed<seed>`, misalnya `main_seed1`; untuk GA `<instance>_pop<P>_iter<I>_seed<seed>`,
+misalnya `main_pop50_iter300_seed2`. Run dengan instance, algoritma, parameter GA, dan seed yang sama akan
+menimpa file sebelumnya. `duration_s` adalah durasi search saja, tidak termasuk waktu menyimpan file dan gambar.
+
+### Lainnya
+
+```bash
 # buat instance baru (parameter tersimpan di "meta" file output)
 python src/core/generator.py --seed 1 --vehicles 30 --width 10 --length 20 --out src/data/main.json
 # armada beberapa kapal: pasangan --width/--length ke-k = geladak kapal ke-k
