@@ -131,27 +131,28 @@ Params: `T0` otomatis (100 sampel, move dengan ΔE rata-rata diterima dengan pel
 
 Plot per run: objective vs iterasi, dan `e^(ΔE/T)` vs iterasi.
 
-### 4.6 GA — Kontrol Populasi (pop = __), Variasi Iterasi
+### 4.6 GA — Kontrol Populasi (pop = 100), Variasi Iterasi
 
-Fixed: `p_c = __`, `p_m = __`, elitism `= __`, selection = **roulette wheel**
+Fixed (semua run GA): `p_c = 0.8` (one-point), `p_m = 0.2` (satu random move per anak), elitism `= 2`,
+selection = **roulette wheel** dengan windowing `fit = f − min f + 1`, `initial_p_inside = 0.5`.
+`initial_state` = individu terbaik populasi awal, `final_state` = individu terbaik selama pencarian (DESIGN §7.3).
 
 | Iterasi | Run | Seed | Obj akhir (best) | Fee | Feasible | Gap UB | Durasi (s) |
 |---|---|---|---|---|---|---|---|
-| __ (rendah) | 1–3 | 1,2,3 | | | | | |
-| __ (sedang) | 1–3 | 1,2,3 | | | | | |
-| __ (tinggi) | 1–3 | 1,2,3 | | | | | |
+| 300 (rendah) | 1–3 | 1,2,3 | | | | | |
+| 1000 (sedang) | 1–3 | 1,2,3 | | | | | |
+| 3000 (tinggi) | 1–3 | 1,2,3 | | | | | |
 
-Saran awal: pop = 50, iterasi ∈ {100, 300, 1000}. Sesuaikan dengan runtime.
-
-### 4.7 GA — Kontrol Iterasi (iter = __), Variasi Populasi
+### 4.7 GA — Kontrol Iterasi (iter = 1000), Variasi Populasi
 
 | Populasi | Run | Seed | Obj akhir (best) | Fee | Feasible | Gap UB | Durasi (s) |
 |---|---|---|---|---|---|---|---|
-| __ (kecil) | 1–3 | 1,2,3 | | | | | |
-| __ (sedang) | 1–3 | 1,2,3 | | | | | |
-| __ (besar) | 1–3 | 1,2,3 | | | | | |
+| 50 (kecil) | 1–3 | 1,2,3 | | | | | |
+| 100 (sedang) | 1–3 | 1,2,3 | | | | | |
+| 200 (besar) | 1–3 | 1,2,3 | | | | | |
 
-Saran awal: iter = 300, pop ∈ {20, 50, 100}.
+Nilai variasi ada di `config.GA_POPULATION_VARIANTS` dan `config.GA_ITERATION_VARIANTS`. Konfigurasi kontrol
+(pop 100, iter 1000) muncul di kedua tabel (PROJECT_TRACKER Q&A #8).
 Plot per run: **max** dan **mean** objective populasi vs generasi.
 
 ### 4.8 Bonus 3 — Multi-kapal (`multi.json`)
@@ -241,3 +242,20 @@ Plot ringkasan yang disarankan: box plot objective akhir per algoritma, dan over
   `main.json` terjadi setelah titik itu. Dengan definisi DESIGN §7.2 (counter di-reset setiap `K`
   iterasi), jumlah stuck juga mengukur lamanya SA tertahan, bukan hanya berapa kali. Ini perlu ditulis
   eksplisit di laporan.
+- **Sel 20, sanity run Genetic Algorithm**, default params (§4.6, pop 100, 1000 generasi), seed 1/2/3 (bukan
+  hasil resmi):
+
+  | Instance | Objective | Gap UB | Generasi best pertama kali dicapai | Mean populasi akhir | Durasi |
+  |---|---|---|---|---|---|
+  | `main.json` | 780 / 908 / 865 | 24.6% / 12.3% / 16.4% | 952 / 866 / 909 | 333 / 52 / −277 | ~1.3 s |
+  | `small.json` (optimum 287) | 241 / 287 / 285 | 19.1% / 3.7% / 4.4% | 300 / 317 / 133 | 22 / 68 / 7 | ~0.8 s |
+  | `multi.json` | 1016 / 885 / 1032 | 22.9% / 32.9% / 21.7% | 953 / 654 / 964 | −543 / −329 / −309 | ~1.9 s |
+
+  Semua feasible; di `multi.json` ketiga kapal terpakai. GA di bawah Steepest (`main.json` 982 / 978 / 902) dan
+  SA. Mean populasi jauh di bawah max dan sering negatif: anak crossover dari dua induk feasible hampir selalu
+  overlap (posisi kendaraan saling bergantung, DESIGN §4), sehingga sebagian besar anak terkena penalty.
+  Best masih naik sampai generasi akhir.
+
+  **Tuning** (`main.json`, mean 3 seed): pop 50 / 300 gen → 674, pop 100 / 1000 → 851, pop 100 / 3000 → 869
+  (3× durasi), pop 200 / 1000 → 875. Variasi `p_m` ∈ {0.1, 0.2, 0.5, 1.0} × elitism ∈ {1, 2, 5} memberi mean
+  767–919 tanpa pola yang konsisten (masih dalam noise 3 seed), jadi dipakai nilai DESIGN §7.3.
