@@ -143,6 +143,25 @@ iterasi, durasi) dan final state dalam bentuk teks, lalu menyimpan ke `output/<a
 misalnya `main_pop50_iter300_seed2`. Run dengan instance, algoritma, parameter GA, dan seed yang sama akan
 menimpa file sebelumnya. `duration_s` adalah durasi search saja, tidak termasuk waktu menyimpan file dan gambar.
 
+### Seluruh eksperimen
+
+```bash
+python src/experiments.py --dry-run          # daftar run (21 wajib, 36 dengan bonus) tanpa menjalankan
+python src/experiments.py                    # semua run -> output/<algo>/ + output/summary.md
+python src/experiments.py --only sa ga_pop   # sebagian grup: hc, sa, ga_iter, ga_pop, hc_variants, eta, multi
+python src/experiments.py --skip-existing    # lanjutkan bila terputus (run yang JSON-nya sudah ada dilewati)
+python src/experiments.py --plots-only       # gambar ulang + ringkasan dari JSON, tanpa search
+python src/experiments.py --quick --out tmp_quick   # uji coba cepat dengan small.json dan parameter kecil
+```
+
+Runner memakai fungsi yang sama dengan `src/main.py`, sehingga file hasilnya sama seperti run lewat CLI.
+Konfigurasi kontrol GA (populasi 100, iterasi 1000) dipakai bersama oleh tabel EXPERIMENTS §4.6 dan §4.7 dan
+hanya dijalankan sekali. Run Bonus 1 (ETA) dilewati selama objective ETA belum tersedia. `output/summary.md`
+berisi tabel per bagian EXPERIMENTS §4 dan info mesin, ditambah `summary_*.png`.
+
+Notebook `notebooks/experiments.ipynb` membaca `output/**/*.json` (tanpa menjalankan search) dan menampilkan
+tabel, plot per algoritma, state awal/akhir run terbaik, serta ringkasan antar-algoritma.
+
 ### Lainnya
 
 ```bash
