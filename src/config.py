@@ -37,3 +37,23 @@ HC_STOCHASTIC_MAX_ITERATIONS = 200_000
 # --- Multi-kapal (Bonus 3, DESIGN §8) -----------------------------------------------------------
 # armada 3 kapal dengan geladak 10x12, 8x10, 6x8 dan 40 kendaraan
 MULTI_INSTANCE = DATA_DIR / "multi.json"
+
+# --- Genetic Algorithm (DESIGN §7.3) ----------------------------------------------------------
+# Eksperimen hanya memvariasikan populasi dan iterasi (generasi). Parameter lain tetap di semua run.
+# kontrol: populasi 100 dan 1000 generasi (~1.2 s per run di main.json). Best masih membaik sampai akhir di
+# 300 generasi, sedangkan 3000 generasi hanya menambah sedikit dengan durasi 3x.
+GA_POPULATION = 100
+GA_ITERATIONS = 1000
+
+# variasi eksperimen (EXPERIMENTS §4.6–§4.7): satu parameter divariasikan, yang lain = nilai kontrol di atas
+GA_POPULATION_VARIANTS = (50, 100, 200)
+GA_ITERATION_VARIANTS = (300, 1000, 3000)
+
+GA_P_CROSSOVER = 0.8
+GA_P_MUTATION = 0.2
+
+# banyak individu terbaik yang dibawa langsung ke generasi berikutnya (heuristik tambahan)
+GA_ELITISM = 2
+
+# windowing fitness roulette: fit_i = f_i - min_j f_j + GA_EPSILON, supaya semua peluang > 0
+GA_EPSILON = 1.0
