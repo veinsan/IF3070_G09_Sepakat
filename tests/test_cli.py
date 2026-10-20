@@ -66,6 +66,15 @@ class TestRunAllAlgorithms(unittest.TestCase):
             self.assertEqual(len(data["extra"]["iters_per_restart"]), 3)
             self.assertFalse(list((Path(tmp) / "random_restart").glob("*.png")))
 
+    def test_max_iterations_limits_hill_climbing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            code, _, _ = run_cli("--algo", "steepest", "--instance", "multi", "--max-iterations", 1, "--out", tmp,
+                                 "--no-plot")
+            self.assertEqual(code, 0)
+            data = json.loads((Path(tmp) / "steepest" / "multi_seed1.json").read_text(encoding="utf-8"))
+            self.assertEqual(data["params"]["max_iterations"], 1)
+            self.assertEqual(data["iterations"], 1)
+
 
 class TestOptions(unittest.TestCase):
     def test_hc_is_alias_of_steepest(self):
@@ -104,6 +113,7 @@ class TestOptions(unittest.TestCase):
         cases = [
             ("--algo", "sa", "--population", 10),           # parameter GA untuk SA
             ("--algo", "steepest", "--max-sideways", 5),    # parameter Sideways untuk Steepest
+            ("--algo", "sa", "--max-iterations", 5),        # batas iterasi HC untuk SA (pakai --iterations)
             ("--algo", "ga", "--population", 0),
             ("--algo", "tabu"),
             ("--algo", "sa", "--objective", "eta"),        # Bonus 1 belum tersedia

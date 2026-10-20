@@ -119,6 +119,7 @@ python src/main.py --view output/sa/main_seed1.json        # tampilkan & gambar 
 | `--instance` | path file instance, atau nama file di `src/data/` (`main.json`, `small.json`, `multi.json`). Default `main.json` |
 | `--seed` | seed random (default 1); eksperimen memakai seed 1, 2, 3 |
 | `--max-sideways`, `--max-restart`, `--max-no-improve` | parameter Sideways Move, Random Restart, Stochastic HC |
+| `--max-iterations` | batas pengaman iterasi varian HC (Random Restart: per percobaan) |
 | `--iterations` | iterasi SA / generasi GA |
 | `--population` | ukuran populasi GA |
 | `--objective` | objective yang dioptimasi; saat ini hanya `fee` (objective ETA, Bonus 1, belum tersedia) |
