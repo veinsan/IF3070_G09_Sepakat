@@ -119,7 +119,9 @@ Params: `max_restart = 10` (total 11 percobaan Steepest Ascent)
 
 ### 4.5 Simulated Annealing
 
-Params: `T0 = __ (auto)`, `α = __`, `T_min = __`, `max_iter = __`, stuck window `K = __`
+Params: `T0` otomatis (100 sampel, move dengan ΔE rata-rata diterima dengan peluang 0.8), `N = 100000` iterasi
+(tepat), `T_min = 0.01`, `α = (T_min / T0)^(1/N)` (≈ 0.99986, dihitung per run), stuck window `K = 500`,
+`initial_p_inside = 0.5`. `final_state` = state terbaik selama pencarian (DESIGN §7.2).
 
 | Run | Seed | Obj awal | Obj akhir | Fee | Feasible | Gap UB | Iterasi | #Stuck | Durasi (s) |
 |---|---|---|---|---|---|---|---|---|---|
@@ -218,6 +220,28 @@ Plot ringkasan yang disarankan: box plot objective akhir per algoritma, dan over
 
   Semua feasible dan memakai ketiga kapal. Steepest seed 2/3: 1072 / 1078. Gap UB lebih besar daripada
   `main.json` karena UB armada menggabungkan kapasitas dan luas semua kapal (DESIGN §8).
+- **Sen 19, sanity run Simulated Annealing**, default params (§4.5), seed 1/2/3 (bukan hasil resmi):
+
+  | Instance | Objective | Gap UB | Iterasi ke-k objective terbaik pertama kali dicapai | #Stuck | Durasi |
+  |---|---|---|---|---|---|
+  | `main.json` | 964 / 973 / 962 | 6.9% / 6.0% / 7.1% | 60 862 / 65 868 / 62 170 | 182 / 185 / 179 | ~1.8 s |
+  | `small.json` (optimum 287) | 287 / 287 / 287 | 3.7% (= optimum) | 50 893 / 44 092 / 49 451 | 191 / 191 / 192 | ~1.6 s |
+  | `multi.json` | 1214 / 1246 / 1214 | 7.9% / 5.5% / 7.9% | 65 076 / 70 425 / 75 639 | 179 / 174 / 178 | ~1.8 s |
+
+  Semua feasible; di `multi.json` ketiga kapal terpakai. `T0` ≈ 8 100–13 200 (`main.json`), besar karena
+  penalty satu sel overlap = `P` = 181. SA mengungguli Steepest di `main.json` (mean 966 vs 954) dan menemukan
+  optimum `small.json` di ketiga seed, sedangkan Steepest terjebak di 199 / 199 / 272.
+
+  **Tuning `N`** (`main.json` / `multi.json`, mean 5 seed): 20 000 → 922 / 1148, 50 000 → 970 / 1139,
+  100 000 → 971 / 1216, 200 000 → 977 / 1217 dengan durasi 2× lipat, jadi dipilih `N = 100000`. `T_min = 1`
+  tidak berbeda nyata dari `T_min = 0.01`. Versi awal dengan `α = 0.999` tetap (berhenti saat `T < T_min`,
+  ~14 ribu iterasi) hanya mencapai 899 / 924 / 945 di `main.json`, karena suhu turun terlalu cepat.
+
+  **Catatan frekuensi stuck (untuk analisis §5):** objective terbaik terakhir kali naik di ~60–75% run. Sisa
+  run berada di suhu rendah (SA praktis menjadi hill-climbing), sehingga 68–78 dari ~180 kejadian stuck di
+  `main.json` terjadi setelah titik itu. Dengan definisi DESIGN §7.2 (counter di-reset setiap `K`
+  iterasi), jumlah stuck juga mengukur lamanya SA tertahan, bukan hanya berapa kali. Ini perlu ditulis
+  eksplisit di laporan.
 - **Sel 20, sanity run Genetic Algorithm**, default params (§4.6, pop 100, 1000 generasi), seed 1/2/3 (bukan
   hasil resmi):
 
