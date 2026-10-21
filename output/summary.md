@@ -1,9 +1,8 @@
 # Ringkasan eksperimen
 
-Dibuat oleh `src/experiments.py` pada 2026-10-21 15:22.
+Dibuat oleh `src/experiments.py` pada 2026-10-21 23:22.
 Mesin: Windows-11-10.0.26200-SP0 | CPU Intel64 Family 6 Model 186 Stepping 3, GenuineIntel (12 thread) | Python 3.14.3.
-Run tersedia: 33. Durasi = search saja (`duration_s`), tidak termasuk menyimpan file dan gambar.
-Belum ada / dilewati (3): `steepest/main_eta_seed1`, `steepest/main_eta_seed2`, `steepest/main_eta_seed3`
+Run tersedia: 36. Durasi = search saja (`duration_s`), tidak termasuk menyimpan file dan gambar.
 
 ### 4.1 Hill-Climbing - Steepest Ascent
 
@@ -85,6 +84,17 @@ Belum ada / dilewati (3): `steepest/main_eta_seed1`, `steepest/main_eta_seed2`, 
 | sideways | 982 | 973.3 ± 11.7 | 6.0% | 48.633 | 1454799 |
 | random_restart | 993 | 973.7 ± 24.6 | 5.9% | 78.697 | 2534374 |
 | ga (pop 200, iter 1000) - terbaik | 940 | 875.3 ± 58.5 | 15.4% | 8.916 | 198200 |
+
+### 4.10 Bonus 1 - objective urgensi ETA
+
+| Run | Seed | Obj awal | Obj akhir (bobot) | Fee asli | Feasible | Gap UB | Dimuat | Berat | Iterasi | #Stuck | Durasi (s) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 1 | -30496.8 | 1293.3 | 984 | True | 3.9% | 16 | 130/131 | 100000 | 175 | 1.382 |
+| 2 | 2 | -72463.9 | 1223.6 | 941 | True | 9.1% | 16 | 128/131 | 100000 | 178 | 1.387 |
+| 3 | 3 | -40726.8 | 1228.8 | 941 | True | 8.7% | 15 | 124/131 | 100000 | 178 | 1.427 |
+| **mean ± std** |  |  | 1248.6 ± 38.8 | 955.3 ± 24.8 |  |  |  |  |  |  | 1.398 ± 0.025 |
+
+Bobot urgensi `fee * (1 + 1/(eta + 1))`, gap terhadap UB bobot. Perbandingan dengan run objective fee pada seed yang sama: `output/summary_eta.md`.
 
 ### Gambar ringkasan
 

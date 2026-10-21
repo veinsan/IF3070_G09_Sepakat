@@ -20,11 +20,15 @@ Grup run (seed 1, 2, 3, parameter dari config.py):
 | `ga_iter`     | §4.6        | GA populasi kontrol, variasi iterasi                           | 9   |
 | `ga_pop`      | §4.7        | GA iterasi kontrol, variasi populasi                           | 9   |
 | `hc_variants` | §4.2-§4.4   | Stochastic, Sideways Move, Random Restart (Bonus 2)            | 9   |
-| `eta`         | Bonus 1     | objective ETA, dilewati selama objective ETA belum tersedia    | 3   |
+| `eta`         | §4.10       | SA dengan objective urgensi ETA (Bonus 1, `core.eta_objective`) | 3   |
 | `multi`       | §4.8        | Steepest Ascent pada `multi.json` (Bonus 3)                    | 3   |
 
 Konfigurasi kontrol GA (populasi 100, iterasi 1000) masuk ke `ga_iter` dan `ga_pop` tetapi hanya dijalankan
 sekali, sehingga totalnya 21 run wajib dan 36 run dengan bonus.
+
+Run Bonus 1 dijalankan dengan `core.eta_objective.run_eta`, sama seperti `src/eta_experiments.py`, jadi file
+`output/sa/main_eta_seed<k>.json` dari kedua runner identik. Perbandingan run fee vs ETA tetap ditulis oleh
+`eta_experiments.py` ke `output/summary_eta.md`.
 
 `--quick` memakai `small.json` dan parameter kecil (dipakai test). Hasilnya tetap ke `--out`, jadi pakai
 folder lain dari `output/` supaya tidak tercampur dengan hasil resmi.
@@ -43,6 +47,7 @@ import sys
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -56,8 +61,10 @@ from config import (
     OUTPUT_DIR,
     SEEDS,
 )
+from core.eta_objective import eta_problem, run_eta
 from core.problem import Problem, load_problem
-from main import OBJECTIVES, resolve_instance, run_algorithm, run_id, save_plots, save_run
+from main import resolve_instance, run_algorithm, run_id, save_plots, save_run
+from search.result import RunResult
 
 Result = dict[str, Any]
 
@@ -68,7 +75,7 @@ GROUPS: dict[str, tuple[str, bool]] = {
     "ga_iter": ("4.6 GA - kontrol populasi, variasi iterasi", True),
     "ga_pop": ("4.7 GA - kontrol iterasi, variasi populasi", True),
     "hc_variants": ("4.2-4.4 Hill-Climbing varian lain (Bonus 2)", False),
-    "eta": ("Bonus 1 - objective ETA", False),
+    "eta": ("4.10 Bonus 1 - objective urgensi ETA", False),
     "multi": ("4.8 Bonus 3 - multi-kapal", False),
 }
 
@@ -94,10 +101,6 @@ class Run:
     @property
     def required(self) -> bool:
         return any(GROUPS[g][1] for g in self.groups)
-
-    @property
-    def available(self) -> bool:
-        return self.objective in OBJECTIVES
 
     def path(self, out_dir: Path) -> Path:
         return Path(out_dir) / self.algo / f"{self.run_id}.json"
@@ -147,8 +150,8 @@ def planned_runs(quick: bool = False, seeds: Sequence[int] = SEEDS) -> list[Run]
         add("ga_pop", "ga", main_instance, {"population": population, "iterations": ga_iterations})
     for algo in ("stochastic", "sideways", "random_restart"):
         add("hc_variants", algo, main_instance, params[algo])
-    # algoritma untuk Bonus 1 menunggu objective ETA (bagian T); sementara Steepest seperti Bonus 3
-    add("eta", "steepest", main_instance, params["steepest"], objective="eta")
+    # Bonus 1: SA dengan parameter §4.5, sama dengan src/eta_experiments.py (EXPERIMENTS §4.10)
+    add("eta", "sa", main_instance, params["sa"], objective="eta")
     add("multi", "steepest", MULTI_INSTANCE, params["multi"])
     return list(runs.values())
 
@@ -159,18 +162,11 @@ def select(runs: Sequence[Run], only: Sequence[str] | None) -> list[Run]:
 
 
 def count_line(runs: Sequence[Run]) -> str:
-    required = sum(r.required for r in runs)
-    skipped = [r for r in runs if not r.available]
-    line = f"{required} run wajib, {len(runs)} run dengan bonus"
-    if skipped:
-        line += f" ({len(skipped)} dilewati: objective {', '.join(sorted({r.objective for r in skipped}))} belum ada)"
-    return line
+    return f"{sum(r.required for r in runs)} run wajib, {len(runs)} run dengan bonus"
 
 
 def describe(run: Run, out_dir: Path, skip_existing: bool) -> str:
-    if not run.available:
-        status = "dilewati (objective belum ada)"
-    elif skip_existing and run.path(out_dir).is_file():
+    if skip_existing and run.path(out_dir).is_file():
         status = "sudah ada"
     else:
         status = "dijalankan"
@@ -178,20 +174,33 @@ def describe(run: Run, out_dir: Path, skip_existing: bool) -> str:
     return f"{','.join(run.groups):<16} {run.algo:<15} {run.instance.name:<11} {run.run_id:<28} {params:<30} {status}"
 
 
+def problem_for(run: Run, problems: dict[Path, Problem]) -> Problem:
+    """Instance yang dioptimasi `run`: instance asli, atau turunan bobot urgensi untuk objective ETA."""
+    problem = problems.setdefault(run.instance, load_problem(run.instance))
+    return eta_problem(problem) if run.objective == "eta" else problem
+
+
+def search(run: Run, problem: Problem) -> RunResult:
+    """Jalankan `run` pada instance asli `problem` (run ETA lewat `run_eta`, seperti eta_experiments.py)."""
+    if run.objective == "eta":
+        return run_eta(partial(run_algorithm, run.algo), problem, seed=run.seed, **run.params)
+    return run_algorithm(run.algo, problem, run.seed, **run.params)
+
+
 def execute(runs: Sequence[Run], out_dir: Path, skip_existing: bool = False, plots: bool = True,
             log: Callable[[str], None] = print) -> list[Path]:
     """Jalankan dan simpan `runs` (lewat `main.run_algorithm` / `main.save_run`). Mengembalikan JSON yang ditulis."""
     problems: dict[Path, Problem] = {}
     written = []
-    todo = [r for r in runs if r.available]
-    for k, run in enumerate(todo, start=1):
-        head = f"[{k}/{len(todo)}] {run.algo} {run.run_id}"
+    for k, run in enumerate(runs, start=1):
+        head = f"[{k}/{len(runs)}] {run.algo} {run.run_id}"
         if skip_existing and run.path(out_dir).is_file():
             log(f"{head}: sudah ada, dilewati")
             continue
-        problem = problems.setdefault(run.instance, load_problem(run.instance))
-        result = run_algorithm(run.algo, problem, run.seed, **run.params).to_dict()
-        written.append(save_run(result, problem, out_dir, plots=plots)[0])
+        problems.setdefault(run.instance, load_problem(run.instance))
+        run_result = search(run, problems[run.instance])
+        result = run_result.to_dict()
+        written.append(save_run(result, run_result.problem, out_dir, plots=plots)[0])
         log(f"{head}: objective {result['initial_objective']:g} -> {result['final_objective']:g}, "
             f"feasible {result['is_feasible']}, {result['duration_s']:.2f} s")
     return written
@@ -205,8 +214,7 @@ def redraw(runs: Sequence[Run], out_dir: Path, log: Callable[[str], None] = prin
         path = run.path(out_dir)
         if not path.is_file():
             continue
-        problem = problems.setdefault(run.instance, load_problem(run.instance))
-        save_plots(load_result(path), problem, path.with_suffix(""))
+        save_plots(load_result(path), problem_for(run, problems), path.with_suffix(""))
         count += 1
         log(f"gambar ulang {path}")
     return count
@@ -331,7 +339,6 @@ def summary_sections(pairs: Sequence[tuple[Run, Result]]) -> list[str]:
             " / ".join(f"{u:g}/{c:g}" for u, c in zip(r["used_weight"], r["capacity"])),
             " / ".join(str(n) for n in vehicles_per_ship(r)), f"{r['duration_s']:.3f}"]), multi,
         {**final_mean, 9: lambda r: r["duration_s"]})
-
     overview = []
     for label, results in comparison_groups(pairs).items():
         finals = [r["final_objective"] for r in results]
@@ -342,6 +349,21 @@ def summary_sections(pairs: Sequence[tuple[Run, Result]]) -> list[str]:
     if overview:
         lines.extend(["", "### 4.9 Ringkasan antar-algoritma (instance utama)", ""] + _table(
             ["Algoritma", "Best", "Mean ± std", "Gap UB (mean)", "Durasi mean (s)", "Evals mean"], overview))
+
+    eta = of("eta")
+    section(GROUPS["eta"][0],
+            ["Run", "Seed", "Obj awal", "Obj akhir (bobot)", "Fee asli", "Feasible", "Gap UB", "Dimuat", "Berat",
+             "Iterasi", "#Stuck", "Durasi (s)"],
+            _seed_rows(eta, lambda r: [
+                _num(round(r["initial_objective"], 1)), _num(round(r["final_objective"], 1)),
+                _num(r["extra"]["shipping_fee_total"]), r["is_feasible"], _gap(r), r["loaded"],
+                " / ".join(f"{u:g}/{c:g}" for u, c in zip(r["used_weight"], r["capacity"])), r["iterations"],
+                r["extra"].get("stuck_count", ""), f"{r['duration_s']:.3f}"]), eta,
+            {3: lambda r: r["final_objective"], 4: lambda r: r["extra"]["shipping_fee_total"],
+             11: lambda r: r["duration_s"]})
+    if eta:
+        lines.extend(["", "Bobot urgensi `fee * (1 + 1/(eta + 1))`, gap terhadap UB bobot. Perbandingan dengan run "
+                      "objective fee pada seed yang sama: `output/summary_eta.md`."])
     return lines
 
 
