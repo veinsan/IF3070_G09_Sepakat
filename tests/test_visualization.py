@@ -5,6 +5,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+
 from config import DATA_DIR, MULTI_INSTANCE
 from core.problem import load_problem
 from core.state import State, random_state
@@ -47,6 +49,16 @@ class TestStateView(unittest.TestCase):
         self.assertIn("TIDAK feasible", fig.get_suptitle())
         hatched = [p for p in fig.axes[0].patches if p.get_hatch()]
         self.assertGreater(len(hatched), 0)
+
+    def test_title_fits_figure(self):
+        # state awal acak di geladak kecil: judul terpanjang (rincian pelanggaran) tetap muat di gambar
+        for problem in (SMALL, FLEET):
+            state = random_state(problem, random.Random(4)).to_dict()
+            fig = draw_state(problem, state, title="Initial state | random_restart | small | seed 3")
+            renderer = FigureCanvasAgg(fig).get_renderer()
+            extent = fig._suptitle.get_window_extent(renderer)
+            self.assertGreaterEqual(extent.x0, 0)
+            self.assertLessEqual(extent.x1, fig.bbox.width)
 
     def test_render_text(self):
         state = random_state(FLEET, random.Random(3))
