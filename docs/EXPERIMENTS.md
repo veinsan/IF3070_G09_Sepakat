@@ -67,7 +67,7 @@ nama yang sama: `output/<algo>/<run_id>_{initial,final,plot}.png`.
 | GA: kontrol populasi, variasi iterasi | 3 | 9 | ✅ |
 | GA: kontrol iterasi, variasi populasi | 3 | 9 | ✅ |
 | HC varian lain (Bonus 2) | 3 | 9 | Bonus |
-| Objective alternatif (Bonus 1) | ≥1 | 3 | Bonus |
+| Objective alternatif (Bonus 1, SA dengan objective ETA) | 1 | 3 | Bonus |
 | Multi-kapal (Bonus 3) | ≥1 | 3 | Bonus |
 
 Total wajib: **24 run**. Dengan bonus: **39 run** (dijalankan Rab 21 pagi, lihat PROJECT_TRACKER §Jadwal).
@@ -186,6 +186,34 @@ Params: sama dengan §4.1 (`max_iterations = 10000`, `initial_p_inside = 0.5`). 
 
 Plot ringkasan yang disarankan: box plot objective akhir per algoritma, dan overlay kurva konvergensi (x = jumlah evaluasi).
 
+### 4.10 Bonus 1 — Objective Urgensi ETA
+
+Objective: `Σ w_i` dengan `w_i = fee_i · (1 + 1/(eta_i + 1))`, `P = max w_i + 1` (DESIGN §8). Algoritma: SA,
+params sama dengan §4.5, seed 1/2/3 (`python src/eta_experiments.py`). Dengan seed yang sama, run objective fee
+(§4.5) dan run objective ETA berangkat dari initial state yang sama. UB bobot = 1346.25. Hasil mentah di
+`output/sa/main_eta_seed*.json`, perbandingan di `output/summary_eta.md`.
+
+| Run | Seed | Obj awal | Obj akhir (bobot) | Fee asli | Feasible | Gap UB | Dimuat | Berat | Iterasi | #Stuck | Durasi (s) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 1 | -30496.8 | 1293.3 | 984 | ya | 3.9% | 16 | 130/131 | 100000 | 175 | 1.382 |
+| 2 | 2 | -72463.9 | 1223.6 | 941 | ya | 9.1% | 16 | 128/131 | 100000 | 178 | 1.387 |
+| 3 | 3 | -40726.8 | 1228.8 | 941 | ya | 8.7% | 15 | 124/131 | 100000 | 178 | 1.427 |
+| **mean ± std** |  |  | 1248.6 ± 38.8 | 955.3 ± 24.8 |  |  |  |  |  |  | 1.399 ± 0.025 |
+
+Nilai aktual run 1/2/3: `T0` = 17 394 / 11 668 / 18 936, `α` = 0.999856 / 0.999860 / 0.999855.
+
+Perbandingan dengan run objective fee (§4.5), seed yang sama:
+
+| Seed | Bobot urgensi (fee → ETA) | Fee asli (fee → ETA) | Dimuat (fee → ETA) | Mean ETA dimuat (fee → ETA) |
+|---|---|---|---|---|
+| 1 | 1243.5 → 1293.3 | 964 → 984 | 11 → 16 | 3.82 → 3.62 |
+| 2 | 1206.8 → 1223.6 | 973 → 941 | 15 → 16 | 4.20 → 3.44 |
+| 3 | 1148.1 → 1228.8 | 962 → 941 | 17 → 15 | 4.29 → 3.80 |
+| **mean** | 1199.5 → 1248.6 | 966.3 → 955.3 |  | 4.10 → 3.62 |
+
+Di ketiga seed, objective ETA memberi bobot urgensi lebih tinggi dan memuat kendaraan yang lebih mendesak (mean
+ETA lebih kecil), dengan fee asli rata-rata turun ~1.1%. Durasi tidak sebanding dengan §4.5 (lihat §6, Rab 21).
+
 ---
 
 ## 5. Checklist Analisis (untuk bab Pembahasan)
@@ -283,4 +311,7 @@ Plot ringkasan yang disarankan: box plot objective akhir per algoritma, dan over
   - Run resmi memakai daya baterai, sehingga durasi ~3–5× lebih lama daripada sanity run (Steepest 7.3 s vs
     ~1.3 s, SA 6.6 s vs ~1.8 s, GA pop 100 / iter 1000 3.9 s vs ~1.3 s). Semua run dijalankan dalam kondisi yang
     sama, jadi perbandingan durasi antar-algoritma tetap berlaku.
-  - Bonus 1 (objective ETA, 3 run) belum dijalankan karena objective ETA belum ada di `main`.
+  - Bonus 1 (objective ETA, 3 run) dijalankan terpisah dengan `python src/eta_experiments.py` (§4.10),
+    karena `experiments.py` belum memiliki objective ETA. Semua feasible. Durasinya (~1.4 s) mendekati sanity
+    run, jadi kemungkinan besar run ini tidak memakai daya baterai seperti run resmi lain, sehingga tidak sebanding dengan durasi run resmi lain (SA ~6.6 s di §4.5);
+    durasi sanity run SA dengan objective fee pada kondisi yang sama ~1.8 s.

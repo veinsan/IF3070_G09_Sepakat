@@ -237,9 +237,14 @@ loop pendakian yang sama (`_climb`). Steepest Ascent = Sideways dengan `max_side
 ### 7.2 Simulated Annealing
 
 - Terima neighbor lebih baik; kalau lebih buruk, terima dengan peluang `e^(ΔE/T)` (ΔE < 0).
-- **Schedule:** geometric `T_k = T0 · α^k`, contoh `α = 0.995`; stop saat `T < T_min` atau `max_iter`.
-- **T0 heuristik:** sampling ~100 random move yang memperburuk, lalu `T0 = −mean(ΔE) / ln(0.8)`
-  (awalnya ~80% move buruk diterima). Sebutkan sumbernya di laporan.
+- **Schedule:** geometric `T_k = T0 · α^k` dengan `α = (T_min / T0)^(1/N)`, sehingga suhu turun tepat dari T0
+  ke T_min dalam N iterasi (N sama untuk semua seed walaupun T0 berbeda). Default `N = 100 000`,
+  `T_min = 0.01` (`config.py`). Bila `T0 ≤ T_min`, `α = 1`.
+- **T0 heuristik:** sampling 100 random neighbor, ambil yang memperburuk (ΔE < 0), lalu pilih T0 sehingga
+  `e^(mean(ΔE)/T0) = 0.8`, yaitu `T0 = mean(ΔE) / ln(0.8) = mean(|ΔE|) / −ln(0.8)` (positif karena ΔE < 0 dan
+  `ln(0.8) < 0`). Artinya move buruk berukuran rata-rata awalnya diterima dengan peluang ~80%. Bila tidak ada
+  move yang memperburuk, `T0 = 1`. Sebutkan sumbernya di laporan.
+- **`final_state`** = state terbaik selama pencarian, karena SA bisa berakhir di state yang lebih buruk.
 - **Plot `e^(ΔE/T)`:** catat hanya di iterasi dengan ΔE < 0 (untuk ΔE ≥ 0 nilainya 1 dan tidak informatif).
 - **Definisi "stuck" 🟡:** 1 kejadian stuck = nilai `best` tidak membaik selama `K` iterasi
   berturut-turut (contoh `K = 500`), lalu counter di-reset. Frekuensi = jumlah kejadian.
@@ -260,14 +265,39 @@ loop pendakian yang sama (`_climb`). Steepest Ascent = Sideways dengan `max_side
 - **Parameter yang divariasikan (spec):** hanya `population_size` dan `iterations` (= generasi).
   Parameter lain (`p_c`, `p_m`, elitism) dibuat **tetap** di semua eksperimen.
 - **Dicatat per generasi:** `max` dan `mean` objective populasi.
+- **Detail implementasi** (`src/search/genetic_algorithm.py`):
+  - Crossover menghasilkan dua anak; bila `rng ≥ p_c`, anak = salinan kedua induk.
+  - Mutasi diterapkan **per anak** dengan peluang `p_m` (satu random neighbor), bukan per gene.
+  - `initial_state` di output = individu terbaik populasi awal (`RunResult` hanya menyimpan satu state awal),
+    sehingga `history.objective[0]` = objective-nya. `final_state` = individu terbaik selama pencarian.
+  - `evaluations` = populasi awal + semua anak baru (elit tidak dinilai ulang).
+  - Default: populasi 100, 1000 generasi, `p_c = 0.8`, `p_m = 0.2`, elitism 2, ε = 1 (`config.py`).
 
 ## 8. Bonus
 
 | Bonus | Poin | Desain |
 |---|---|---|
-| 1. Objective alternatif (tanpa variabel baru) | 3 | Prioritas ETA: `Σ fee_i · (1 + 1/eta_i)` (makin mendesak, makin berbobot). Jalankan ulang 1 set eksperimen untuk dibandingkan. ⚠ `eta` boleh 0 (§2), jadi rumusnya perlu dijaga dari pembagian nol (misalnya `1/(eta_i + 1)`). `P` juga harus memakai bobot maksimum, bukan fee maksimum, supaya properti §4 tetap berlaku |
+| 1. Objective alternatif (tanpa variabel baru) | 3 | Prioritas ETA: `Σ fee_i · (1 + 1/(eta_i + 1))` (makin mendesak, makin berbobot; `+ 1` karena `eta` boleh 0, §2). `P` memakai bobot maksimum, bukan fee maksimum, supaya properti §4 tetap berlaku. Satu set eksperimen (SA, 3 seed) dijalankan ulang untuk dibandingkan |
 | 2. Semua varian HC | 7 | Tabel 7.1, masing-masing 3 run |
 | 3. Multi-kapal | 10 | `pos` sudah punya `ship`; constraint per kapal; `move` boleh ke kapal lain; `swap` lintas kapal; UB pakai total kapasitas & luas |
+
+**Bonus 1 — Objective urgensi ETA ✅ (`[T]`):** setiap kendaraan bernilai `w_i = fee_i · (1 + 1/(eta_i + 1))`,
+jadi `eta = 0` bernilai 2 × fee dan bobot mendekati fee untuk ETA besar. Hanya memakai `shipping_fee` dan `eta`
+yang sudah ada di input (tidak ada variabel baru).
+
+- **Implementasi** (`src/core/eta_objective.py`): `eta_problem()` membuat salinan instance yang `shipping_fee`
+  tiap kendaraannya diganti `w_i` (nama `<instance>_eta`). Karena itu `State`, delta evaluation, penalty,
+  upper bound, dan format hasil tidak perlu diubah, dan semua algoritma (HC, SA, GA) bisa langsung dipakai.
+- **Penalty:** `P = max w_i + 1` otomatis (`penalty_coefficient` pada instance turunan), jadi mengeluarkan satu
+  kendaraan yang melanggar tetap selalu menaikkan objective (§4).
+- **UB dan gap** dihitung dengan bobot yang sama dengan objective yang dioptimasi (§6).
+- **Konsekuensi:** di hasil run ETA, `total_fee` dan label "fee" di gambar berisi bobot urgensi. Fee asli
+  kendaraan yang dimuat dicatat di `extra.shipping_fee_total`.
+- **Eksperimen** (`src/eta_experiments.py`): SA, seed 1/2/3, parameter default → `output/sa/main_eta_seed*`.
+  Perbandingan dengan run objective fee (seed sama = initial state sama) di `output/summary_eta.md` dan
+  EXPERIMENTS §4.10.
+- **Teruji** di `tests/test_eta_objective.py`: bobot dihitung manual, `P` = bobot maksimum + 1, delta = full
+  recompute (termasuk multi-kapal), state infeasible selalu punya removal yang memperbaiki, run SA dan GA feasible.
 
 **Bonus 3 — Multi-kapal ✅ (bagian core, `[R]`):** spesifikasi meminta program "dapat menerima jumlah kapal lebih
 dari satu dan memaksimalkan *value* total yang diangkut armada".
@@ -295,7 +325,7 @@ Urutan pengerjaan dan pemotongan bila waktu kurang ada di PROJECT_TRACKER §Jadw
 - [x] Konstanta penalty `P` final (`max fee + 1`, berat via `weight_units`)
 - [x] `max_sideways` berturut-turut atau total → **total**, langsung berhenti saat tercapai (§7.1)
 - [ ] Definisi "stuck" SA disepakati
-- [ ] Nilai default SA (`α`, `T_min`, `max_iter`) dan GA (`p_c`, `p_m`, elitism)
+- [x] Nilai default SA (`N`, `T_min`, `α` dihitung dari T0) dan GA (`p_c`, `p_m`, elitism) → `config.py` (§7.2, §7.3)
 - [ ] Format input dikonfirmasi (apakah asisten kasih test case sendiri saat demo?)
 
 ## 10. Struktur Kode & Konvensi ✅
@@ -305,9 +335,9 @@ Struktur lengkap per file ada di [README](../README.md#struktur-repository). Pem
 | Layer | Folder | Tanggung jawab | Boleh import |
 |---|---|---|---|
 | Model | `src/core/` | Data persoalan, state, objective, delta evaluation, upper bound | stdlib saja |
-| Search | `src/search/` | Neighbor + HC, SA, GA. Hanya bicara ke API `State` | `core` |
+| Search | `src/search/` | Neighbor + HC, SA, GA. Hanya bicara ke API `State` | `core`, `config` (nilai default parameter) |
 | Visualisasi | `src/visualization/` | Gambar state + plot. Membaca dict hasil / JSON di `output/`, tidak menjalankan search | `core`, `matplotlib` |
-| Entry point | `src/main.py`, `src/experiments.py` | CLI + runner eksperimen | semua |
+| Entry point | `src/main.py`, `src/experiments.py`, `src/eta_experiments.py` | CLI + runner eksperimen | semua |
 | Analisis | `notebooks/experiments.ipynb` | Tabel + plot dari `output/*.json` | `src` (via `sys.path`) |
 
 Alasan: algoritma tidak tahu detail grid, jadi delta evaluation dan multi-kapal (Bonus 3) cukup diubah di
