@@ -10,7 +10,7 @@ Semua run **harus reproducible**: instance tetap, seed tercatat, output mentah d
 - **Upper bound (UB):** 1035 (lihat DESIGN §6). `gap = (UB − f) / UB`.
 - **Seeds:** run 1/2/3 = seed `1`, `2`, `3` untuk semua algoritma.
 - **Durasi:** wall-clock dengan `time.perf_counter()`, hanya bagian search (tidak termasuk plotting / IO).
-- **Mesin:** (CPU / RAM / versi Python) __ . Semua run di satu mesin yang sama.
+- **Mesin:** Intel Core 5 120U (10 core / 12 thread), RAM 16 GB, Windows 11, Python 3.14.3. Run resmi Rab 21 dengan daya baterai (power plan Balanced). Semua run di satu mesin yang sama.
 - Selain iterasi, catat juga **jumlah evaluasi objective**. Perbandingan antar-algoritma lebih
   adil kalau pakai jumlah evaluasi, karena satu "iterasi" Steepest HC ≠ satu iterasi SA.
 
@@ -82,10 +82,10 @@ Params: `max_iterations = 10000` (hanya pengaman, tidak pernah tercapai), tie-br
 
 | Run | Seed | Obj awal | Obj akhir | Fee | Feasible | Gap UB | Iterasi | Evals | Durasi (s) |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | 1 | | | | | | | | |
-| 2 | 2 | | | | | | | | |
-| 3 | 3 | | | | | | | | |
-| **mean ± std** | | | | | | | | | |
+| 1 | 1 | -21226 | 982 | 982 | ya | 5.1% | 16 | 208452 | 5.628 |
+| 2 | 2 | -50553 | 978 | 978 | ya | 5.5% | 20 | 258031 | 9.368 |
+| 3 | 3 | -28402 | 902 | 902 | ya | 12.9% | 17 | 221238 | 6.997 |
+| **mean ± std** |  |  | 954.0 ± 45.1 | 954.0 ± 45.1 |  |  |  |  | 7.331 ± 1.892 |
 
 ### 4.2 Hill-Climbing — Stochastic (Bonus 2)
 
@@ -93,9 +93,10 @@ Params: `max_iterations = 200000`, `max_no_improve = 20000`
 
 | Run | Seed | Obj awal | Obj akhir | Fee | Feasible | Gap UB | Iterasi | Evals | Durasi (s) |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | 1 | | | | | | | | |
-| 2 | 2 | | | | | | | | |
-| 3 | 3 | | | | | | | | |
+| 1 | 1 | -21226 | 778 | 778 | ya | 24.8% | 36486 | 36486 | 0.850 |
+| 2 | 2 | -50553 | 876 | 876 | ya | 15.4% | 32510 | 32510 | 0.854 |
+| 3 | 3 | -28402 | 771 | 771 | ya | 25.5% | 24504 | 24504 | 1.214 |
+| **mean ± std** |  |  | 808.3 ± 58.7 | 808.3 ± 58.7 |  |  |  |  | 0.973 ± 0.209 |
 
 ### 4.3 Hill-Climbing — Sideways Move
 
@@ -103,9 +104,10 @@ Params: `max_sideways = 100` (total, DESIGN §7.1), `max_iterations = 10000` (pe
 
 | Run | Seed | Obj awal | Obj akhir | Fee | Feasible | Gap UB | Iterasi | #Sideways | Durasi (s) |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | 1 | | | | | | | | |
-| 2 | 2 | | | | | | | | |
-| 3 | 3 | | | | | | | | |
+| 1 | 1 | -21226 | 982 | 982 | ya | 5.1% | 116 | 100 | 48.765 |
+| 2 | 2 | -50553 | 978 | 978 | ya | 5.5% | 120 | 100 | 49.008 |
+| 3 | 3 | -28402 | 960 | 960 | ya | 7.2% | 118 | 100 | 48.126 |
+| **mean ± std** |  |  | 973.3 ± 11.7 | 973.3 ± 11.7 |  |  |  |  | 48.633 ± 0.455 |
 
 ### 4.4 Hill-Climbing — Random Restart
 
@@ -113,9 +115,10 @@ Params: `max_restart = 10` (total 11 percobaan Steepest Ascent)
 
 | Run | Seed | Obj akhir | Fee | Feasible | Gap UB | #Restart | Iterasi per restart | Durasi (s) |
 |---|---|---|---|---|---|---|---|---|
-| 1 | 1 | | | | | | | |
-| 2 | 2 | | | | | | | |
-| 3 | 3 | | | | | | | |
+| 1 | 1 | 982 | 982 | ya | 5.1% | 10 | 16, 14, 20, 17, 16, 15, 17, 17, 23, 16, 22 | 79.324 |
+| 2 | 2 | 993 | 993 | ya | 4.1% | 10 | 20, 18, 17, 13, 22, 14, 15, 22, 18, 18, 18 | 78.999 |
+| 3 | 3 | 946 | 946 | ya | 8.6% | 10 | 17, 23, 17, 16, 20, 16, 20, 19, 17, 18, 14 | 77.767 |
+| **mean ± std** |  | 973.7 ± 24.6 | 973.7 ± 24.6 |  |  |  |  | 78.697 ± 0.821 |
 
 ### 4.5 Simulated Annealing
 
@@ -125,9 +128,12 @@ Params: `T0` otomatis (100 sampel, move dengan ΔE rata-rata diterima dengan pel
 
 | Run | Seed | Obj awal | Obj akhir | Fee | Feasible | Gap UB | Iterasi | #Stuck | Durasi (s) |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | 1 | | | | | | | | |
-| 2 | 2 | | | | | | | | |
-| 3 | 3 | | | | | | | | |
+| 1 | 1 | -21226 | 964 | 964 | ya | 6.9% | 100000 | 182 | 7.037 |
+| 2 | 2 | -50553 | 973 | 973 | ya | 6.0% | 100000 | 185 | 6.651 |
+| 3 | 3 | -28402 | 962 | 962 | ya | 7.1% | 100000 | 179 | 6.186 |
+| **mean ± std** |  |  | 966.3 ± 5.9 | 966.3 ± 5.9 |  |  |  |  | 6.625 ± 0.426 |
+
+Nilai aktual run 1/2/3: `T0` = 12 154 / 8 142 / 13 226, `α` = 0.999860 / 0.999864 / 0.999859.
 
 Plot per run: objective vs iterasi, dan `e^(ΔE/T)` vs iterasi.
 
@@ -139,17 +145,17 @@ selection = **roulette wheel** dengan windowing `fit = f − min f + 1`, `initia
 
 | Iterasi | Run | Seed | Obj akhir (best) | Fee | Feasible | Gap UB | Durasi (s) |
 |---|---|---|---|---|---|---|---|
-| 300 (rendah) | 1–3 | 1,2,3 | | | | | |
-| 1000 (sedang) | 1–3 | 1,2,3 | | | | | |
-| 3000 (tinggi) | 1–3 | 1,2,3 | | | | | |
+| 300 (rendah) | 1–3 | 1,2,3 | 721 / 863 / 858 (mean 814.0 ± 80.6) | 721 / 863 / 858 | ya / ya / ya | 30.3% / 16.6% / 17.1% | 1.107 / 1.120 / 1.168 |
+| 1000 (sedang) | 1–3 | 1,2,3 | 780 / 908 / 865 (mean 851.0 ± 65.1) | 780 / 908 / 865 | ya / ya / ya | 24.6% / 12.3% / 16.4% | 3.489 / 4.906 / 3.859 |
+| 3000 (tinggi) | 1–3 | 1,2,3 | 803 / 927 / 876 (mean 868.7 ± 62.3) | 803 / 927 / 876 | ya / ya / ya | 22.4% / 10.4% / 15.4% | 10.849 / 10.968 / 11.740 |
 
 ### 4.7 GA — Kontrol Iterasi (iter = 1000), Variasi Populasi
 
 | Populasi | Run | Seed | Obj akhir (best) | Fee | Feasible | Gap UB | Durasi (s) |
 |---|---|---|---|---|---|---|---|
-| 50 (kecil) | 1–3 | 1,2,3 | | | | | |
-| 100 (sedang) | 1–3 | 1,2,3 | | | | | |
-| 200 (besar) | 1–3 | 1,2,3 | | | | | |
+| 50 (kecil) | 1–3 | 1,2,3 | 749 / 778 / 804 (mean 777.0 ± 27.5) | 749 / 778 / 804 | ya / ya / ya | 27.6% / 24.8% / 22.3% | 1.233 / 1.219 / 1.311 |
+| 100 (sedang) | 1–3 | 1,2,3 | 780 / 908 / 865 (mean 851.0 ± 65.1) | 780 / 908 / 865 | ya / ya / ya | 24.6% / 12.3% / 16.4% | 3.489 / 4.906 / 3.859 |
+| 200 (besar) | 1–3 | 1,2,3 | 860 / 940 / 826 (mean 875.3 ± 58.5) | 860 / 940 / 826 | ya / ya / ya | 16.9% / 9.2% / 20.2% | 9.969 / 8.509 / 8.269 |
 
 Nilai variasi ada di `config.GA_POPULATION_VARIANTS` dan `config.GA_ITERATION_VARIANTS`. Konfigurasi kontrol
 (pop 100, iter 1000) muncul di kedua tabel (PROJECT_TRACKER Q&A #8).
@@ -158,20 +164,25 @@ Plot per run: **max** dan **mean** objective populasi vs generasi.
 ### 4.8 Bonus 3 — Multi-kapal (`multi.json`)
 
 Algoritma: Steepest Ascent, seed 1/2/3 (SA dan GA bisa dijalankan pada instance yang sama tanpa perubahan kode).
+Params: sama dengan §4.1 (`max_iterations = 10000`, `initial_p_inside = 0.5`). UB = 1318, C = 80 / 54 / 32.
 
 | Run | Seed | Obj awal | Obj akhir | Fee | Feasible | Gap UB | Berat per kapal | Kendaraan per kapal | Durasi (s) |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | 1 | | | | | | | | |
-| 2 | 2 | | | | | | | | |
-| 3 | 3 | | | | | | | | |
+| 1 | 1 | -59430 | 1170 | 1170 | ya | 11.2% | 70/80 / 51/54 / 30/32 | 10 / 6 / 5 | 18.668 |
+| 2 | 2 | -37965 | 1072 | 1072 | ya | 18.7% | 63/80 / 54/54 / 26/32 | 13 / 5 / 5 | 15.176 |
+| 3 | 3 | -76448 | 1078 | 1078 | ya | 18.2% | 78/80 / 48/54 / 15/32 | 4 / 8 / 7 | 19.427 |
+| **mean ± std** |  |  | 1106.7 ± 54.9 | 1106.7 ± 54.9 |  |  |  |  | 17.757 ± 2.267 |
 
 ### 4.9 Ringkasan Antar-Algoritma
 
 | Algoritma | Best | Mean ± std | Gap UB (mean) | Durasi mean (s) | Evals mean |
 |---|---|---|---|---|---|
-| Steepest HC | | | | | |
-| SA | | | | | |
-| GA (config terbaik) | | | | | |
+| Steepest HC | 982 | 954.0 ± 45.1 | 7.8% | 7.331 | 229240 |
+| SA | 973 | 966.3 ± 5.9 | 6.6% | 6.625 | 100100 |
+| GA (config terbaik: pop 200, iter 1000) | 940 | 875.3 ± 58.5 | 15.4% | 8.916 | 198200 |
+| Stochastic HC (Bonus 2) | 876 | 808.3 ± 58.7 | 21.9% | 0.973 | 31167 |
+| Sideways Move HC (Bonus 2) | 982 | 973.3 ± 11.7 | 6.0% | 48.633 | 1454799 |
+| Random Restart HC (Bonus 2) | 993 | 973.7 ± 24.6 | 5.9% | 78.697 | 2534374 |
 
 Plot ringkasan yang disarankan: box plot objective akhir per algoritma, dan overlay kurva konvergensi (x = jumlah evaluasi).
 
@@ -259,3 +270,17 @@ Plot ringkasan yang disarankan: box plot objective akhir per algoritma, dan over
   **Tuning** (`main.json`, mean 3 seed): pop 50 / 300 gen → 674, pop 100 / 1000 → 851, pop 100 / 3000 → 869
   (3× durasi), pop 200 / 1000 → 875. Variasi `p_m` ∈ {0.1, 0.2, 0.5, 1.0} × elitism ∈ {1, 2, 5} memberi mean
   767–919 tanpa pola yang konsisten (masih dalam noise 3 seed), jadi dipakai nilai DESIGN §7.3.
+- **Rab 21, run resmi** (`python src/experiments.py`, 33 run, hasil di `output/` dan `output/summary.md`):
+  - Semua 33 run selesai tanpa error dan semua final state feasible. Objective akhir identik dengan sanity
+    run Sen 19 / Sel 20 di atas (hasil reproducible per seed).
+  - Tidak ada run HC yang berhenti karena batas pengaman `max_iterations`: Steepest, Random Restart (semua 11
+    percobaan) dan multi-kapal berhenti di local optimum, Sideways ketiganya berhenti karena `max_sideways = 100`
+    tercapai, Stochastic karena `max_no_improve`.
+  - **Run pertama diulang.** Durasinya tidak valid karena laptop menjalankan proses lain bersamaan: Random
+    Restart seed 3 tercatat 939.5 s padahal jumlah evaluasinya sama dengan seed 1/2 (~2.5 juta), yaitu
+    ~367 µs per evaluasi dibanding ~13 µs. Semua 33 run diulang tanpa proses lain; objective identik, yang
+    dipakai di tabel adalah run ulang.
+  - Run resmi memakai daya baterai, sehingga durasi ~3–5× lebih lama daripada sanity run (Steepest 7.3 s vs
+    ~1.3 s, SA 6.6 s vs ~1.8 s, GA pop 100 / iter 1000 3.9 s vs ~1.3 s). Semua run dijalankan dalam kondisi yang
+    sama, jadi perbandingan durasi antar-algoritma tetap berlaku.
+  - Bonus 1 (objective ETA, 3 run) belum dijalankan karena objective ETA belum ada di `main`.
