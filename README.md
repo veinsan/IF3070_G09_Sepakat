@@ -158,8 +158,9 @@ python src/experiments.py --quick --out tmp_quick   # uji coba cepat dengan smal
 
 Runner memakai fungsi yang sama dengan `src/main.py`, sehingga file hasilnya sama seperti run lewat CLI.
 Konfigurasi kontrol GA (populasi 100, iterasi 1000) dipakai bersama oleh tabel EXPERIMENTS §4.6 dan §4.7 dan
-hanya dijalankan sekali. Grup `eta` dilewati oleh runner ini; run Bonus 1 dijalankan terpisah (di bawah).
-`output/summary.md` berisi tabel per bagian EXPERIMENTS §4 dan info mesin, ditambah `summary_*.png`.
+hanya dijalankan sekali. Grup `eta` (Bonus 1) menjalankan SA dengan objective urgensi ETA, sama persis dengan
+`src/eta_experiments.py` di bawah, jadi file hasilnya sama.
+`output/summary.md` berisi tabel per bagian EXPERIMENTS §4 (§4.1–§4.10) dan info mesin, ditambah `summary_*.png`.
 
 ### Bonus 1 (objective urgensi ETA)
 
