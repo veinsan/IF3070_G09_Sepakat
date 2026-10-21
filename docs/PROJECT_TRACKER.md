@@ -70,8 +70,8 @@ Target tetap **semua spek wajib + Bonus 1, 2, 3**. Kolom "Gate" = kondisi yang h
 
 ### M2 — Algoritma (Sen 19 – Sel 20 Okt)
 - [x] `[R]` Steepest Ascent HC
-- [ ] `[T]` SA: T0 otomatis, geometric cooling, catat `e^(ΔE/T)` dan stuck count
-- [ ] `[T]` GA: **roulette wheel selection eksplisit** (cumsum + spin), one-point crossover, mutation, elitism
+- [x] `[T]` SA: T0 otomatis, geometric cooling, catat `e^(ΔE/T)` dan stuck count
+- [x] `[T]` GA: **roulette wheel selection eksplisit** (cumsum + spin), one-point crossover, mutation, elitism
 - [x] `[R]` `config.py` + `search/result.py`: format hasil seragam (EXPERIMENTS §2), dipakai semua algoritma
 - [ ] `[L]` CLI: `python src/main.py --algo <hc|sa|ga|...> --instance ... --seed ...`
 - [x] `[R]` (Bonus 2) Stochastic, Sideways, Random Restart HC
@@ -84,7 +84,7 @@ Target tetap **semua spek wajib + Bonus 1, 2, 3**. Kolom "Gate" = kondisi yang h
 
 ### M4 — Laporan, Bonus, Release (Sel 20 – Kam 22 Okt)
 - [ ] `[L]` Laporan PDF (koordinator; isi per bab oleh pemilik bagian, lihat checklist di bawah)
-- [ ] `[T]` Bonus 1 (objective ETA, 3 run)
+- [x] `[T]` Bonus 1 (objective ETA, 3 run)
 - [x] `[R]` Bonus 3: generator multi-kapal + instance `multi.json` + test (state, neighbor, UB sudah mendukung banyak kapal)
 - [ ] `[L]` Bonus 3: visualisasi multi-kapal (`final_state.decks` berisi grid tiap kapal)
 - [ ] `[L]` README final (setup, run, pembagian tugas)
@@ -116,8 +116,8 @@ Target tetap **semua spek wajib + Bonus 1, 2, 3**. Kolom "Gate" = kondisi yang h
 - [ ] Constraint: no overlap, dalam batas geladak, berat ≤ kapasitas
 - [ ] Objective: maksimalkan total ShippingFee
 - [ ] ≥1 Hill-Climbing
-- [ ] Simulated Annealing
-- [ ] Genetic Algorithm dengan **roulette wheel selection**
+- [x] Simulated Annealing
+- [x] Genetic Algorithm dengan **roulette wheel selection**
 - [ ] State menampilkan: kendaraan di dalam & di luar, keadaan geladak, value
 - [ ] Visualisasi initial state, final state, dan hasil eksperimen
 
@@ -126,8 +126,8 @@ Target tetap **semua spek wajib + Bonus 1, 2, 3**. Kolom "Gate" = kondisi yang h
 - [ ] Steepest / Stochastic HC: jumlah iterasi
 - [ ] Sideways: jumlah iterasi, parameter `max_sideways`
 - [ ] Random Restart: jumlah restart, iterasi per restart, parameter `max_restart`
-- [ ] SA: plot `e^(ΔE/T)` vs iterasi, frekuensi stuck
-- [ ] GA: populasi, iterasi, plot **max & mean** vs iterasi, 2 × 3 variasi × 3 run
+- [x] SA: plot `e^(ΔE/T)` vs iterasi, frekuensi stuck
+- [x] GA: populasi, iterasi, plot **max & mean** vs iterasi, 2 × 3 variasi × 3 run
 
 ### Laporan PDF
 - [ ] Cover
@@ -181,12 +181,12 @@ Tanya **hanya** lewat komentar di unggahan Tubes di Teams (DM ke asisten tidak d
 | 6 | `feat/result-format` | `config.py`, `search/result.py` (format hasil seragam, EXPERIMENTS §2) | R | ✅ |
 | 7 | `feat/hill-climbing` | Steepest Ascent | R | ✅ |
 | 8 | `feat/visualization` | `visualization/state_view.py`, `visualization/plots.py` | L | Sen 19 |
-| 9 | `feat/simulated-annealing` | `search/simulated_annealing.py` | T | Sen 19 |
+| 9 | `feat/simulated-annealing` | `search/simulated_annealing.py` | T | ✅ |
 | 10 | `feat/hc-variants` | Stochastic, Sideways, Random Restart (Bonus 2) | R | ✅ |
-| 11 | `feat/genetic-algorithm` | `search/genetic_algorithm.py` (roulette) | T | Sel 20 |
+| 11 | `feat/genetic-algorithm` | `search/genetic_algorithm.py` (roulette) | T | ✅ |
 | 12 | `feat/cli` | `main.py` | L | Sel 20 |
 | 13 | `feat/multi-ship` | Generator multi-kapal + `multi.json` + test (Bonus 3) | R | ✅ |
 | 13b | `feat/visualization` (lanjutan) | Visualisasi multi-kapal (Bonus 3) | L | Sel 20 |
-| 14 | `feat/eta-objective` | Objective ETA (Bonus 1) | T | Sel 20 |
+| 14 | `feat/eta-objective` | Objective ETA (Bonus 1): `core/eta_objective.py`, `eta_experiments.py` | T | ✅ |
 | 15 | `exp/main-experiments` | `experiments.py`, `output/`, `notebooks/experiments.ipynb` | L | Sel 20 – Rab 21 |
 | 16 | `docs/report` | Laporan PDF + README final | L | Rab 21 |

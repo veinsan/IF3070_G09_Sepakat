@@ -65,6 +65,7 @@ IF3070_G09_Sepakat/
 ├── src/
 │   ├── main.py                     # CLI: jalankan satu algoritma pada satu instance
 │   ├── experiments.py              # jalankan seluruh eksperimen → output/
+│   ├── eta_experiments.py          # run Bonus 1 (objective ETA) → output/sa/ + output/summary_eta.md
 │   ├── config.py                   # parameter default algoritma (HC, SA, GA)
 │   ├── data/                       # instance persoalan (JSON)
 │   │   ├── main.json               # instance utama eksperimen (30 kendaraan, deck 10x20)
@@ -75,7 +76,8 @@ IF3070_G09_Sepakat/
 │   │   ├── generator.py            # generator instance random (seeded)
 │   │   ├── state.py                # State + occupancy grid + delta evaluation
 │   │   ├── objective.py            # objective (full recompute), penalty, laporan feasibility
-│   │   └── bounds.py               # upper bound + brute force instance kecil
+│   │   ├── bounds.py               # upper bound + brute force instance kecil
+│   │   └── eta_objective.py        # objective urgensi ETA (Bonus 1)
 │   ├── search/                     # algoritma local search
 │   │   ├── neighbors.py            # move, swap, rotate, random & full neighborhood
 │   │   ├── result.py               # format hasil run yang seragam
@@ -122,7 +124,7 @@ python src/main.py --view output/sa/main_seed1.json        # tampilkan & gambar 
 | `--max-iterations` | batas pengaman iterasi varian HC (Random Restart: per percobaan) |
 | `--iterations` | iterasi SA / generasi GA |
 | `--population` | ukuran populasi GA |
-| `--objective` | objective yang dioptimasi; saat ini hanya `fee` (objective ETA, Bonus 1, belum tersedia) |
+| `--objective` | objective yang dioptimasi; saat ini hanya `fee` (objective ETA, Bonus 1, dijalankan lewat `src/eta_experiments.py`) |
 | `--out` | folder output (default `output/`) |
 | `--no-plot`, `--no-save` | simpan JSON tanpa gambar / tidak menyimpan apa pun |
 | `--view JSON` | baca hasil run yang sudah disimpan tanpa menjalankan search lagi |
@@ -156,8 +158,18 @@ python src/experiments.py --quick --out tmp_quick   # uji coba cepat dengan smal
 
 Runner memakai fungsi yang sama dengan `src/main.py`, sehingga file hasilnya sama seperti run lewat CLI.
 Konfigurasi kontrol GA (populasi 100, iterasi 1000) dipakai bersama oleh tabel EXPERIMENTS §4.6 dan §4.7 dan
-hanya dijalankan sekali. Run Bonus 1 (ETA) dilewati selama objective ETA belum tersedia. `output/summary.md`
-berisi tabel per bagian EXPERIMENTS §4 dan info mesin, ditambah `summary_*.png`.
+hanya dijalankan sekali. Grup `eta` dilewati oleh runner ini; run Bonus 1 dijalankan terpisah (di bawah).
+`output/summary.md` berisi tabel per bagian EXPERIMENTS §4 dan info mesin, ditambah `summary_*.png`.
+
+### Bonus 1 (objective urgensi ETA)
+
+```bash
+python src/eta_experiments.py                # SA, seed 1, 2, 3 -> output/sa/main_eta_seed*.* + output/summary_eta.md
+python src/eta_experiments.py --no-plots     # tanpa gambar
+```
+
+Bobot tiap kendaraan `fee · (1 + 1/(eta + 1))` (DESIGN §8). `output/summary_eta.md` membandingkan run ETA dengan
+run objective fee pada seed yang sama (`output/sa/main_seed*.json`, harus sudah ada).
 
 Notebook `notebooks/experiments.ipynb` membaca `output/**/*.json` (tanpa menjalankan search) dan menampilkan
 tabel, plot per algoritma, state awal/akhir run terbaik, serta ringkasan antar-algoritma.
