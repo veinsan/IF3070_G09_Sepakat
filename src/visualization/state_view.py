@@ -65,8 +65,9 @@ def draw_state(problem: Problem, state_data: dict[str, Any], title: str = "") ->
         f"TIDAK feasible (overlap {evaluation.overlap_cells} sel, keluar batas {evaluation.out_of_bound_cells} sel, "
         f"kelebihan berat {evaluation.weight_units} unit)"
     )
-    header = f"objective = {evaluation.objective:g} | total fee = {evaluation.total_fee:g} | {status}"
-    fig.suptitle(f"{title}\n{header}" if title else header)
+    # status di baris sendiri: rincian pelanggaran state tidak feasible lebih lebar dari geladak kecil
+    header = f"objective = {evaluation.objective:g} | total fee = {evaluation.total_fee:g}\n{status}"
+    fig.suptitle(f"{title}\n{header}" if title else header, fontsize=10)
     return fig
 
 
