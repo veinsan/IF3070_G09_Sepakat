@@ -49,11 +49,10 @@ class TestPlannedRuns(unittest.TestCase):
         self.assertEqual({r.run_id for r in shared}, {f"main_pop100_iter1000_seed{s}" for s in SEEDS})
         self.assertTrue(all(r.instance.name == "multi.json" for r in runs if "multi" in r.groups))
 
-    def test_eta_is_skipped_until_available(self):
+    def test_eta_runs_match_eta_runner(self):
+        # nama file sama dengan yang ditulis src/eta_experiments.py (SA, instance turunan `main_eta`)
         eta = [r for r in planned_runs() if "eta" in r.groups]
-        self.assertEqual(len(eta), 3)
-        self.assertFalse(any(r.available for r in eta))
-        self.assertTrue(all("_eta_" in r.run_id for r in eta))
+        self.assertEqual([(r.algo, r.run_id) for r in eta], [("sa", f"main_eta_seed{s}") for s in SEEDS])
 
     def test_run_id_matches_cli(self):
         # nama file dari rencana harus sama dengan nama file yang ditulis main.save_run
@@ -68,7 +67,7 @@ class TestRunner(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             code, out = run_cli("--dry-run", "--out", tmp)
             self.assertEqual(code, 0)
-            self.assertIn("21 run wajib, 36 run dengan bonus (3 dilewati", out)
+            self.assertIn("21 run wajib, 36 run dengan bonus", out)
             listed = [line.split()[3] for line in out.splitlines()[1:]]
             algos = [line.split()[1] for line in out.splitlines()[1:]]
             self.assertEqual(len(listed), 36)
@@ -82,14 +81,16 @@ class TestRunner(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             code, _ = run_cli("--quick", "--no-plot", "--out", tmp)
             self.assertEqual(code, 0)
-            expected = sorted(f"{r.algo}/{r.run_id}.json" for r in planned_runs(quick=True) if r.available)
+            expected = sorted(f"{r.algo}/{r.run_id}.json" for r in planned_runs(quick=True))
             self.assertEqual(json_files(tmp), expected)
-            self.assertEqual(len(expected), 33)
+            self.assertEqual(len(expected), 36)
             summary = (Path(tmp) / "summary.md").read_text(encoding="utf-8")
-            # satu tabel per bagian EXPERIMENTS §4.1-§4.9
-            for k in range(1, 10):
+            # satu tabel per bagian EXPERIMENTS §4.1-§4.10
+            for k in range(1, 11):
                 self.assertIn(f"### 4.{k} ", summary)
-            self.assertIn("small_eta_seed1", summary)  # run ETA tercatat sebagai belum ada
+            self.assertNotIn("Belum ada", summary)
+            eta = json.loads((Path(tmp) / "sa" / "small_eta_seed1.json").read_text(encoding="utf-8"))
+            self.assertEqual((eta["instance"], eta["extra"]["objective"]), ("small_eta", "eta"))
             self.assertFalse(list(Path(tmp).rglob("*.png")))
 
     def test_quick_run_with_images_and_plots_only(self):
