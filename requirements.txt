@@ -4,5 +4,4 @@ nbclient>=0.10
 nbformat>=5.10
 fastapi>=0.159,<1
 uvicorn>=0.30,<1
-# Transport untuk regresi API melalui Starlette TestClient.
 httpx2>=2.16,<3
