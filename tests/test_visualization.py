@@ -111,7 +111,7 @@ class TestPlots(unittest.TestCase):
 
 
     def test_sa_adds_acceptance_plot(self):
-        # format SA (EXPERIMENTS §2): history.prob = [iterasi, e^(ΔE/T)], extra.stuck_count
+        # format SA (EXPERIMENTS §3): history.prob = [iterasi, e^(ΔE/T)], extra.stuck_count
         result = dict(self.steepest, algorithm="sa", extra={"stuck_count": 3})
         result["history"] = {"objective": self.steepest["history"]["objective"], "prob": [[1, 0.9], [5, 0.4]]}
         fig = plot_run(result)

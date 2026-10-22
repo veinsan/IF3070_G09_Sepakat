@@ -1,4 +1,4 @@
-"""Format hasil run yang seragam untuk semua algoritma (EXPERIMENTS §2).
+"""Format hasil run yang seragam untuk semua algoritma (EXPERIMENTS §3).
 
 Setiap algoritma (HC, SA, GA) mengembalikan `RunResult`. `to_dict()` menghasilkan dict siap-JSON yang
 disimpan ke `output/` dan menjadi satu-satunya sumber untuk plot, visualisasi, dan tabel laporan, sehingga

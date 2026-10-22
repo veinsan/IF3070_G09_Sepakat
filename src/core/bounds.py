@@ -1,4 +1,4 @@
-"""Acuan global optimum untuk analisis "seberapa dekat ke global optima" (DESIGN §6).
+"""Acuan global optimum untuk analisis "seberapa dekat ke global optima" (DESIGN §8).
 
 - `upper_bound()`: relaksasi 0/1 knapsack dua dimensi (total berat <= kapasitas, total luas <= luas
   geladak) yang mengabaikan geometri. Semua susunan feasible juga feasible di relaksasi ini, jadi

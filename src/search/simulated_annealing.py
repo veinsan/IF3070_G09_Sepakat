@@ -1,4 +1,4 @@
-"""Simulated Annealing (DESIGN §7.2).
+"""Simulated Annealing (DESIGN §6).
 
 Sumber kuliah: M. L. Khodra, "Beyond Classical Search: Simulated Annealing", 2021,
 https://www.youtube.com/watch?v=AdhG7HnhYrk (referensi [4] spesifikasi).
@@ -99,7 +99,7 @@ def simulated_annealing(
     bila pencarian belum mengunjungi state feasible. Tidak ada perbaikan tersembunyi setelah loop.
     `history["objective"]` mencatat objective state current di setiap iterasi (indeks 0 = state awal).
     `history["prob"]` berisi pasangan `[iterasi, e^(ΔE/T)]` hanya untuk iterasi dengan ΔE < 0, karena untuk
-    ΔE >= 0 nilainya selalu 1 dan tidak informatif (DESIGN §7.2).
+    ΔE >= 0 nilainya selalu 1 dan tidak informatif (DESIGN §6).
 
     Setiap `stuck_window` iterasi, neighborhood current diperiksa sampai ditemukan perbaikan atau habis.
     Satu episode stuck = rangkaian checkpoint tanpa neighbor membaik, dihitung hanya pada checkpoint

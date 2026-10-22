@@ -1,4 +1,4 @@
-"""Genetic Algorithm dengan roulette wheel selection (DESIGN §7.3).
+"""Genetic Algorithm dengan roulette wheel selection (DESIGN §7).
 
 Sumber kuliah: M. L. Khodra, "Beyond Classical Search: Genetic Algorithm", 2021,
 https://www.youtube.com/watch?v=aI41TGo9J9c (referensi [5] spesifikasi).
@@ -10,7 +10,7 @@ https://www.youtube.com/watch?v=aI41TGo9J9c (referensi [5] spesifikasi).
 - Selection: roulette wheel eksplisit. Cumulative sum fitness dibuat sekali per generasi, lalu setiap spin
   mengambil r ~ U(0, Σfit) dan memilih individu pertama dengan cumsum ≥ r (`bisect`).
 - Crossover: one-point pada index kendaraan dengan peluang `p_c`, menghasilkan dua anak.
-- Mutation: dengan peluang `p_m`, terapkan satu random neighbor (move/swap/rotate, DESIGN §5) ke anak.
+- Mutation: dengan peluang `p_m`, terapkan satu random neighbor (move/swap/rotate, DESIGN §4) ke anak.
 - Elitism: `elitism` individu terbaik dibawa langsung ke generasi berikutnya (heuristik tambahan).
 
 Parameter default ada di `config.py` (bagian Genetic Algorithm). Sesuai spesifikasi, eksperimen hanya
@@ -83,7 +83,7 @@ def crossover(a: State, b: State, cut: int) -> tuple[State, State]:
 
 
 def mutate(state: State, rng: random.Random) -> None:
-    """Terapkan satu random neighbor (DESIGN §5) ke `state` secara in-place."""
+    """Terapkan satu random neighbor (DESIGN §4) ke `state` secara in-place."""
     state.apply(random_neighbor(state, rng))
 
 

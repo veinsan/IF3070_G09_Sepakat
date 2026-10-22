@@ -97,7 +97,7 @@ class TestBruteForce(unittest.TestCase):
             self.assertGreaterEqual(upper_bound(problem), optimum.objective)
 
     def test_small_instance_reference_values(self):
-        """Nilai acuan small.json yang dipakai di laporan (DESIGN §6)."""
+        """Nilai acuan small.json yang dipakai di laporan (DESIGN §8)."""
         problem = load_problem(DATA / "small.json")
         self.assertEqual(brute_force(problem).objective, 287)
         self.assertEqual(upper_bound(problem), 298)

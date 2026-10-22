@@ -3,5 +3,5 @@
 import sys
 from pathlib import Path
 
-# kode dijalankan dengan `src/` sebagai root import (DESIGN §10)
+# kode dijalankan dengan `src/` sebagai root import (DESIGN §9)
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))

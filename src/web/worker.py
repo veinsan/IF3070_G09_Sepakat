@@ -11,7 +11,7 @@ from search.trace import TraceRecorder
 
 def run_worker(spec: dict[str, Any], events, max_frames: int) -> None:
     def publish(frames):
-        # Intermediate updates may be skipped; the terminal message always includes the full trace.
+        # Update perantara boleh terlewat; pesan terminal selalu memuat trace lengkap.
         try:
             events.put_nowait({"kind": "progress", "frames": list(frames)})
         except Full:
@@ -30,6 +30,6 @@ def run_worker(spec: dict[str, Any], events, max_frames: int) -> None:
     except Exception as exc:
         events.put({"kind": "failed", "error": f"{type(exc).__name__}: {exc}"[:500]})
     finally:
-        # Flush the terminal message before exiting; the parent continues draining while we exit.
+        # Kirim pesan terminal sebelum keluar; parent tetap membaca antrean selama proses berhenti.
         events.close()
         events.join_thread()

@@ -1,4 +1,4 @@
-"""State persoalan beserta delta evaluation (DESIGN §3–§4).
+"""State persoalan beserta delta evaluation (DESIGN §1–§3).
 
 State menyimpan satu `Placement` per kendaraan (index sama dengan `problem.vehicles`) dan agregat yang
 diperbarui secara incremental setiap kali satu kendaraan dipindah:
@@ -103,8 +103,8 @@ class State:
 
     def delta(self, changes: Sequence[Change]) -> float:
         """Selisih objective jika `changes` diterapkan. State tidak berubah setelah pemanggilan."""
-        # ponytail: apply lalu revert, biaya 2x luas kendaraan per perubahan. Kalau Steepest Ascent terlalu
-        # lambat, hitung skor kandidat posisi langsung dari occupancy tanpa mutasi.
+        # apply lalu revert: biaya 2x luas kendaraan per perubahan, tetapi tetap memakai satu jalur evaluasi
+        # yang sama dengan apply() sehingga delta selalu konsisten dengan objective penuh.
         before = self.objective
         undo = self.apply(changes)
         after = self.objective
@@ -124,7 +124,7 @@ class State:
         clone._unit = self._unit
         return clone
 
-    # --- serialisasi (format output JSON, EXPERIMENTS §2) ----------------------------------
+    # --- serialisasi (format output JSON, EXPERIMENTS §3) ----------------------------------
 
     def to_dict(self) -> dict:
         """Pemetaan semua kendaraan (di dalam dan di luar) + pemetaan sel tiap geladak (`decks`).

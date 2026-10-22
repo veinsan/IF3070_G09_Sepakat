@@ -22,7 +22,7 @@ class TestSteepestAscent(unittest.TestCase):
                 result = steepest_ascent(SMALL, seed=seed)
                 final = result.final_state
                 self.assertEqual(result.extra["stop_reason"], "local_optimum")
-                self.assertTrue(final.is_feasible)  # properti penalty DESIGN §4
+                self.assertTrue(final.is_feasible)  # properti penalty DESIGN §3
                 self.assertTrue(all(final.delta(move) <= EPS for move in all_neighbors(final)))
                 self.assertLessEqual(final.objective, SMALL_OPTIMUM)
 

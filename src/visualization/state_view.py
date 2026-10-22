@@ -2,8 +2,8 @@
 
 Spesifikasi meminta state dan visualisasi menunjukkan (1) keadaan semua kendaraan di dalam maupun di luar,
 (2) keadaan geladak kapal, dan (3) value state tersebut. Modul ini menggambar ketiganya dari dict state hasil
-`State.to_dict()` (field `initial_state` / `final_state` di JSON hasil run, EXPERIMENTS §2), sehingga gambar
-bisa dibuat ulang dari `output/` tanpa menjalankan search lagi (DESIGN §10).
+`State.to_dict()` (field `initial_state` / `final_state` di JSON hasil run, EXPERIMENTS §3), sehingga gambar
+bisa dibuat ulang dari `output/` tanpa menjalankan search lagi (DESIGN §9).
 
 - `draw_state`        : satu Figure matplotlib, satu panel per kapal (multi-kapal, Bonus 3) + daftar kendaraan
                         di luar kapal. Sel overlap diarsir merah, bagian kendaraan yang keluar geladak digambar
@@ -120,7 +120,7 @@ def _draw_deck(ax, state: State, s: int, used_weight: float) -> None:
                  f"{used_weight:g}/{ship.max_capacity:g}{over}", fontsize=9)
     right, bottom = _extent(state, s)
     ax.set_xlim(-1, right + 1)
-    # y ke bawah: anchor (x, y) = sel kiri-atas (DESIGN §3)
+    # y ke bawah: anchor (x, y) = sel kiri-atas (DESIGN §2)
     ax.set_ylim(bottom + 1, -1)
     ax.set_aspect("equal")
     # nomor kolom/baris di tengah sel, sumbu x di atas supaya dekat dengan anchor y = 0

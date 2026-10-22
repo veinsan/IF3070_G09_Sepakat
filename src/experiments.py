@@ -260,7 +260,7 @@ def _ga_rows(results: Sequence[Result], key: str) -> list[list[Any]]:
 
 
 def summary_sections(pairs: Sequence[tuple[Run, Result]]) -> list[str]:
-    """Tabel markdown dengan kolom yang sama seperti EXPERIMENTS §4, siap disalin ke dokumen."""
+    """Tabel markdown dengan kolom yang sama seperti summary.md §4, siap disalin ke dokumen."""
 
     def of(group: str, algo: str | None = None) -> list[Result]:
         return [res for run, res in pairs if group in run.groups and (algo is None or run.algo == algo)]
@@ -417,7 +417,7 @@ def eta_comparison(pairs: Sequence[tuple[Run, Result]]) -> list[str]:
 
 def write_summary(pairs: Sequence[tuple[Run, Result]], out_dir: Path, missing: Sequence[Run] = (),
                   plots: bool = True) -> Path:
-    """Tulis `<out_dir>/summary.md` (tabel per bagian EXPERIMENTS §4 + info mesin) dan `summary_*.png`."""
+    """Tulis `<out_dir>/summary.md` (tabel per bagian §4 + info mesin) dan `summary_*.png`."""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     lines = [

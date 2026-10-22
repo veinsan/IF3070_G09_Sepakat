@@ -327,7 +327,7 @@ def create_app(*, timeout_s: float = LIMITS["timeout_s"], history_size: int = LI
 
     @app.middleware("http")
     async def local_boundary(request: Request, call_next):
-        # Host checking also prevents browser DNS rebinding against the local service.
+        # Pemeriksaan Host juga mencegah DNS rebinding dari browser terhadap layanan lokal.
         try:
             host = urlsplit("http://" + request.headers.get("host", "")).hostname
         except ValueError:

@@ -1,4 +1,4 @@
-"""Neighbor move sesuai spesifikasi (DESIGN §5).
+"""Neighbor move sesuai spesifikasi (DESIGN §4).
 
 Satu `Move` adalah daftar `Change` yang bisa langsung diberikan ke `State.delta()` / `State.apply()`:
 

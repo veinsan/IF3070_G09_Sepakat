@@ -109,7 +109,7 @@ class TestDeltaEvaluation(unittest.TestCase):
                     self.assertEqual(state.is_feasible, full.is_feasible)
 
     def test_infeasible_state_always_has_improving_removal(self):
-        """Properti DESIGN §4: dari state infeasible, ada kendaraan yang jika dikeluarkan menaikkan f."""
+        """Properti DESIGN §3: dari state infeasible, ada kendaraan yang jika dikeluarkan menaikkan f."""
         for problem in (load_problem(DATA / "main.json"), MULTI):
             rng = random.Random(7)
             for _ in range(300):

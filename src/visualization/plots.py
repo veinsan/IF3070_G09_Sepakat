@@ -1,4 +1,4 @@
-"""Plot hasil eksperimen dari dict hasil run (`RunResult.to_dict()`, EXPERIMENTS §2).
+"""Plot hasil eksperimen dari dict hasil run (`RunResult.to_dict()`, EXPERIMENTS §3).
 
 Plot wajib menurut spesifikasi (bagian Cakupan) dan sumber datanya:
 

@@ -1,4 +1,4 @@
-"""Objective function dengan penalty (DESIGN §4) dan evaluasi penuh (full recompute).
+"""Objective function dengan penalty (DESIGN §3) dan evaluasi penuh (full recompute).
 
     f(s) = total_fee - P * (overlap_cells + out_of_bound_cells + weight_units)
 

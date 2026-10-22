@@ -1,4 +1,4 @@
-"""Hill-Climbing: Steepest Ascent, Sideways Move, Random Restart, dan Stochastic (DESIGN §7.1).
+"""Hill-Climbing: Steepest Ascent, Sideways Move, Random Restart, dan Stochastic (DESIGN §5).
 
 Semua varian mengikuti salindia kuliah. Sumber: M. L. Khodra, "Beyond Classical Search: Hill-climbing
 Search", 2021, https://www.youtube.com/watch?v=L0b0CN3Fds8 (referensi [3] spesifikasi).
@@ -113,7 +113,7 @@ def _climb(state: State, rng: random.Random, max_iterations: int, max_sideways: 
                 climb.stop_reason = "max_sideways"
                 break
     if state.is_feasible and state.objective >= incumbent.state.objective:
-        incumbent.state = state  # preserve the ordinary climb endpoint on a feasible plateau
+        incumbent.state = state  # pertahankan endpoint climb biasa pada plateau feasible
     return climb
 
 

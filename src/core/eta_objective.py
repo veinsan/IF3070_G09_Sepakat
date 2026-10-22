@@ -5,14 +5,14 @@ Setiap kendaraan bernilai bobot urgensi, bukan shipping fee saja:
     w_i = fee_i · (1 + 1/(eta_i + 1))
 
 Makin kecil ETA (makin mendesak), makin besar bobotnya: eta = 0 bernilai 2 · fee, eta besar mendekati fee.
-`+ 1` di penyebut menjaga pembagian nol karena `eta` boleh 0 (DESIGN §2). Tidak ada variabel baru, hanya
+`+ 1` di penyebut menjaga pembagian nol karena `eta` boleh 0 (DESIGN §1). Tidak ada variabel baru, hanya
 `shipping_fee` dan `eta` yang sudah ada di input.
 
 Objective ETA dipasang dengan mengganti `shipping_fee` tiap kendaraan menjadi w_i pada salinan instance
 (`eta_problem`), sehingga `State`, delta evaluation, penalty, upper bound, dan format hasil tidak berubah:
 
 - P = max w_i + 1 (`penalty_coefficient` pada instance turunan), sesuai syarat DESIGN §8, jadi properti
-  "state infeasible selalu punya removal yang memperbaiki" (DESIGN §4) tetap berlaku.
+  "state infeasible selalu punya removal yang memperbaiki" (DESIGN §3) tetap berlaku.
 - `upper_bound` dan `gap_ub` otomatis memakai bobot yang sama dengan objective yang dioptimasi.
 - Semua algoritma (HC, SA, GA) bisa dipakai tanpa perubahan kode.
 
