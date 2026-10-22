@@ -3,3 +3,5 @@ __pycache__/
 .ipynb_checkpoints/
 *.py[cod]
 output/runs/
+ref/
+docs/laporan/referensi/
