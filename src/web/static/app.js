@@ -2,7 +2,7 @@
 
 const $ = (id) => document.getElementById(id);
 const number = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 });
-const fmt = (value) => Number.isFinite(value) ? number.format(value) : "–";
+const fmt = (value) => Number.isFinite(value) ? number.format(value) : "-";
 const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 const state = {
   bootstrap: null, upload: null, runs: new Map(), completed: [], activeId: null, viewedId: null,
@@ -22,6 +22,7 @@ const shownProblem = () => viewed()?.problem || draftProblem();
 const frames = () => viewed()?.frames || [];
 const algorithmLabel = (id) => state.bootstrap?.algorithms.find((item) => item.id === id)?.label || id;
 const stepName = (run = viewed()) => run?.algorithm === "ga" ? "Generasi" : "Iterasi";
+const datasetLabel = (problem) => state.bootstrap?.datasets.find((item) => item.problem.name === problem.name)?.label || problem.name;
 const unitName = (run = viewed()) => run?.objective === "eta" ? "unit urgensi ETA" : "juta Rp";
 
 function errorText(error) {
@@ -93,7 +94,7 @@ function renderInput() {
   if (!problem) return;
   const area = problem.ships.reduce((total, ship) => total + ship.width * ship.length, 0);
   const capacity = problem.ships.reduce((total, ship) => total + ship.max_capacity, 0);
-  $("input-summary").innerHTML = `<strong>${esc(problem.name)}</strong>${fmt(problem.ships.length)} kapal · ${fmt(problem.vehicles.length)} kendaraan<br>${fmt(area)} sel · kapasitas gabungan ${fmt(capacity)} unit berat${state.upload ? "<br>Masukan dari unggahan JSON" : ""}`;
+  $("input-summary").innerHTML = `<strong>${esc(datasetLabel(problem))}</strong>${fmt(problem.ships.length)} kapal, ${fmt(problem.vehicles.length)} kendaraan<br>${fmt(area)} sel, kapasitas gabungan ${fmt(capacity)} unit berat${state.upload ? "<br>Masukan dari unggahan JSON" : ""}`;
   if (!state.viewedId) { state.ship = 0; state.vehicle = null; render(); }
 }
 
@@ -266,7 +267,7 @@ function renderActiveStatus() {
       $("run-progress").max = progress.target;
       $("run-progress").value = Math.min(progress.step || 0, progress.target);
     } else $("run-progress").removeAttribute("value");
-    $("progress-text").textContent = Number.isFinite(progress.step) ? `${stepName(active)} teramati ${fmt(progress.step)}${progress.target ? ` / batas ${fmt(progress.target)}` : ""}${active.id !== state.viewedId ? " · proses lain sedang ditampilkan" : ""}` : "Menunggu snapshot pertama…";
+    $("progress-text").textContent = Number.isFinite(progress.step) ? `${stepName(active)} teramati ${fmt(progress.step)}${progress.target ? ` / batas ${fmt(progress.target)}` : ""}${active.id !== state.viewedId ? ". Proses lain sedang ditampilkan" : ""}` : "Menunggu snapshot pertama…";
   }
 }
 
@@ -287,14 +288,13 @@ function render() {
   const problem = shownProblem();
   if (!problem) return;
   const run = viewed();
-  $("run-context").textContent = run ? `${algorithmLabel(run.algorithm)} · seed ${run.seed}` : "Pratinjau masukan";
-  $("run-title").textContent = problem.name;
-  $("run-subtitle").textContent = run ? `${run.objective === "eta" ? "Objective urgensi ETA" : "Objective pendapatan"} · ${fmt(problem.ships.length)} kapal · ${fmt(problem.vehicles.length)} kendaraan${run.result ? ` · ${fmt(run.result.duration_s)} dtk pencarian` : ""}` : `${fmt(problem.ships.length)} kapal · ${fmt(problem.vehicles.length)} kendaraan · belum ada hasil pencarian`;
+  $("run-title").textContent = run ? algorithmLabel(run.algorithm) : "Pratinjau data";
+  $("run-subtitle").textContent = `Data ${datasetLabel(problem)}${run ? `, seed ${run.seed}${run.objective === "eta" ? ", objective ETA" : ""}` : ""}, ${fmt(problem.ships.length)} kapal, ${fmt(problem.vehicles.length)} kendaraan${run?.result ? `, ${fmt(run.result.duration_s)} dtk` : ""}`;
   $("status-label").textContent = run ? statusText[run.status] || run.status : "Belum dijalankan";
   $("status-label").dataset.status = run?.status || "preview";
   if (run?.error) showError("job-error", run.error);
   if (state.ship >= problem.ships.length) state.ship = 0;
-  const shipOptions = problem.ships.map((ship, index) => `<option value="${index}">${esc(ship.id)} · ${ship.width} × ${ship.length}</option>`).join("");
+  const shipOptions = problem.ships.map((ship, index) => `<option value="${index}">${esc(ship.id)} (${ship.width} × ${ship.length})</option>`).join("");
   if ($("ship-select").innerHTML !== shipOptions) $("ship-select").innerHTML = shipOptions;
   $("ship-select").value = String(state.ship);
   $("ship-select").disabled = problem.ships.length < 2;
@@ -307,7 +307,7 @@ function render() {
   $("compare-button").setAttribute("aria-pressed", String(state.compare));
   $("compare-button").textContent = state.compare ? "Kembali ke snapshot" : "Bandingkan awal / akhir";
   const frame = selectedFrame();
-  $("frame-caption").textContent = state.compare ? "Awal aktual vs hasil akhir feasible" : frame ? `${stepName()} ${fmt(frame.step)} · ${state.view === "best" ? "terbaik feasible" : "state pencarian"}` : run ? "Menunggu snapshot pencarian" : "Pratinjau masukan · belum dijalankan";
+  $("frame-caption").textContent = state.compare ? "Awal aktual vs hasil akhir feasible" : frame ? `${stepName()} ${fmt(frame.step)}, ${state.view === "best" ? "terbaik feasible" : "state pencarian"}` : run ? "Menunggu snapshot pencarian" : "Pratinjau masukan, belum dijalankan";
   renderDeck();
   renderSummary();
   renderPlayback();
@@ -319,7 +319,7 @@ function render() {
   const expired = !!run?.result && state.retainedIds && !state.retainedIds.has(run.id);
   $("download-json").disabled = !run?.result || expired;
   $("download-png").disabled = !run?.result || expired;
-  if (expired) $("run-subtitle").textContent += " · ekspor sudah kedaluwarsa";
+  if (expired) $("run-subtitle").textContent += ", ekspor sudah kedaluwarsa";
 }
 
 function deckSVG(problem, view, prefix, title) {
@@ -341,7 +341,7 @@ function deckSVG(problem, view, prefix, title) {
   for (let y = 0; y <= ship.length; y++) grid += `<line class="grid-line" x1="0" y1="${y}" x2="${ship.width}" y2="${y}"/>`;
   const vehicles = items.map((item) => {
     const out = item.x < 0 || item.y < 0 || item.x + item.width > ship.width || item.y + item.height > ship.length;
-    return `<g class="vehicle${state.vehicle === item.index ? " is-selected" : ""}" role="button" tabindex="0" data-vehicle="${item.index}" data-source="${prefix}" aria-label="${esc(item.vehicle.id)}, kapal ${esc(ship.id)}, x ${item.x}, y ${item.y}, orientasi ${item.orientation}${out ? ", keluar batas" : ""}" aria-pressed="${state.vehicle === item.index}"><title>${esc(item.vehicle.id)} · ${item.width} × ${item.height}${out ? " · keluar batas" : ""}</title><rect class="body" x="${item.x + .04}" y="${item.y + .04}" width="${Math.max(.1, item.width - .08)}" height="${Math.max(.1, item.height - .08)}" rx=".1"/><text x="${item.x + item.width / 2}" y="${item.y + item.height / 2}" dominant-baseline="central" text-anchor="middle" font-size="${Math.min(.65, item.width / Math.max(2, String(item.vehicle.id).length) * 1.3, item.height * .4)}">${esc(item.vehicle.id)}</text>${out ? `<rect x="${item.x}" y="${item.y}" width="${item.width}" height="${item.height}" fill="url(#${prefix}-violation)" pointer-events="none"/>` : ""}</g>`;
+    return `<g class="vehicle${state.vehicle === item.index ? " is-selected" : ""}" role="button" tabindex="0" data-vehicle="${item.index}" data-source="${prefix}" aria-label="${esc(item.vehicle.id)}, kapal ${esc(ship.id)}, x ${item.x}, y ${item.y}, orientasi ${item.orientation}${out ? ", keluar batas" : ""}" aria-pressed="${state.vehicle === item.index}"><title>${esc(item.vehicle.id)}, ${item.width} × ${item.height}${out ? ", keluar batas" : ""}</title><rect class="body" x="${item.x + .04}" y="${item.y + .04}" width="${Math.max(.1, item.width - .08)}" height="${Math.max(.1, item.height - .08)}" rx=".1"/><text x="${item.x + item.width / 2}" y="${item.y + item.height / 2}" dominant-baseline="central" text-anchor="middle" font-size="${Math.min(.65, item.width / Math.max(2, String(item.vehicle.id).length) * 1.3, item.height * .4)}">${esc(item.vehicle.id)}</text>${out ? `<rect x="${item.x}" y="${item.y}" width="${item.width}" height="${item.height}" fill="url(#${prefix}-violation)" pointer-events="none"/>` : ""}</g>`;
   }).join("");
   let overlaps = "";
   for (let a = 0; a < items.length; a++) for (let b = a + 1; b < items.length; b++) {
@@ -387,7 +387,7 @@ function syncScene() {
   $("scene-note").textContent = state.compare
     ? "Perbandingan awal / akhir memakai 2D. Tutup perbandingan untuk kembali ke mode sebelumnya."
     : enabled
-      ? "3D ilustratif · tanpa constraint tinggi. Drag: orbit · scroll: zoom · klik: inspeksi."
+      ? "3D ilustratif, tanpa constraint tinggi. Drag untuk orbit, scroll untuk zoom, klik untuk inspeksi."
       : "Grid 2D adalah acuan constraint. Pilih 3D untuk menginspeksi susunan dari sudut lain.";
   for (const id of ["camera-reset", "camera-top", "camera-zoom-in", "camera-zoom-out", "camera-orbit-left", "camera-orbit-right"]) {
     $(id).disabled = !enabled || !state.scene;
@@ -445,7 +445,7 @@ function renderDeck() {
   if (syncScene()) return;
   const focus = canvas.contains(document.activeElement) ? { vehicle: document.activeElement.dataset.vehicle, source: document.activeElement.dataset.source } : null;
   if (state.compare && list.length) {
-    canvas.innerHTML = `<figure class="deck-figure"><figcaption>Awal · ${stepName()} ${fmt(list[0].step)}<br>Objective ${fmt(list[0].current.objective)} ${esc(unitName())} · fee asli ${fmt(originalFee(problem, list[0].current))}<br>${list[0].current.feasible ? "Feasible" : "Tidak feasible"}</figcaption>${deckSVG(problem, list[0].current, "initial", "Penempatan awal")}</figure><figure class="deck-figure"><figcaption>Akhir · ${stepName()} ${fmt(list.at(-1).step)} · terbaik feasible<br>Objective ${fmt(list.at(-1).best.objective)} ${esc(unitName())} · fee asli ${fmt(originalFee(problem, list.at(-1).best))}<br>${list.at(-1).best.feasible ? "Feasible" : "Tidak feasible"}</figcaption>${deckSVG(problem, list.at(-1).best, "final", "Penempatan akhir")}</figure>`;
+    canvas.innerHTML = `<figure class="deck-figure"><figcaption>Awal, ${stepName().toLowerCase()} ${fmt(list[0].step)}<br>Objective ${fmt(list[0].current.objective)} ${esc(unitName())}, fee asli ${fmt(originalFee(problem, list[0].current))}<br>${list[0].current.feasible ? "Feasible" : "Tidak feasible"}</figcaption>${deckSVG(problem, list[0].current, "initial", "Penempatan awal")}</figure><figure class="deck-figure"><figcaption>Akhir, ${stepName().toLowerCase()} ${fmt(list.at(-1).step)}, terbaik feasible<br>Objective ${fmt(list.at(-1).best.objective)} ${esc(unitName())}, fee asli ${fmt(originalFee(problem, list.at(-1).best))}<br>${list.at(-1).best.feasible ? "Feasible" : "Tidak feasible"}</figcaption>${deckSVG(problem, list.at(-1).best, "final", "Penempatan akhir")}</figure>`;
   } else canvas.innerHTML = deckSVG(problem, selectedView(), "deck", selectedView() ? "Snapshot terpilih" : "Pratinjau kosong");
   if (focus?.vehicle !== undefined) canvas.querySelector(`[data-vehicle="${focus.vehicle}"][data-source="${focus.source}"]`)?.focus({ preventScroll: true });
 }
@@ -462,8 +462,8 @@ function renderSummary() {
     $("ship-capacities").innerHTML = problem.ships.map((ship) => `<span>${esc(ship.id)}: kapasitas ${fmt(ship.max_capacity)} unit berat</span>`).join("");
     return;
   }
-  const violations = `${fmt(view.overlap_cells)} sel tumpang tindih · ${fmt(view.out_of_bound_cells)} sel keluar batas · ${fmt(view.weight_units)} unit penalti berat`;
-  notice.textContent = `${state.compare ? "Ringkasan hasil akhir. " : ""}${view.feasible ? "Feasible: semua kendala terpenuhi." : `Tidak feasible: ${violations}.`}`;
+  const violations = `${fmt(view.overlap_cells)} sel tumpang tindih, ${fmt(view.out_of_bound_cells)} sel keluar batas, ${fmt(view.weight_units)} unit penalti berat`;
+  notice.textContent = `${state.compare ? "Ringkasan hasil akhir. " : ""}${view.feasible ? "Feasible: semua constraint terpenuhi." : `Tidak feasible: ${violations}.`}`;
   if ((state.compare || state.view === "best") && viewed()?.result?.extra.empty_baseline_used) {
     notice.textContent = "Belum ada kandidat feasible yang ditemukan. Hasil ini memakai baseline kapal kosong, bukan keberhasilan optimasi.";
   }
@@ -474,10 +474,10 @@ function renderSummary() {
     ["Objective (setelah penalti)", fmt(view.objective), unitName()],
     ["Pendapatan asli", fmt(originalFee(problem, view)), "juta Rp"],
     ["Kendaraan dimuat", `${fmt(loaded)} / ${fmt(problem.vehicles.length)}`, "kendaraan"],
-    ["Sel terisi gabungan", `${fmt(100 * occupied / area)}%`, `${fmt(occupied)} / ${fmt(area)} sel`],
+    ["Luas geladak terisi", `${fmt(100 * occupied / area)}%`, `${fmt(occupied)} / ${fmt(area)} sel`],
   ];
   $("state-summary").innerHTML = metrics.map(([label, value, unit]) => `<dl><dt>${esc(label)}</dt><dd>${esc(value)} <small>${esc(unit)}</small></dd></dl>`).join("");
-  $("ship-capacities").innerHTML = problem.ships.map((ship, index) => `<span class="${view.used_weight[index] > ship.max_capacity + 1e-9 ? "overweight" : ""}">${esc(ship.id)}: ${fmt(view.used_weight[index])} / ${fmt(ship.max_capacity)} unit berat${view.used_weight[index] > ship.max_capacity + 1e-9 ? " · kapasitas terlampaui" : ""}</span>`).join("");
+  $("ship-capacities").innerHTML = problem.ships.map((ship, index) => `<span class="${view.used_weight[index] > ship.max_capacity + 1e-9 ? "overweight" : ""}">${esc(ship.id)}: ${fmt(view.used_weight[index])} / ${fmt(ship.max_capacity)} unit berat${view.used_weight[index] > ship.max_capacity + 1e-9 ? ", kapasitas terlampaui" : ""}</span>`).join("");
 }
 
 function renderPlayback() {
@@ -488,7 +488,7 @@ function renderPlayback() {
   $("frame-range").value = String(Math.max(0, index));
   $("frame-range").disabled = disabled;
   $("frame-range").setAttribute("aria-valuetext", list.length ? `${stepName()} ${list[index].step}, snapshot ${index + 1} dari ${list.length}` : "Belum ada snapshot");
-  $("timeline-label").textContent = list.length ? `Snapshot ${index + 1} / ${list.length} · ${stepName().toLowerCase()} ${fmt(list[index].step)}${state.followLatest && viewed()?.status === "running" ? " · mengikuti terbaru" : ""}` : "Belum ada snapshot";
+  $("timeline-label").textContent = list.length ? `Snapshot ${index + 1} / ${list.length}, ${stepName().toLowerCase()} ${fmt(list[index].step)}${state.followLatest && viewed()?.status === "running" ? ", mengikuti terbaru" : ""}` : "Belum ada snapshot";
   $("reset-frame").disabled = disabled || index <= 0;
   $("previous-frame").disabled = disabled || index <= 0;
   $("next-frame").disabled = disabled || index >= list.length - 1;
@@ -550,7 +550,7 @@ function renderInspection() {
   const vehicleOptions = '<option value="">Pilih kendaraan…</option>' + problem.vehicles.map((vehicle, index) => {
     const position = view?.positions[index];
     const location = position ? problem.ships[position[0]].id : view ? "di luar kapal" : "belum ditempatkan";
-    return `<option value="${index}">${esc(vehicle.id)} · ${esc(location)}</option>`;
+    return `<option value="${index}">${esc(vehicle.id)} (${esc(location)})</option>`;
   }).join("");
   if ($("vehicle-select").innerHTML !== vehicleOptions) $("vehicle-select").innerHTML = vehicleOptions;
   $("vehicle-select").value = state.vehicle === null ? "" : String(state.vehicle);
@@ -559,12 +559,12 @@ function renderInspection() {
   if (outsideFocus !== undefined) $("outside-list").querySelector(`[data-outside="${outsideFocus}"]`)?.focus({ preventScroll: true });
   const vehicle = problem.vehicles[state.vehicle];
   if (!vehicle) {
-    $("vehicle-detail").innerHTML = "<p class=\"muted\">Pilih kendaraan di geladak atau daftar kendaraan untuk melihat ukuran, fee, berat, dan penempatannya.</p>";
+    $("vehicle-detail").innerHTML = "<p class=\"muted\">Pilih kendaraan untuk melihat ukuran, fee, berat, dan penempatannya.</p>";
     return;
   }
   const position = view?.positions[state.vehicle];
   const facts = [["Ukuran asli", `${vehicle.width} × ${vehicle.length} sel`], ["Berat", `${fmt(vehicle.weight)} unit`], ["Fee asli", `${fmt(vehicle.shipping_fee)} juta Rp`], ["ETA", `${fmt(vehicle.eta)} hari`], ["Bobot urgensi ETA", `${fmt(vehicle.shipping_fee * (1 + 1 / (vehicle.eta + 1)))} unit`], ["Orientasi", position ? `${position[3]}${position[3] === "V" ? " (diputar 90°)" : " (asli)"}` : "Belum ditempatkan"]];
-  $("vehicle-detail").innerHTML = `<h3>${esc(vehicle.id)}</h3><dl class="vehicle-facts">${facts.map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join("")}</dl><p class="placement-note">${position ? `Kapal ${esc(problem.ships[position[0]].id)} · posisi kiri atas (${position[1]}, ${position[2]}).` : view ? "Tidak dimuat ke kapal pada state ini." : "Belum ada penempatan. Jalankan simulasi untuk mengamati pencarian."}${state.compare ? ` Inspeksi mengacu pada state ${state.inspectionSource === "initial" ? "awal" : "akhir"} yang dipilih.` : ""}</p>`;
+  $("vehicle-detail").innerHTML = `<h3>${esc(vehicle.id)}</h3><dl class="vehicle-facts">${facts.map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join("")}</dl><p class="placement-note">${position ? `Kapal ${esc(problem.ships[position[0]].id)}, posisi kiri atas (${position[1]}, ${position[2]}).` : view ? "Tidak dimuat ke kapal pada state ini." : "Belum ada penempatan. Jalankan simulasi untuk mengamati pencarian."}${state.compare ? ` Inspeksi mengacu pada state ${state.inspectionSource === "initial" ? "awal" : "akhir"} yang dipilih.` : ""}</p>`;
 }
 
 function thinPoints(points, max = 700) {
@@ -641,7 +641,7 @@ function renderChart() {
   }).join("");
   const cursor = selectedFrame();
   const cursorLine = cursor ? `<line class="chart-cursor" x1="${x(cursor.step)}" x2="${x(cursor.step)}" y1="${top}" y2="${height - bottom}"/><text class="chart-text" x="${Math.min(width - 80, Math.max(left + 5, x(cursor.step) + 5))}" y="14">${stepName()} ${fmt(cursor.step)}</text>` : "";
-  $("convergence-chart").innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="convergence-title convergence-description"><title id="convergence-title">Objective terhadap ${stepName().toLowerCase()}</title><desc id="convergence-description">${esc(series.map((item) => item.label).join(", "))}. Garis vertikal menunjukkan snapshot terpilih. Nilai lengkap tersedia dalam tabel data.</desc>${axes}${paths}${cursorLine}<text class="chart-text" x="${width - right}" y="${height - 1}" text-anchor="end">${stepName()} · ${esc(unitName())}</text></svg>`;
+  $("convergence-chart").innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="convergence-title convergence-description"><title id="convergence-title">Objective terhadap ${stepName().toLowerCase()}</title><desc id="convergence-description">${esc(series.map((item) => item.label).join(", "))}. Garis vertikal menunjukkan snapshot terpilih. Nilai lengkap tersedia dalam tabel data.</desc>${axes}${paths}${cursorLine}<text class="chart-text" x="${width - right}" y="${height - 1}" text-anchor="end">${stepName()} (sumbu x), ${esc(unitName())} (sumbu y)</text></svg>`;
   const full = !!run.result?.history;
   $("chart-note").textContent = full ? `Riwayat aktual lengkap tersedia di tabel; kurva diringkas dengan mempertahankan ekstrem tiap kelompok bila melebihi 700 titik. Sumbu vertikal: ${unitName()}.` : `Selama proses: hanya snapshot aktual yang diterima. Garis menghubungkan sampel, bukan semua transisi. Sumbu vertikal: ${unitName()}.`;
   const count = Math.max(...series.map((item) => item.points.length));
@@ -651,7 +651,7 @@ function renderChart() {
   const options = Array.from({ length: pages }, (_, index) => `<option value="${index}">${index + 1} / ${pages}</option>`).join("");
   if ($("data-page").innerHTML !== options) $("data-page").innerHTML = options;
   $("data-page").value = String(state.dataPage);
-  $("data-caption").textContent = `${fmt(count)} titik ${full ? "riwayat aktual (tanpa pengurangan)" : "snapshot aktual"} · maksimal 30 baris per halaman`;
+  $("data-caption").textContent = `${fmt(count)} titik ${full ? "riwayat aktual (tanpa pengurangan)" : "snapshot aktual"}, maksimal 30 baris per halaman`;
   if ($("chart-data").open) renderChartData();
 }
 
@@ -671,9 +671,9 @@ function finalOriginalFee(run) {
 
 function renderHistory() {
   const completed = state.completed.map((id) => state.runs.get(id)).filter((run) => run?.result);
-  $("history-count").textContent = `${completed.length} run selesai`;
+  $("history-count").textContent = `${completed.length} simulasi`;
   if (!completed.length) {
-    $("history-table").innerHTML = '<p class="empty-history">Belum ada run selesai yang masih tersimpan di server.</p>';
+    $("history-table").innerHTML = '<p class="empty-history">Belum ada simulasi selesai yang masih tersimpan di server.</p>';
     return;
   }
   const { key, direction } = state.sort;
@@ -688,7 +688,7 @@ function renderHistory() {
     return (typeof first === "string" ? first.localeCompare(second, "id") : first - second) * direction;
   });
   const heading = (label, sortKey) => `<th scope="col" aria-sort="${key === sortKey ? direction > 0 ? "ascending" : "descending" : "none"}"><button type="button" data-sort="${sortKey}">${label}${key === sortKey ? direction > 0 ? " ↑" : " ↓" : ""}</button></th>`;
-  $("history-table").innerHTML = `<table><caption>Run selesai, bukan hasil benchmark resmi. Sortir objective dikelompokkan menurut masukan dan tujuan.</caption><thead><tr>${heading("Algoritma / parameter", "algorithm")}<th scope="col">Data / tujuan</th>${heading("Seed", "seed")}${heading("Objective", "objective")}${heading("Fee asli", "fee")}${heading("Durasi", "duration")}<th scope="col">Tampilkan</th></tr></thead><tbody>${sorted.map((run) => `<tr class="${run.id === state.viewedId ? "is-active" : ""}"><td class="params-cell">${esc(algorithmLabel(run.algorithm))}<small>${esc(Object.entries(run.result.params || run.params || {}).map(([name, value]) => `${name}=${value}`).join(", "))}</small></td><td>${esc(run.problem.name)}<small>${run.objective === "eta" ? "Urgensi ETA" : "Pendapatan fee"}</small></td><td>${fmt(run.seed)}</td><td>${fmt(run.result.final_objective)}<small>${esc(unitName(run))}</small></td><td>${fmt(finalOriginalFee(run))}</td><td>${fmt(run.result.duration_s)} dtk<small>${fmt(run.result.iterations)} ${stepName(run).toLowerCase()} · ${fmt(run.result.evaluations)} evaluasi</small></td><td><button type="button" data-open-run="${esc(run.id)}" ${run.id === state.viewedId ? 'aria-current="true"' : ""}>${run.id === state.viewedId ? "Terpilih" : "Lihat run"}</button></td></tr>`).join("")}</tbody></table>`;
+  $("history-table").innerHTML = `<table><caption>Urutan objective dikelompokkan per data dan tujuan.</caption><thead><tr>${heading("Algoritma / parameter", "algorithm")}<th scope="col">Data / tujuan</th>${heading("Seed", "seed")}${heading("Objective", "objective")}${heading("Fee asli", "fee")}${heading("Durasi", "duration")}<th scope="col">Tampilkan</th></tr></thead><tbody>${sorted.map((run) => `<tr class="${run.id === state.viewedId ? "is-active" : ""}"><td class="params-cell">${esc(algorithmLabel(run.algorithm))}<small>${esc(Object.entries(run.result.params || run.params || {}).map(([name, value]) => `${name}=${value}`).join(", "))}</small></td><td>${esc(datasetLabel(run.problem))}<small>${run.objective === "eta" ? "Urgensi ETA" : "Pendapatan fee"}</small></td><td>${fmt(run.seed)}</td><td>${fmt(run.result.final_objective)}<small>${esc(unitName(run))}</small></td><td>${fmt(finalOriginalFee(run))}</td><td>${fmt(run.result.duration_s)} dtk<small>${fmt(run.result.iterations)} ${stepName(run).toLowerCase()}, ${fmt(run.result.evaluations)} evaluasi</small></td><td><button type="button" data-open-run="${esc(run.id)}" ${run.id === state.viewedId ? 'aria-current="true"' : ""}>${run.id === state.viewedId ? "Terpilih" : "Lihat run"}</button></td></tr>`).join("")}</tbody></table>`;
 }
 
 async function download(kind) {

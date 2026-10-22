@@ -99,28 +99,28 @@ def bounded_problem(raw: Any, name: str) -> Problem:
     for key, maximum in (("ships", LIMITS["max_ships"]), ("vehicles", LIMITS["max_vehicles"])):
         items = raw.get(key)
         if isinstance(items, list) and len(items) > maximum:
-            raise ValueError(f"{key} exceeds local limit {maximum}")
+            raise ValueError(f"Jumlah {key} melebihi batas {maximum}.")
     problem = parse_problem(raw, name=name)
     for item in (*problem.ships, *problem.vehicles):
         if len(item.id) > LIMITS["max_label_length"]:
-            raise ValueError("ship and vehicle identifiers must be at most 64 characters")
+            raise ValueError("Id kapal dan kendaraan maksimal 64 karakter.")
         if item.width > LIMITS["max_dimension"] or item.length > LIMITS["max_dimension"]:
-            raise ValueError("ship and vehicle dimensions exceed local limit")
+            raise ValueError("Ukuran kapal atau kendaraan melebihi batas.")
     for vehicle in problem.vehicles:
         if any(value > LIMITS["max_numeric_value"] for value in
                (vehicle.weight, vehicle.shipping_fee, vehicle.eta)):
-            raise ValueError("vehicle numeric value exceeds local limit")
+            raise ValueError("Nilai angka kendaraan melebihi batas.")
     area = sum(ship.area for ship in problem.ships)
     capacity = sum(ship.max_capacity for ship in problem.ships)
     if area > LIMITS["max_deck_cells"]:
-        raise ValueError("total deck area exceeds local limit")
+        raise ValueError("Total luas geladak melebihi batas.")
     if capacity > LIMITS["max_total_capacity"]:
-        raise ValueError("total ship capacity exceeds local limit")
+        raise ValueError("Total kapasitas kapal melebihi batas.")
     # Match core.bounds.upper_bound, including its evaluator tolerance.
     weight_cap = math.floor(sum(ship.max_capacity + EPS for ship in problem.ships))
     dp_cells = (area + 1) * (weight_cap + 1)
     if dp_cells > LIMITS["max_dp_cells"] or dp_cells * len(problem.vehicles) > LIMITS["max_dp_work"]:
-        raise ValueError("instance exceeds local knapsack memory/work budget")
+        raise ValueError("Instance terlalu besar untuk dihitung batas atasnya di simulator.")
     return problem
 
 
@@ -193,7 +193,7 @@ class JobManager:
 
     def get(self, run_id: str) -> dict[str, Any]:
         if run_id not in self.runs:
-            raise HTTPException(404, "Run tidak tersedia lagi di memori server. Muat ulang halaman atau jalankan kembali.")
+            raise HTTPException(404, "Simulasi ini sudah tidak tersimpan di server. Muat ulang halaman atau jalankan kembali.")
         return self.runs[run_id]
 
     def prune(self) -> None:
@@ -206,7 +206,7 @@ class JobManager:
 
         async with self.lock:
             if self.active is not None:
-                raise HTTPException(409, "A run is already active; cancel it or wait for completion")
+                raise HTTPException(409, "Masih ada simulasi yang berjalan. Tunggu sampai selesai atau batalkan dulu.")
             run_id = uuid.uuid4().hex
             params = spec["params"]
             target = params.get("iterations", params.get("max_iterations"))
@@ -223,7 +223,7 @@ class JobManager:
                 process.start()
             except Exception:
                 events.close()
-                raise HTTPException(500, "Could not start local search worker") from None
+                raise HTTPException(500, "Proses pencarian lokal gagal dimulai.") from None
             self.runs[run_id] = run
             self.active, self.process, self.events = run_id, process, events
             self.started = time.monotonic()
@@ -275,12 +275,12 @@ class JobManager:
                 self.drain(run)
                 if run["status"] == "running":
                     if time.monotonic() - self.started > self.timeout_s:
-                        run["status"], run["error"] = "failed", "Local worker exceeded its wall-time limit"
+                        run["status"], run["error"] = "failed", "Pencarian melewati batas waktu 45 detik. Kecilkan iterasi atau populasi."
                     elif not self.process.is_alive():
                         # A child flushes its queue before exit, so drain once more after observing death.
                         self.drain(run)
                         if run["status"] == "running":
-                            run["status"], run["error"] = "failed", "Local worker exited without a result"
+                            run["status"], run["error"] = "failed", "Proses pencarian berhenti tanpa hasil."
                 if run["status"] != "running":
                     await self.release()
 
@@ -304,8 +304,8 @@ class JobManager:
 def create_app(*, timeout_s: float = LIMITS["timeout_s"], history_size: int = LIMITS["history_size"]) -> FastAPI:
     datasets = {key: {"id": key, "label": label, "problem": problem_json(
         bounded_problem(problem_json(load_problem(DATA_DIR / f"{key}.json")), key))}
-        for key, label in (("main", "Utama"), ("small", "Kecil · studi optimum eksak"),
-                           ("multi", "Armada · multi-kapal"))}
+        for key, label in (("main", "Utama"), ("small", "Kecil (studi optimum eksak)"),
+                           ("multi", "Armada multi-kapal"))}
     algorithms = {item["id"]: item for item in algorithm_metadata()}
 
     @asynccontextmanager
@@ -362,11 +362,11 @@ def create_app(*, timeout_s: float = LIMITS["timeout_s"], history_size: int = LI
             if length < 0:
                 raise HTTPException(400, "Invalid Content-Length")
             if length > LIMITS["max_body_bytes"]:
-                raise HTTPException(413, "Request exceeds local body limit")
+                raise HTTPException(413, "Ukuran permintaan melebihi batas server.")
         raw = bytearray()
         async for chunk in request.stream():
             if len(raw) + len(chunk) > LIMITS["max_body_bytes"]:
-                raise HTTPException(413, "Request exceeds local body limit")
+                raise HTTPException(413, "Ukuran permintaan melebihi batas server.")
             raw.extend(chunk)
         try:
             def reject_constant(value):
@@ -390,7 +390,7 @@ def create_app(*, timeout_s: float = LIMITS["timeout_s"], history_size: int = LI
     def completed(run_id: str, request: Request):
         run = request.app.state.jobs.get(run_id)
         if run["status"] != "completed":
-            raise HTTPException(409, "A completed result is required for this export")
+            raise HTTPException(409, "Ekspor hanya tersedia untuk simulasi yang sudah selesai.")
         return run
 
     @app.get("/api/runs/{run_id}/download")

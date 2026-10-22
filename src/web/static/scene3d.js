@@ -2,17 +2,19 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const VEHICLE_HEIGHT = .72; // Illustration only; the solver has no height dimension.
-const COLORS = [0x9e7554, 0x638a85, 0xb59b68, 0x788ba0, 0x9b838c, 0x81916c];
+// Palet Carbon (IBM DESIGN.md): kendaraan abu-abu dingin, IBM Blue hanya untuk pilihan, merah hanya untuk pelanggaran.
+const COLORS = [0xf2f4f8, 0xdde1e6, 0xc1c7cd, 0xa2a9b0, 0xe0e0e0, 0xc6c6c6];
+const FOV = 38;
 
 export function createCargoScene(host, { onSelect, onError } = {}) {
   // Let WebGL creation failures reach the application's honest 2D fallback.
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'low-power' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFShadowMap;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.25;
+  renderer.toneMappingExposure = 1.05;
   const canvas = renderer.domElement;
   canvas.setAttribute('role', 'img');
   canvas.setAttribute('aria-label', 'Tampilan 3D kapal. Pilih kendaraan melalui pemilih kendaraan; gunakan tombol kamera untuk navigasi.');
@@ -20,8 +22,9 @@ export function createCargoScene(host, { onSelect, onError } = {}) {
   host.append(canvas);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xdce4e1);
-  const camera = new THREE.OrthographicCamera(-10, 10, 10, -10, .01, 1000);
+  scene.background = new THREE.Color(0xf4f4f4);
+  scene.fog = new THREE.Fog(0xf4f4f4, 40, 160);
+  const camera = new THREE.PerspectiveCamera(FOV, 1, .05, 1000);
   camera.position.set(15, 20, 22);
   const controls = new OrbitControls(camera, canvas);
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -31,18 +34,17 @@ export function createCargoScene(host, { onSelect, onError } = {}) {
   controls.screenSpacePanning = true;
   controls.minPolarAngle = 0;
   controls.maxPolarAngle = Math.PI * .48;
-  controls.minZoom = .15;
-  controls.maxZoom = 12;
   controls.enabled = false;
 
-  scene.add(new THREE.HemisphereLight(0xf5f4e9, 0x687b77, 2.6));
-  const sunlight = new THREE.DirectionalLight(0xffecd4, 3.1);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8d8d8d, 1.4));
+  const sunlight = new THREE.DirectionalLight(0xffffff, 2.2);
   sunlight.castShadow = true;
-  sunlight.shadow.mapSize.set(1024, 1024);
+  sunlight.shadow.mapSize.set(2048, 2048);
+  sunlight.shadow.radius = 3;
   sunlight.shadow.bias = -.00025;
   sunlight.shadow.normalBias = .035;
   scene.add(sunlight, sunlight.target);
-  const fill = new THREE.DirectionalLight(0xe1f0ff, 1.2);
+  const fill = new THREE.DirectionalLight(0xffffff, .5);
   fill.position.set(-20, 12, -10);
   scene.add(fill);
 
@@ -56,18 +58,18 @@ export function createCargoScene(host, { onSelect, onError } = {}) {
   ]), shared);
   const boxEdges = keep(new THREE.EdgesGeometry(box), shared);
   const materials = {
-    hull: standard(0x344b4c), rim: standard(0x647773), deck: standard(0xd3c8ad),
-    cabin: standard(0xe6e1ce), glass: standard(0x48656b, .28),
-    tire: standard(0x303c3e),
-    water: standard(0xa3b8b1, .95),
-    warning: standard(0xb64a3f), selected: standard(0xe1a651),
-    headlight: standard(0xf4e8bb), taillight: standard(0x953f36),
-    cars: COLORS.map(color => standard(color)),
-    border: keep(new THREE.LineBasicMaterial({ color: 0x53645b }), shared),
-    footprint: keep(new THREE.LineBasicMaterial({ color: 0x69786b, transparent: true, opacity: .75 }), shared),
-    selectedLine: keep(new THREE.LineBasicMaterial({ color: 0x9b571d, depthTest: false }), shared),
-    warningLine: keep(new THREE.LineBasicMaterial({ color: 0xa62f29, depthTest: false }), shared),
-    warningFill: keep(new THREE.MeshBasicMaterial({ color: 0xc94c3e, transparent: true, opacity: .3, depthWrite: false, side: THREE.DoubleSide }), shared),
+    hull: standard(0x262626, .55, .25), boot: standard(0x525252, .6), rim: standard(0x6f6f6f), deck: standard(0x393939, .9),
+    cabin: standard(0xffffff, .55, .1), glass: standard(0x393939, .25, .6), funnel: standard(0x0f62fe, .55),
+    tire: standard(0x161616, .9),
+    water: standard(0xc1c7cd, .62, .04),
+    warning: glow(0xda1e28, .35), selected: glow(0x0f62fe, .3),
+    headlight: standard(0xf4f4f4), taillight: standard(0x953f36),
+    cars: COLORS.map(color => standard(color, .5, .3)),
+    border: keep(new THREE.LineBasicMaterial({ color: 0x8d8d8d }), shared),
+    footprint: keep(new THREE.LineBasicMaterial({ color: 0x6f6f6f, transparent: true, opacity: .75 }), shared),
+    selectedLine: keep(new THREE.LineBasicMaterial({ color: 0x0f62fe, depthTest: false }), shared),
+    warningLine: keep(new THREE.LineBasicMaterial({ color: 0xda1e28, depthTest: false }), shared),
+    warningFill: keep(new THREE.MeshBasicMaterial({ color: 0xda1e28, transparent: true, opacity: .3, depthWrite: false, side: THREE.DoubleSide }), shared),
   };
   materials.rim.side = THREE.DoubleSide;
   const shipRoot = new THREE.Group();
@@ -94,8 +96,6 @@ export function createCargoScene(host, { onSelect, onError } = {}) {
   let contextLost = false;
   let drag = null;
   let pointerCount = 0;
-  let frustumHeight = 20;
-  let frustumWidth = 20;
   let hasCamera = false;
   let fitBounds = new THREE.Box3();
 
@@ -104,9 +104,24 @@ export function createCargoScene(host, { onSelect, onError } = {}) {
     return resource;
   }
 
-  function standard(color, roughness = .72) {
-    return keep(new THREE.MeshStandardMaterial({ color, roughness, metalness: .04, flatShading: true }), shared);
+  function standard(color, roughness = .72, metalness = .08) {
+    return keep(new THREE.MeshStandardMaterial({ color, roughness, metalness }), shared);
   }
+
+  function glow(color, intensity) {
+    return keep(new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: intensity, roughness: .5, metalness: .1 }), shared);
+  }
+
+  // Riak statis seperti air Ember Scope: variasi warna di shader, tanpa animasi sehingga render tetap on-demand.
+  materials.water.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec2 vWave;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvWave = (modelMatrix * vec4(position, 1.)).xz;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec2 vWave;')
+      .replace('#include <map_fragment>', '#include <map_fragment>\ndiffuseColor.rgb *= .93 + .05 * sin(vWave.x * 1.7 + vWave.y * .45) + .03 * sin(vWave.y * 2.3 - vWave.x * .8);');
+  };
+
 
   function mesh(parent, material, x, y, z, width, height, length, geometry = box) {
     const object = new THREE.Mesh(geometry, material);
@@ -183,12 +198,15 @@ export function createCargoScene(host, { onSelect, onError } = {}) {
       [width * .76, length + bow], [width * .24, length + bow], [-edge, length + edge],
     ];
     const hullShape = new THREE.Shape(outline.map(([x, z]) => new THREE.Vector2(x, z)));
-    const hullGeometry = keep(new THREE.ExtrudeGeometry(hullShape, { depth, bevelEnabled: false, steps: 1 }));
-    hullGeometry.rotateX(Math.PI / 2);
-    const hull = new THREE.Mesh(hullGeometry, materials.hull);
-    hull.position.y = -.12;
-    hull.castShadow = hull.receiveShadow = true;
-    shipRoot.add(hull);
+    // Lambung dua warna: badan gelap di atas, cat antifouling merah di sekitar garis air.
+    for (const [material, top, height] of [[materials.hull, -.12, depth * .55], [materials.boot, -.12 - depth * .55, depth * .45]]) {
+      const geometry = keep(new THREE.ExtrudeGeometry(hullShape, { depth: height, bevelEnabled: false, steps: 1 }));
+      geometry.rotateX(Math.PI / 2);
+      const part = new THREE.Mesh(geometry, material);
+      part.position.y = top;
+      part.castShadow = part.receiveShadow = true;
+      shipRoot.add(part);
+    }
     const walkwayGeometry = keep(new THREE.ShapeGeometry(hullShape));
     walkwayGeometry.rotateX(Math.PI / 2);
     const walkway = new THREE.Mesh(walkwayGeometry, materials.rim);
@@ -202,7 +220,7 @@ export function createCargoScene(host, { onSelect, onError } = {}) {
     const gridCanvas = document.createElement('canvas');
     gridCanvas.width = gridCanvas.height = 64;
     const ctx = gridCanvas.getContext('2d');
-    ctx.strokeStyle = 'rgba(89,109,92,.42)';
+    ctx.strokeStyle = 'rgba(141,141,141,.55)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(.75, 64); ctx.lineTo(.75, .75); ctx.lineTo(64, .75); ctx.stroke();
@@ -230,11 +248,14 @@ export function createCargoScene(host, { onSelect, onError } = {}) {
     mesh(shipRoot, materials.cabin, width * .5, cabinHeight / 2, cabinZ, cabinWidth, cabinHeight, stern * .65);
     mesh(shipRoot, materials.glass, width * .5, cabinHeight * .67, cabinZ + stern * .33, cabinWidth * .86, cabinHeight * .25, .025);
     mesh(shipRoot, materials.cabin, width * .5, cabinHeight + .045, cabinZ, cabinWidth * 1.13, .09, stern * .77);
-    mesh(shipRoot, materials.hull, width * .5, cabinHeight + .38, cabinZ - stern * .16, Math.min(.4, cabinWidth * .25), .65, Math.min(.4, stern * .22));
+    mesh(shipRoot, materials.funnel, width * .5, cabinHeight + .38, cabinZ - stern * .16, Math.min(.4, cabinWidth * .25), .65, Math.min(.4, stern * .22));
     const mastPoints = [[width * .72, 0, cabinZ], [width * .72, cabinHeight * 1.65, cabinZ], [width * .65, cabinHeight * 1.4, cabinZ], [width * .79, cabinHeight * 1.4, cabinZ]];
     line(shipRoot, mastPoints, materials.border);
-    const stage = mesh(shipRoot, materials.water, width / 2, -depth - .23, length / 2, span * 12, .08, span * 12);
-    stage.castShadow = false;
+    const sea = new THREE.Mesh(keep(new THREE.PlaneGeometry(span * 16, span * 16)), materials.water);
+    sea.rotation.x = -Math.PI / 2;
+    sea.position.set(width / 2, -.12 - depth * .62, length / 2);
+    sea.receiveShadow = true;
+    shipRoot.add(sea);
     sunlight.position.set(width / 2 - span * .5, span * 1.2 + 6, length / 2 + span * .4);
     sunlight.target.position.set(width / 2, 0, length / 2);
     const shadowSpan = span * .85 + stern + bow;
@@ -248,12 +269,15 @@ export function createCargoScene(host, { onSelect, onError } = {}) {
     labelCanvas.width = 512;
     labelCanvas.height = 96;
     const context = labelCanvas.getContext('2d');
-    context.fillStyle = 'rgba(248,246,235,.94)';
-    context.fillRect(0, 0, 512, 96);
-    context.fillStyle = '#354a47';
+    context.fillStyle = '#ffffff';
+    context.fillRect(4, 8, 504, 80);
+    context.strokeStyle = '#e0e0e0';
+    context.lineWidth = 3;
+    context.strokeRect(4, 8, 504, 80);
+    context.fillStyle = '#161616';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
-    context.font = '600 42px "IBM Plex Sans", sans-serif';
+    context.font = '400 42px "IBM Plex Sans", sans-serif';
     let display = String(text);
     while (context.measureText(display).width > 464 && display.length > 1) display = display.slice(0, -1);
     if (display !== String(text)) display = display.slice(0, -1) + '…';
@@ -426,28 +450,21 @@ export function createCargoScene(host, { onSelect, onError } = {}) {
     controls.target.copy(sphere.center);
     if (preset === 'top') offset.set(0, radius * 2.5, .000001);
     else offset.set(radius * 2.2, radius * 1.5, radius * .35);
-    camera.position.copy(controls.target).add(offset);
-    camera.zoom = 1;
-    camera.near = Math.max(.001, radius / 10000);
-    camera.far = radius * 30 + 100;
     controls.minTargetRadius = 0;
     controls.maxTargetRadius = radius * 8;
     controls.cursor.copy(sphere.center);
+    // Jarak kamera agar seluruh bola pembatas masuk ke FOV vertikal maupun horizontal.
+    const aspect = Math.max(1, host.clientWidth) / Math.max(1, host.clientHeight);
+    const halfFov = THREE.MathUtils.degToRad(FOV / 2);
+    const distance = radius / Math.sin(Math.min(halfFov, Math.atan(Math.tan(halfFov) * aspect))) * .66;
+    camera.position.copy(controls.target).add(offset.setLength(distance));
+    camera.near = distance / 200;
+    camera.far = distance * 30;
+    controls.minDistance = radius * .3;
+    controls.maxDistance = distance * 4;
+    scene.fog.near = distance * .9;
+    scene.fog.far = distance * 3.2;
     controls.update();
-    camera.updateMatrixWorld(true);
-    const projected = new THREE.Box3();
-    const corner = new THREE.Vector3();
-    for (const x of [bounds.min.x, bounds.max.x]) {
-      for (const y of [bounds.min.y, bounds.max.y]) {
-        for (const z of [bounds.min.z, bounds.max.z]) {
-          projected.expandByPoint(corner.set(x, y, z).applyMatrix4(camera.matrixWorldInverse));
-        }
-      }
-    }
-    const width = Math.max(1, host.clientWidth), height = Math.max(1, host.clientHeight);
-    const availableHeight = Math.max(height * .8, height - 32);
-    frustumHeight = Math.max(1, (projected.max.y - projected.min.y) * height / availableHeight * 1.08);
-    frustumWidth = Math.max(1, (projected.max.x - projected.min.x) * width / Math.max(1, width - 32) * 1.08);
     controls.enableDamping = !motion.matches;
     hasCamera = true;
     resize();
@@ -456,8 +473,9 @@ export function createCargoScene(host, { onSelect, onError } = {}) {
 
   function zoom(factor) {
     if (disposed || !Number.isFinite(factor) || factor <= 0) return;
-    camera.zoom = THREE.MathUtils.clamp(camera.zoom * factor, controls.minZoom, controls.maxZoom);
-    camera.updateProjectionMatrix();
+    offset.copy(camera.position).sub(controls.target);
+    offset.setLength(THREE.MathUtils.clamp(offset.length() / factor, controls.minDistance, controls.maxDistance));
+    camera.position.copy(controls.target).add(offset);
     controls.update();
     requestRender();
   }
@@ -500,12 +518,7 @@ export function createCargoScene(host, { onSelect, onError } = {}) {
     if (renderer.getPixelRatio() !== ratio) renderer.setPixelRatio(ratio);
     const size = renderer.getSize(new THREE.Vector2());
     if (size.x !== width || size.y !== height) renderer.setSize(width, height, false);
-    const aspect = width / height;
-    const vertical = Math.max(frustumHeight, frustumWidth / aspect);
-    camera.left = -vertical * aspect / 2;
-    camera.right = vertical * aspect / 2;
-    camera.top = vertical / 2;
-    camera.bottom = -vertical / 2;
+    camera.aspect = width / height;
     camera.updateProjectionMatrix();
     requestRender();
   }
