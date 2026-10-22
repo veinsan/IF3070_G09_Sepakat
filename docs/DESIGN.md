@@ -1,357 +1,155 @@
-# Design Decisions — Vehicle Deck Loading (Local Search)
+# Desain — Optimasi Muatan Kendaraan
 
-Dokumen hidup. Setiap keputusan di sini **harus** dijelaskan ulang di laporan (bab Pembahasan).
-Status keputusan: ✅ final · 🟡 usulan (perlu disepakati / dikonfirmasi asisten).
+Dokumen ini menjelaskan implementasi yang berjalan, bukan rencana fitur. Spesifikasi tugas asli di direktori ini tidak diubah. Source code merupakan sumber detail fungsi/kelas; hasil terukur berada di `output/experiments/` dan notebook.
 
----
+## 1. Persoalan dan input
 
-## 1. Formalisasi Masalah
+Setiap kendaraan mempunyai id, dimensi integer, shipping fee, berat, dan ETA. Setiap kapal mempunyai id, dimensi geladak integer, dan kapasitas berat. Pilihan solusi adalah seluruh kendaraan di luar kapal atau menempatkannya pada satu geladak dengan posisi dan orientasi tertentu.
 
-- Geladak (deck): grid `W × L`, kapasitas berat `C`.
-- Kendaraan `i = 1..n`: `w_i × l_i`, `fee_i`, `weight_i`, `eta_i`, orientasi ∈ {H, V}.
-- Keputusan: untuk tiap kendaraan → **di luar kapal** ATAU (x, y, orientasi) di dalam geladak.
-- Maksimalkan `Σ fee_i` kendaraan yang dimuat.
-- Constraint: (1) no overlap, (2) di dalam batas geladak, (3) `Σ weight_i ≤ C`.
+Input JSON dalam `dataset/` memakai `ships` dan `vehicles`. Banyak kapal diterima melalui list `ships`; tidak ada format single-ship terpisah. Loader menolak id kosong/duplikat, dimensi bukan integer positif, berat/kapasitas tidak positif, fee negatif, ETA bukan integer nonnegatif, dan angka non-finite. Metadata generator diabaikan oleh loader.
 
-> Catatan: spec v1.1 (07/10/2026) sudah mengganti "truk" menjadi "kapal". Sisa istilah "peti kemas" dan
-> "paket" (dari spec tahun lalu) kita anggap peti kemas = geladak, paket = kendaraan. 🟡 Konfirmasi di Teams.
-> `ETA` tidak dipakai di objective wajib, jadi kita pakai untuk **Bonus 1**.
-
-## 2. Format Input (JSON) 🟡
+Contoh input minimal yang dapat dimuat:
 
 ```json
 {
   "ships": [
-    { "id": "Deck-1", "width": 10, "length": 20, "max_capacity": 500 }
+    {"id": "Deck-1", "width": 10, "length": 20, "max_capacity": 500}
   ],
   "vehicles": [
-    { "id": "Owen", "width": 3, "length": 4, "shipping_fee": 60, "weight": 5, "eta": 3 }
+    {"id": "A", "width": 3, "length": 4, "shipping_fee": 60, "weight": 5, "eta": 3}
   ]
 }
 ```
 
-`ships` sengaja berupa list sejak awal. Single-ship = list berisi 1 elemen, jadi Bonus 3 (multi-kapal)
-tidak butuh refactor.
-
-**Validasi** (`core/problem.py`, pesan error menunjuk lokasi, misalnya `vehicles[3].width`):
-
-| Field | Aturan |
+| Input | Pemakaian |
 |---|---|
-| `ships`, `vehicles` | list tidak kosong, `id` string unik |
-| `width`, `length` | bilangan bulat ≥ 1 |
-| `max_capacity`, `weight` | angka > 0 (berat > 0 dibutuhkan oleh properti penalty §4) |
-| `shipping_fee` | angka ≥ 0 |
-| `eta` | bilangan bulat ≥ 0 |
+| `main.json` | Instance utama bersama untuk eksperimen wajib dan varian HC |
+| `small.json` | Smoke run dan pembuktian optimum eksak dengan brute force |
+| `multi.json` | Bonus armada tiga kapal dengan ukuran dan kapasitas berbeda |
 
-Key lain (`meta`, `type`, dll.) diabaikan supaya instance dari asisten tetap terbaca.
+Generator menggunakan katalog dimensi kendaraan, fee/berat acak, dan ETA acak. Seed dan parameter pembentukan dicatat pada `meta`. Kapasitas tiap kapal diturunkan dari luas geladak dan berat rata-rata per sel, sehingga kapasitas maupun geometri dapat menjadi pembatas.
 
-**Generator** (`core/generator.py`): kendaraan dari katalog 6 tipe (motor 1×2, sedan 2×4, SUV 2×5,
-pickup 2×6, truk 3×8, bus 3×10) dengan fee/berat acak per rentang tipe. Kapasitas =
-`capacity_ratio` (default 0.8) × luas geladak × rata-rata berat per sel, sehingga geladak **tidak bisa
-diisi penuh** dan constraint berat ikut aktif (kalau kapasitas dibuat dari total berat, constraint berat
-hampir tidak pernah aktif karena luas habis duluan). Parameter generator disimpan di `meta` instance.
+## 2. Representasi state
 
-| Instance | Perintah | Isi |
-|---|---|---|
-| `src/data/main.json` | `--seed 1 --vehicles 30 --width 10 --length 20` | luas 466/200 (2.33×), berat 382/131 (2.92×), fee total 2351 |
-| `src/data/small.json` | `--seed 3 --vehicles 12 --width 6 --length 8 --capacity-ratio 1.0 --types motor sedan suv pickup` | luas 88/48 (1.83×), berat 62/34 (1.82×), fee total 493, untuk brute force (§6) |
-| `src/data/multi.json` | `--seed 1 --vehicles 40 --width 10 8 6 --length 12 10 8` | armada 3 kapal: 10×12 (C=80), 8×10 (C=54), 6×8 (C=32); luas 640/248 (2.58×), berat 535/166 (3.22×), fee total 3241 (Bonus 3) |
-
-Generator menerima beberapa geladak: `--width` dan `--length` diisi beberapa nilai, pasangan ke-k = kapal ke-k
-(`Deck-k`). Kapasitas tiap kapal dihitung dengan rumus di atas dari luas geladaknya sendiri.
-
-## 3. Representasi State ✅ (`core/state.py`)
-
-Satu gene per kendaraan (urutan index tetap):
-
-```
-pos[i] = None                      # di luar kapal
-pos[i] = (ship, x, y, orient)      # anchor = sel kiri-atas, orient ∈ {H, V}
+```python
+positions[i] = None                     # seluruh kendaraan di luar kapal
+positions[i] = (ship_index, x, y, 'H')   # anchor kiri atas
+positions[i] = (ship_index, x, y, 'V')
 ```
 
-- `H`: menempati `w_i` kolom × `l_i` baris. `V`: di-rotate (`l_i` × `w_i`). Konvensi ini ditulis di laporan.
-- Koordinat integer, `0 ≤ x < W`, `0 ≤ y < L`.
-- Representasi yang sama dipakai HC, SA, dan GA (jadi GA chromosome = list `pos`).
-- Anchor acak selalu di dalam geladak, tapi badan kendaraan boleh keluar (dihitung sebagai pelanggaran).
-- Untuk evaluasi cepat: simpan `occupancy[ship][y * W + x]` (list datar per kapal) = jumlah kendaraan
-  di sel itu, plus agregat overlap, out-of-bound, fee, dan berat per kapal.
-- **Initial state** (`random_state`): tiap kendaraan masuk ke kapal/anchor/orientasi acak dengan peluang
-  `p_inside` (default 0.5), sisanya di luar. Tidak ada perbaikan greedy, sesuai spek "inisialisasi random".
-- State bisa diserialisasi ke JSON (`to_dict`/`from_dict`): per kendaraan `{id, ship, x, y, orientation}`,
-  `ship = null` untuk kendaraan di luar, ditambah `decks[].grid[y][x]` (id kendaraan per sel, `"A+B"` bila
-  overlap). Grid hanya turunan untuk dibaca dan divisualisasi, `from_dict` mengabaikannya.
-- Hasil satu run dibungkus `RunResult` (`search/result.py`), format lengkapnya di EXPERIMENTS §2.
+`H` menempati width kolom dan length baris; `V` menukar kedua dimensi. Anchor random berada di dalam geladak, tetapi badan kendaraan pada state pencarian sementara boleh melewati batas dan menerima penalty. Koordinat integer.
 
-**Kenapa pakai koordinat eksplisit (bukan permutasi + decoder bottom-left)?** Tiga move di spec
-("pindah ke koordinat", "tukar", "ubah orientasi") itu operasi terhadap koordinat, jadi
-representasi ini map 1:1 ke spec.
+Initial state tetap random: tiap kendaraan masuk dengan peluang `INITIAL_P_INSIDE`, kemudian kapal, anchor, dan orientasinya dipilih acak. Tidak ada penataan greedy berdasarkan fee. Setiap fungsi menerima RNG lokal dari seed; tidak memakai RNG global.
 
-## 4. Objective Function ✅ (`core/objective.py`)
+`State` menyimpan occupancy per sel/per kapal, overlap, sel keluar batas, fee, dan berat per kapal. `to_dict()` menghasilkan semua kendaraan di dalam/luar dan semua grid geladak. Grid memakai string kosong untuk sel kosong dan gabungan id untuk overlap; visualisasi menampilkan pelanggaran secara eksplisit.
 
-```
-f(s) = Σ_{i dimuat} fee_i − P · (overlap_cells + out_of_bound_cells + weight_units)
+Initial state eksplisit pada API harus cocok dengan isi problem. State disalin agar algoritma tidak mengubah objek pemanggil. Wrapper ETA mengikat ulang posisi initial ke problem dengan objective transformasi.
 
-overlap_cells      = Σ_cells max(0, occupancy − 1)
-out_of_bound_cells = jumlah sel kendaraan yang keluar batas geladak
-weight_units       = Σ_kapal ceil( max(0, Σ_{i di kapal} weight_i − C_kapal) / w_min )
-w_min              = berat kendaraan teringan
-P                  = max_i(fee_i) + 1
+## 3. Objective dan constraint
+
+Untuk objective wajib:
+
+```text
+f(s) = total_fee - P * (overlap_cells + out_of_bound_cells + weight_units)
+P = max(shipping_fee) + 1
+weight_units = jumlah per kapal ceil(excess_weight / min_vehicle_weight)
 ```
 
-**Kenapa penalty, bukan hanya state feasible?**
-1. Crossover GA hampir pasti menghasilkan anak dengan overlap, jadi GA tetap butuh penalty.
-   Kalau satu fungsi dipakai untuk ketiga algoritma, perbandingannya fair.
-2. SA bisa melewati daerah infeasible sebentar untuk kabur dari local optimum.
-3. **Properti penting (tulis di laporan):** karena `P > max fee`, dari state infeasible mana pun,
-   mengeluarkan kendaraan yang melanggar **pasti** menaikkan `f` (penalty turun ≥ P, fee turun
-   < P). Jadi **tidak ada state infeasible yang jadi local optimum** untuk HC dengan neighborhood
-   penuh, dan hasil akhir HC pasti feasible. Properti ini diuji di
-   `tests/test_state.py::test_infeasible_state_always_has_improving_removal`.
-4. **Kenapa berat dibagi `w_min` lalu dibulatkan ke atas?** Berat boleh pecahan (DESIGN §2). Dengan
-   `max(0, Σw − C)` biasa, mengeluarkan kendaraan seberat 0.5 hanya menurunkan penalty 0.5·P (< fee),
-   sehingga state kelebihan berat bisa menjadi local optimum. Dengan `ceil(excess / w_min)`, mengeluarkan
-   kendaraan mana pun (berat ≥ `w_min`) dari kapal yang kelebihan berat menurunkan `weight_units`
-   minimal 1, jadi penalty turun ≥ P. Untuk `w_min = 1` (misalnya `main.json`, yang punya motor seberat 1),
-   rumus ini sama dengan kelebihan berat biasa. Perbandingan berat memakai toleransi `1e-9` agar noise
-   float tidak dihitung sebagai pelanggaran.
+- `overlap_cells` menjumlahkan occupancy berlebih, bukan hanya jumlah pasangan kendaraan.
+- `out_of_bound_cells` menjumlahkan bagian kendaraan yang melewati geladak.
+- Kapasitas dan occupancy dipisahkan per kapal; kendaraan di kapal berbeda tidak overlap.
+- Berat dibandingkan dengan toleransi numerik `EPS`. Pelanggaran positif di luar toleransi tetap mendapat minimal satu unit penalty.
 
-Yang dicatat di output: `objective`, `total_fee`, `is_feasible`, `used_weight`, `used_area_pct`.
+Karena fee satu kendaraan lebih kecil daripada `P`, mengeluarkan kendaraan yang menyebabkan pelanggaran memberi langkah perbaikan. Konsekuensinya, HC dengan neighborhood lengkap yang benar-benar berhenti di local optimum tidak berhenti pada state infeasible. **Argumen ini tidak berlaku jika budget iterasi memotong pencarian sebelum local optimum.**
 
-**Delta evaluation (heuristik performa):** move hanya mengubah 1–2 kendaraan, jadi hitung ulang
-cukup untuk sel-sel yang disentuh (update `occupancy`), bukan seluruh grid. `State.delta(changes)`
-menerapkan perubahan, membaca objective dari agregat (O(jumlah kapal)), lalu membatalkannya.
-`core.objective.evaluate()` menghitung semuanya dari nol dan menjadi acuan: test membandingkan keduanya
-di 3000 move acak per instance. Terukur ~5 µs per `delta()` di `main.json`, jadi satu iterasi Steepest
-Ascent (~12.5 ribu neighbor) ≈ 0.07 s.
+### Incumbent feasible
 
-## 5. Neighbor Moves ✅ (`search/neighbors.py`)
+Semua algoritma mempertahankan arsip `FeasibleIncumbent`, terpisah dari state berjalan atau maksimum objective penalized populasi. Arsip dimulai dari kapal kosong bernilai nol: penempatan ini valid karena spesifikasi membolehkan semua kendaraan tidak diangkut.
 
-| Move | Definisi |
+Setiap state feasible yang benar-benar dikunjungi diperiksa terhadap arsip. `final_state` adalah incumbent feasible terbaik; jika tidak ada state feasible yang dikunjungi, hasilnya tetap baseline kosong. Ini bukan repair setelah search: tidak ada kendaraan yang dihapus diam-diam atau iterasi tambahan.
+
+| Field | Makna |
 |---|---|
-| `move(i, pos')` | Pindahkan kendaraan `i` ke koordinat lain, **termasuk ke "luar kapal"** (`None`) atau dari luar ke dalam |
-| `swap(i, j)` | Tukar anchor (kapal, x, y) dua kendaraan, orientasi masing-masing tetap. Berlaku dalam↔dalam dan dalam↔luar. Kendaraan yang masuk dari luar memakai orientasi pasangannya (karena kendaraan di luar tidak punya orientasi) |
-| `rotate(i)` | Toggle H↔V, anchor tetap. Hanya untuk kendaraan di dalam yang **tidak persegi** (rotasi persegi menempati sel yang sama) |
+| `extra.empty_baseline_used` | Belum ada state feasible yang dikunjungi; hasil memakai baseline kosong |
+| `extra.found_feasible` | Search mengunjungi setidaknya satu state feasible |
+| `extra.raw_final_objective`, `raw_final_is_feasible` | Endpoint mentah search/populasi, sebelum pemilihan incumbent |
+| `extra.raw_best_objective` | Objective penalized terbaik yang terlihat, tidak harus feasible |
+| `history.best_feasible` | Nilai incumbent feasible per iterasi/generasi |
 
-Satu move = list perubahan `[(i, placement), ...]` yang langsung dipakai `State.delta()` / `State.apply()`.
+Baseline tidak boleh ditafsirkan sebagai keberhasilan optimasi. Final state valid tidak berarti optimal. Plot mempertahankan history mentah dan menambahkan incumbent jika nilainya berbeda.
 
-- **Full neighborhood** (`all_neighbors`, untuk Steepest Ascent), tanpa duplikat dan tanpa no-op:
-  - `move`: tiap kendaraan ke semua placement `S·W·L·2`. Kendaraan di dalam melewati placement dengan
-    anchor yang sama (orientasi lain = `rotate`), ditambah satu move ke luar.
-  - `swap`: semua pasangan, kecuali pasangan yang sama-sama di luar atau yang hasilnya tidak berubah.
-  - `rotate`: kendaraan di dalam yang tidak persegi.
-  - `main.json`: ~12.3 ribu neighbor, satu iterasi Steepest (enumerasi + `delta`) ≈ 0.07 s.
-- **Random neighbor** (`random_neighbor`, untuk Stochastic HC, SA, mutasi GA): tipe move dipilih uniform
-  dari {move, swap, rotate}, lalu parameternya acak. Bila tipe tidak mungkin (misalnya tidak ada kendaraan
-  di dalam untuk di-swap/rotate), dipakai `move`. ≈ 9 µs per neighbor + `delta`.
-  - **Heuristik:** untuk `move` kendaraan yang di dalam, target "ke luar" dan "ke koordinat acak" masing-masing
-    berpeluang 1/2. Kalau target dipilih uniform dari semua `2·W·L + 1` kemungkinan, peluang keluar hanya
-    1/401 di `main.json`, sehingga kendaraan yang melanggar constraint hampir tidak pernah dikeluarkan oleh
-    SA/Stochastic HC. Tulis heuristik ini di laporan.
+### Delta evaluation
 
-## 6. Referensi Global Optimum ✅ (`core/bounds.py`)
+`State.delta(changes)` menerapkan lalu membatalkan perubahan pada satu atau dua kendaraan. Hanya occupancy yang tersentuh yang diperbarui; tidak membangun ulang seluruh grid. Evaluator penuh `core.objective.evaluate` menjadi pembanding independen untuk pengujian dan laporan akhir. Penyalinan state, serialisasi, serta evaluasi untuk pelaporan bukan iterasi search tambahan.
 
-Global optimum `main.json` (30 kendaraan) terlalu mahal untuk dihitung persis. Kita pakai **upper bound**:
-- **UB** (`upper_bound`): 0/1 knapsack 2 dimensi (total berat ≤ ΣC, total luas ≤ Σ W·L) via DP
-  `best[luas][berat]`, dengan geometri diabaikan. Kendaraan yang tidak muat di geladak mana pun
-  (dalam orientasi apa pun) dibuang. Berat dan kapasitas dibulatkan ke bawah: untuk himpunan feasible,
-  `Σ floor(w) ≤ Σ w ≤ C`, jadi `Σ floor(w) ≤ floor(C)`. Relaksasi tetap valid untuk berat pecahan dan persis
-  untuk berat bulat. Multi-kapal (Bonus 3) memakai total kapasitas dan total luas.
-- `UB ≥ optimum sebenarnya`, jadi `gap = (UB − f) / UB` adalah **batas atas** gap yang sebenarnya.
-- **Brute force** (`brute_force`): backtracking per kendaraan (di luar, atau tiap posisi yang masih feasible)
-  dengan sel terpakai sebagai bitmask, ditambah branch and bound: cabang dipotong bila
-  `fee sekarang + fee semua kendaraan sisa ≤ terbaik`. Kendaraan ber-fee besar dicoba dulu. Ada batas
-  `max_nodes` supaya tidak macet di instance besar.
+## 4. Neighborhood
 
-| Instance | UB | Global optimum | UB longgar | Waktu |
-|---|---|---|---|---|
-| `main.json` | **1035** | tidak dihitung | – | UB 0.02 s |
-| `small.json` | 298 | **287** (brute force) | 3.7% | brute force 0.2 s |
-| `multi.json` | 1318 | tidak dihitung | – | UB 0.03 s |
+| Operasi | Definisi |
+|---|---|
+| Move | Pindah kendaraan ke anchor/orientasi lain, ke luar kapal, atau masuk dari luar |
+| Swap | Tukar anchor dan kapal dua kendaraan; pertahankan orientasi sendiri jika sudah berada di dalam |
+| Rotate | Tukar H/V pada anchor yang sama untuk kendaraan nonpersegi di dalam kapal |
 
-**Temuan untuk laporan (seberapa longgar UB):** pada instance kecil acak, UB = optimum persis bila yang
-membatasi adalah berat (kendaraan kecil mudah disusun rapat). Bila kapasitas berat dibuat longgar sehingga
-geometri yang membatasi (misalnya sedan/SUV/pickup di deck 5×7), UB lebih tinggi 5–23% dari optimum,
-karena sisa sel yang "terfragmentasi" tidak bisa dipakai. Di `main.json` keduanya membatasi, jadi gap terhadap
-UB sebaiknya dibaca sebagai batas atas, bukan jarak pasti ke optimum. `small.json` dipakai untuk
-membandingkan hasil algoritma terhadap global optimum yang pasti.
+Kendaraan yang masuk melalui swap dari luar memakai orientasi pasangan karena representasi luar tidak memiliki orientasi. Swap dua kendaraan yang sama-sama di luar tidak mengubah state. Bila hanya ada satu kendaraan, random neighbor tidak mencoba memilih pasangan swap kosong.
 
-Kebenaran diuji di `tests/test_bounds.py`: UB = enumerasi semua subset, brute force = enumerasi semua state
-pada instance mungil, dan optimum ≤ UB pada instance acak.
+HC Steepest/Sideways memakai enumerasi neighborhood. SA, Stochastic HC, dan mutasi GA memakai proposal random: tipe move dipilih acak, lalu parameternya diacak. Untuk kendaraan di dalam, target keluar dan target koordinat random diberi peluang sama. Heuristik ini mencegah peluang removal menjadi sangat kecil ketika jumlah koordinat besar.
 
-## 7. Algoritma
+## 5. Hill-Climbing
 
-### 7.1 Hill-Climbing (wajib min. 1, Bonus 2: semua)
-
-Cek definisinya lagi ke salindia Khodra (spec: "utamakan implementasi yang mengacu pada salindia").
-
-| Varian | Aturan | Stop | Yang dicatat (spec) |
-|---|---|---|---|
-| Steepest Ascent | ambil neighbor terbaik, pindah kalau `>` current | tidak ada neighbor lebih baik | iterasi |
-| Stochastic | ambil neighbor random, pindah kalau `>` current | `max_no_improve` neighbor berturut-turut tidak lebih baik, atau `max_iterations` | iterasi |
-| Sideways Move | Steepest, tapi boleh pindah kalau `==` | semua neighbor `<` current, atau **total** sideways move mencapai `max_sideways` | iterasi, `max_sideways` |
-| Random Restart | Steepest dari initial random baru | banyak restart mencapai `max_restart` | jumlah restart, iterasi per restart, `max_restart` |
-
-**Steepest Ascent ✅ (`search/hill_climbing.py`):**
-- Sesuai salindia: tiap iterasi mengevaluasi seluruh neighborhood (§5) dengan `State.delta`, lalu pindah ke
-  neighbor terbaik hanya bila `Δ > 0`. Berhenti di local optimum (`extra.stop_reason = "local_optimum"`).
-- **1 iterasi = 1 langkah pindah**, jadi `history.objective` berisi `iterations + 1` nilai (indeks 0 = state
-  awal). Evaluasi neighborhood terakhir yang tidak menemukan perbaikan tidak dihitung sebagai iterasi, tapi
-  ikut dihitung di `evaluations`.
-- **Tie-breaking acak (heuristik):** bila beberapa neighbor sama-sama terbaik, dipilih acak dengan peluang sama
-  (reservoir sampling). Tanpa ini, `move` selalu menang karena dienumerasi lebih dulu dari `swap`/`rotate`.
-- `max_iterations` (default 10 000, `config.HC_MAX_ITERATIONS`) hanya pengaman, bukan bagian algoritma. Di
-  `main.json` Steepest berhenti sendiri setelah ~20 iterasi.
-- Karena neighborhood lengkap dan `P > max fee` (§4), state akhir **selalu feasible**. Ini diuji di
-  `tests/test_hill_climbing.py`, beserta pengecekan bahwa state akhir memang local optimum.
-- `best_neighbor()` dipisah supaya bisa dipakai ulang oleh Sideways Move dan Random Restart (Bonus 2).
-
-**Varian lain ✅ (Bonus 2, `search/hill_climbing.py`):** Steepest, Sideways, dan Random Restart memakai satu
-loop pendakian yang sama (`_climb`). Steepest Ascent = Sideways dengan `max_sideways = 0`.
-
-- **Sideways Move** (`sideways_move`, default `max_sideways = 100`):
-  - Pindah ke neighbor terbaik bila `Δ > 0` (naik) atau `Δ = 0` (sideways, untuk keluar dari shoulder/plateau).
-    Sideways move dipilih acak di antara neighbor terbaik yang setara (tie-break §7.1).
-  - **`max_sideways` dihitung total sepanjang run**, bukan berturut-turut. Alasannya kalimat spesifikasi:
-    "ketika banyak *sideways move* yang dilakukan sudah mencapai maksimum, pencarian dihentikan". Yang dihitung
-    adalah banyaknya sideways move yang **sudah dilakukan**, tanpa syarat berturut-turut, dan pencarian
-    **langsung berhenti** saat jumlahnya mencapai maksimum (`stop_reason = "max_sideways"`). Selain itu berhenti
-    di local optimum ketat, yaitu semua neighbor `< current` (`"local_optimum"`).
-  - Dicatat: `iterations` (langkah naik + sideways), `params.max_sideways`, `extra.sideways_moves`.
-- **Random Restart** (`random_restart`, default `max_restart = 10`):
-  - 1 percobaan awal + `max_restart` restart, masing-masing Steepest Ascent dari initial state acak baru (RNG
-    yang sama, jadi tetap reproducible). Percobaan pertama identik dengan Steepest Ascent seed yang sama, sehingga
-    hasilnya **selalu ≥** Steepest Ascent. Hasil akhir = state terbaik dari semua percobaan.
-  - `history.objective` = semua percobaan disambung (pola gigi gergaji), `history.best` = terbaik sejauh ini.
-    Lompatan ke initial state baru dihitung satu iterasi, jadi `iterations = Σ iters_per_restart + restarts`.
-  - Dicatat: `extra.restarts`, `extra.iters_per_restart`, `extra.final_objective_per_restart`,
-    `extra.best_restart`, `params.max_restart`.
-- **Stochastic** (`stochastic`, default `max_no_improve = 20 000`, `max_iterations = 200 000`):
-  - Tiap iterasi mengambil satu neighbor acak (`random_neighbor`, §5) dan pindah hanya bila `Δ > 0`.
-    1 iterasi = 1 neighbor dievaluasi, jadi `evaluations = iterations`.
-  - `max_no_improve` ≈ 1.6 × ukuran neighborhood `main.json` (~12.3 ribu), supaya peluang melewatkan neighbor
-    yang lebih baik kecil sebelum dianggap local optimum.
-  - State akhir **tidak dijamin** feasible (berbeda dengan Steepest), karena neighbor yang memperbaiki pelanggaran
-    bisa saja tidak pernah terambil. Di semua sanity run hasilnya tetap feasible.
-  - Dicatat: `iterations`, `extra.improvements` (banyak langkah yang diterima), `extra.stop_reason`.
-
-### 7.2 Simulated Annealing
-
-- Terima neighbor lebih baik; kalau lebih buruk, terima dengan peluang `e^(ΔE/T)` (ΔE < 0).
-- **Schedule:** geometric `T_k = T0 · α^k` dengan `α = (T_min / T0)^(1/N)`, sehingga suhu turun tepat dari T0
-  ke T_min dalam N iterasi (N sama untuk semua seed walaupun T0 berbeda). Default `N = 100 000`,
-  `T_min = 0.01` (`config.py`). Bila `T0 ≤ T_min`, `α = 1`.
-- **T0 heuristik:** sampling 100 random neighbor, ambil yang memperburuk (ΔE < 0), lalu pilih T0 sehingga
-  `e^(mean(ΔE)/T0) = 0.8`, yaitu `T0 = mean(ΔE) / ln(0.8) = mean(|ΔE|) / −ln(0.8)` (positif karena ΔE < 0 dan
-  `ln(0.8) < 0`). Artinya move buruk berukuran rata-rata awalnya diterima dengan peluang ~80%. Bila tidak ada
-  move yang memperburuk, `T0 = 1`. Sebutkan sumbernya di laporan.
-- **`final_state`** = state terbaik selama pencarian, karena SA bisa berakhir di state yang lebih buruk.
-- **Plot `e^(ΔE/T)`:** catat hanya di iterasi dengan ΔE < 0 (untuk ΔE ≥ 0 nilainya 1 dan tidak informatif).
-- **Definisi "stuck" 🟡:** 1 kejadian stuck = nilai `best` tidak membaik selama `K` iterasi
-  berturut-turut (contoh `K = 500`), lalu counter di-reset. Frekuensi = jumlah kejadian.
-  Definisi ini **wajib** ditulis eksplisit di laporan.
-
-### 7.3 Genetic Algorithm — **Roulette Wheel Selection (WAJIB, BUKAN tournament)**
-
-- **Chromosome:** list `pos` (sama seperti state).
-- **Fitness:** `f(s)` bisa negatif karena ada penalty, padahal roulette butuh nilai ≥ 0. Pakai windowing:
-  `fit_i = f_i − min_j f_j + ε` (ε kecil, misal 1). Tulis alasannya di laporan.
-- **Selection (roulette / spin wheel):** `p_i = fit_i / Σ fit`. Buat cumulative sum, lalu spin
-  `r ~ U(0, Σfit)` dan pilih individu pertama dengan `cumsum ≥ r` (`bisect`). Implementasi eksplisit,
-  jangan cuma `random.choices`, supaya roda "spin"-nya jelas kelihatan waktu demo dan di laporan.
-  Sesuai salindia GA Khodra.
-- **Crossover:** one-point crossover pada index kendaraan, `p_c` tetap (misal 0.8).
-- **Mutation:** dengan `p_m` (misal 0.1–0.2) terapkan satu random move (move/swap/rotate).
-- **Elitism:** bawa 1–2 individu terbaik ke generasi berikut. Ini heuristik tambahan, jelaskan di laporan.
-- **Parameter yang divariasikan (spec):** hanya `population_size` dan `iterations` (= generasi).
-  Parameter lain (`p_c`, `p_m`, elitism) dibuat **tetap** di semua eksperimen.
-- **Dicatat per generasi:** `max` dan `mean` objective populasi.
-- **Detail implementasi** (`src/search/genetic_algorithm.py`):
-  - Crossover menghasilkan dua anak; bila `rng ≥ p_c`, anak = salinan kedua induk.
-  - Mutasi diterapkan **per anak** dengan peluang `p_m` (satu random neighbor), bukan per gene.
-  - `initial_state` di output = individu terbaik populasi awal (`RunResult` hanya menyimpan satu state awal),
-    sehingga `history.objective[0]` = objective-nya. `final_state` = individu terbaik selama pencarian.
-  - `evaluations` = populasi awal + semua anak baru (elit tidak dinilai ulang).
-  - Default: populasi 100, 1000 generasi, `p_c = 0.8`, `p_m = 0.2`, elitism 2, ε = 1 (`config.py`).
-
-## 8. Bonus
-
-| Bonus | Poin | Desain |
+| Varian | Aturan | Penghentian |
 |---|---|---|
-| 1. Objective alternatif (tanpa variabel baru) | 3 | Prioritas ETA: `Σ fee_i · (1 + 1/(eta_i + 1))` (makin mendesak, makin berbobot; `+ 1` karena `eta` boleh 0, §2). `P` memakai bobot maksimum, bukan fee maksimum, supaya properti §4 tetap berlaku. Satu set eksperimen (SA, 3 seed) dijalankan ulang untuk dibandingkan |
-| 2. Semua varian HC | 7 | Tabel 7.1, masing-masing 3 run |
-| 3. Multi-kapal | 10 | `pos` sudah punya `ship`; constraint per kapal; `move` boleh ke kapal lain; `swap` lintas kapal; UB pakai total kapasitas & luas |
+| Steepest Ascent | Evaluasi semua neighbor, pilih delta terbesar; tie-break acak dengan reservoir sampling | Tidak ada delta positif, atau batas pengaman |
+| Stochastic | Proposal satu neighbor random; terima hanya jika membaik | `max_no_improve` proposal tanpa perbaikan berturut-turut, atau batas iterasi |
+| Sideways Move | Neighbor terbaik; boleh delta nol | Local optimum ketat, total sideways mencapai `max_sideways`, atau batas iterasi |
+| Random Restart | Steepest dari initial random, kemudian initial random baru | `max_restart` restart selesai; total percobaan = restart + 1 |
 
-**Bonus 1 — Objective urgensi ETA ✅ (`[T]`):** setiap kendaraan bernilai `w_i = fee_i · (1 + 1/(eta_i + 1))`,
-jadi `eta = 0` bernilai 2 × fee dan bobot mendekati fee untuk ETA besar. Hanya memakai `shipping_fee` dan `eta`
-yang sudah ada di input (tidak ada variabel baru).
+Implementasi Stochastic memakai sampling proposal/rejection, bukan enumerasi seluruh improving neighbor atau pembobotan proporsional besar delta. Penghentiannya adalah batas sampling, bukan bukti local optimum.
 
-- **Implementasi** (`src/core/eta_objective.py`): `eta_problem()` membuat salinan instance yang `shipping_fee`
-  tiap kendaraannya diganti `w_i` (nama `<instance>_eta`). Karena itu `State`, delta evaluation, penalty,
-  upper bound, dan format hasil tidak perlu diubah, dan semua algoritma (HC, SA, GA) bisa langsung dipakai.
-- **Penalty:** `P = max w_i + 1` otomatis (`penalty_coefficient` pada instance turunan), jadi mengeluarkan satu
-  kendaraan yang melanggar tetap selalu menaikkan objective (§4).
-- **UB dan gap** dihitung dengan bobot yang sama dengan objective yang dioptimasi (§6).
-- **Konsekuensi:** di hasil run ETA, `total_fee` dan label "fee" di gambar berisi bobot urgensi. Fee asli
-  kendaraan yang dimuat dicatat di `extra.shipping_fee_total`.
-- **Eksperimen** (`src/eta_experiments.py`): SA, seed 1/2/3, parameter default → `output/sa/main_eta_seed*`.
-  Perbandingan dengan run objective fee (seed sama = initial state sama) di `output/summary_eta.md` dan
-  EXPERIMENTS §4.10.
-- **Teruji** di `tests/test_eta_objective.py`: bobot dihitung manual, `P` = bobot maksimum + 1, delta = full
-  recompute (termasuk multi-kapal), state infeasible selalu punya removal yang memperbaiki, run SA dan GA feasible.
+Satu iterasi Steepest/Sideways adalah satu perpindahan; satu iterasi Stochastic adalah satu proposal. Pada Random Restart, perpindahan ke initial baru dihitung sebagai satu langkah pada history gabungan. `iters_per_restart` dan stop reason tiap percobaan tetap dicatat. Sideways dihitung total sepanjang run, sesuai pembacaan literal batas maksimum pada spesifikasi.
 
-**Bonus 3 — Multi-kapal ✅ (bagian core, `[R]`):** spesifikasi meminta program "dapat menerima jumlah kapal lebih
-dari satu dan memaksimalkan *value* total yang diangkut armada".
+## 6. Simulated Annealing
 
-- **Menerima > 1 kapal:** input `ships` berupa list (§2), generator bisa membuat armada, `src/data/multi.json`
-  berisi 3 kapal berbeda ukuran dan kapasitas.
-- **Constraint per kapal:** occupancy dan berat dihitung per kapal (`State`), jadi overlap hanya terjadi antar
-  kendaraan di kapal yang sama, dan tiap kapal punya batas berat sendiri (`weight_units` per kapal, §4).
-- **Value total armada:** objective = Σ fee semua kendaraan yang dimuat di kapal mana pun, dikurangi penalty
-  semua kapal. Properti "state infeasible selalu punya cara keluar" (§4) tetap berlaku per kapal.
-- **Neighbor lintas kapal:** `move` bisa ke anchor di kapal mana pun (`all_placements` / `random_placement`
-  mencakup semua kapal), `swap` menukar anchor termasuk kapalnya. Semua algoritma (HC, SA, GA) otomatis
-  mendukung armada tanpa perubahan kode, karena hanya memakai API `State` + `search/neighbors.py`.
-- **UB armada:** knapsack dengan total kapasitas dan total luas armada (§6). Lebih longgar dibanding satu kapal
-  karena tidak memperhitungkan bahwa satu kendaraan harus muat utuh di satu kapal.
-- **Teruji** di `tests/test_multi_ship.py`: generator armada, objective = total fee armada (dua kendaraan yang
-  terlalu berat untuk satu kapal feasible bila dibagi ke dua kapal), move/swap lintas kapal, brute force armada
-  = enumerasi semua state, dan keempat varian HC menghasilkan state feasible yang memakai lebih dari satu kapal.
-- **Sisa `[L]`:** visualisasi beberapa geladak (`final_state.decks` sudah berisi grid tiap kapal).
+Move dengan delta nonnegatif diterima; move yang memperburuk diterima dengan peluang `exp(delta/T)`. T0 dihitung dari sampel random neighbor yang memperburuk agar penurunan rata-rata awal mempunyai peluang penerimaan `SA_T0_ACCEPT`. Jika tidak ada sampel buruk, T0 bernilai 1. Ini heuristik turunan persamaan peluang, bukan jaminan penerimaan semua move buruk sebesar nilai tersebut.
 
-Urutan pengerjaan dan pemotongan bila waktu kurang ada di PROJECT_TRACKER §Jadwal.
+Pendinginan geometris memakai `alpha = (T_min / T0) ** (1 / N)`. Bila T0 sudah tidak lebih besar daripada T_min, suhu tidak dinaikkan. Jumlah iterasi default tetap sesuai konfigurasi. Peluang untuk delta negatif disimpan sebagai pasangan iterasi/nilai; move nonnegatif diterima dengan peluang satu dan tidak dimasukkan ke scatter tersebut.
 
-## 9. Keputusan Terbuka
+### Stuck dan stagnasi berbeda
 
-- [x] Konstanta penalty `P` final (`max fee + 1`, berat via `weight_units`)
-- [x] `max_sideways` berturut-turut atau total → **total**, langsung berhenti saat tercapai (§7.1)
-- [ ] Definisi "stuck" SA disepakati
-- [x] Nilai default SA (`N`, `T_min`, `α` dihitung dari T0) dan GA (`p_c`, `p_m`, elitism) → `config.py` (§7.2, §7.3)
-- [ ] Format input dikonfirmasi (apakah asisten kasih test case sendiri saat demo?)
+Setiap `stuck_window` iterasi, neighborhood current diperiksa sampai ditemukan delta positif atau seluruh neighbor habis. Checkpoint adalah local optimum hanya jika tidak ada neighbor membaik. `stuck_count` menghitung episode rangkaian checkpoint local-optimum: dihitung pada checkpoint pertama, kemudian baru dapat dihitung lagi setelah checkpoint non-local-optimum.
 
-## 10. Struktur Kode & Konvensi ✅
+Ini **frekuensi episode yang teramati secara berkala**, bukan klaim mendeteksi setiap kunjungan singkat. `history.local_optimum` merekam observasi. `stagnation_count` terpisah menghitung window tanpa raw-best baru; tidak disebut sebagai jumlah local optimum.
 
-Struktur lengkap per file ada di [README](../README.md#struktur-repository). Pembagian layer:
+Seluruh probe konfirmasi termasuk `evaluations` dan `duration_s`, sehingga SA tidak tampak lebih murah dengan menyembunyikan biaya monitoring. Pemeriksaan tidak mengonsumsi RNG dan tidak mengubah lintasan SA.
 
-| Layer | Folder | Tanggung jawab | Boleh import |
-|---|---|---|---|
-| Model | `src/core/` | Data persoalan, state, objective, delta evaluation, upper bound | stdlib saja |
-| Search | `src/search/` | Neighbor + HC, SA, GA. Hanya bicara ke API `State` | `core`, `config` (nilai default parameter) |
-| Visualisasi | `src/visualization/` | Gambar state + plot. Membaca dict hasil / JSON di `output/`, tidak menjalankan search | `core`, `matplotlib` |
-| Entry point | `src/main.py`, `src/experiments.py`, `src/eta_experiments.py` | CLI + runner eksperimen | semua |
-| Analisis | `notebooks/experiments.ipynb` | Tabel + plot dari `output/*.json` | `src` (via `sys.path`) |
+## 7. Genetic Algorithm
 
-Alasan: algoritma tidak tahu detail grid, jadi delta evaluation dan multi-kapal (Bonus 3) cukup diubah di
-`core/`. Visualisasi dibuat dari JSON, jadi plot bisa dibuat ulang tanpa run ulang (EXPERIMENTS §2).
+Chromosome adalah list posisi kendaraan yang sama dengan state HC/SA. Populasi awal random. Fitness roulette memakai windowing `fit_i = f_i - min(f) + epsilon` agar positif. Cumulative sum dibentuk per generasi; spin dilakukan eksplisit dengan pencarian biner.
 
-**Konvensi:**
-- Program dijalankan dari root repo (`python src/main.py ...`), import absolut dari `src/`
-  (`from core.state import State`).
-- Identifier dalam bahasa Inggris. Docstring modul + fungsi publik, serta komentar, dalam bahasa Indonesia.
-- Type hints di semua fungsi publik.
-- **Tidak ada RNG global.** Setiap fungsi acak menerima `rng: random.Random` sehingga run dengan seed
-  yang sama selalu identik.
-- Semua algoritma mengembalikan format hasil yang sama (`search/result.py`, EXPERIMENTS §2).
-- Kode yang diadaptasi dari internet diberi komentar `# Sumber: <judul>, <url>` (aturan spek) dan
-  dicantumkan di referensi laporan.
-- Logika non-trivial punya test di `tests/` (stdlib `unittest`, tanpa dependency tambahan):
-  `python -m unittest discover -s tests -t .`
+Crossover satu titik menghasilkan dua anak tanpa memutasi induk. Mutasi diterapkan per anak dengan peluang tetap, menggunakan satu random neighbor. Elitism membawa individu terbaik sesuai objective penalized. Skor elit dipakai ulang; anak dinilai setelah crossover/mutasi. Arsip feasible memeriksa seluruh populasi, bukan hanya individu raw-max.
+
+`history.objective` adalah maksimum populasi dan `history.mean` adalah rata-rata populasi per generasi. `best_generation` menunjukkan generasi incumbent feasible, atau `None` jika baseline; `raw_best_generation` terpisah. Crossover koordinat dapat menimbulkan overlap meskipun induk feasible; ini alasan penalty dan perbedaan max/mean perlu dibahas.
+
+Dua sweep resmi masing-masing dijalankan tiga kali per konfigurasi, tanpa deduplikasi kontrol. Parameter lain tetap. Pengulangan kontrol pada seed yang sama tetap deterministik dan tidak boleh dianggap sebagai enam sampel independen pada ringkasan kualitas antaralgoritma.
+
+## 8. Upper bound dan bonus
+
+`upper_bound` adalah relaksasi knapsack luas dan berat gabungan; geometri penempatan dan pembagian muatan per kapal diabaikan. Kendaraan yang tidak dapat muat pada kapal mana pun dikeluarkan. Pembulatan berat/kapasitas memperhitungkan toleransi agar relaksasi tidak lebih ketat daripada feasibility evaluator.
+
+`gap_ub = (UB - objective) / UB` pada hasil feasible merupakan batas atas gap relatif terhadap optimum; bukan jarak pasti. `brute_force` menggunakan backtracking, bitmask sel, dan branch-and-bound untuk optimum eksak instance kecil. Jika mencapai batas node, fungsi gagal eksplisit, bukan mengklaim optimum.
+
+Bonus ETA menggunakan `fee * (1 + 1/(eta + 1))`, tanpa atribut persoalan baru. Problem turunan mengganti nilai yang dioptimasi, sedangkan fee asli dicatat pada `extra.shipping_fee_total`. `total_fee` pada JSON ETA masih berarti jumlah bobot transformasi; CLI/gambar memberi label bobot urgensi dan fee asli secara terpisah. UB ETA memakai objective yang sama.
+
+Bonus multi-kapal memakai constraint per kapal, move/swap lintas kapal, dan objective total armada. Semua algoritma memakai API state yang sama. Visualisasi menggambar semua geladak dan kendaraan di luar armada.
+
+## 9. Organisasi dan sumber
+
+`core/` mengelola model; `search/` mengelola algoritma; `visualization/` menggambar hasil tersimpan. CLI satu run dan runner eksperimen terpisah. Data berada di `dataset/`, notebook di `notebooks/`, builder di `src/scripts/`, dan hasil resmi terpisah dari percobaan manual.
+
+- M. L. Khodra, [Hill-Climbing Search](https://www.youtube.com/watch?v=L0b0CN3Fds8), 2021.
+- M. L. Khodra, [Simulated Annealing](https://www.youtube.com/watch?v=AdhG7HnhYrk), 2021.
+- M. L. Khodra, [Genetic Algorithm](https://www.youtube.com/watch?v=aI41TGo9J9c), 2021.
+- [Task2_AI_13524061](https://github.com/parkuskus/Task2_AI_13524061): acuan pemisahan repository saja, bukan sumber kode.
+- `ref/notebook/`: panduan builder dan penyusunan notebook yang disediakan pengguna.
+- [NBClient](https://nbclient.readthedocs.io/en/latest/client.html): eksekusi notebook terprogram.
+
+Penalty, baseline feasible, pemilihan T0, bias proposal removal, tie-breaking, windowing, elitism, relaksasi UB, dan observasi checkpoint adalah keputusan implementasi yang harus dijelaskan kembali pada laporan, bukan diatribusikan otomatis seluruhnya kepada salindia.

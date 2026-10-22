@@ -1,208 +1,155 @@
 # IF3070_G09_Sepakat
 
-Tugas Besar 1 IF3070 Dasar Inteligensi Artifisial 2026/2027: optimasi penataan kendaraan pada
-geladak kapal kargo menggunakan algoritma *local search*.
+Tugas Besar 1 IF3070 Dasar Inteligensi Artifisial 2026/2027: pemilihan dan penataan kendaraan pada geladak kapal dengan **Hill-Climbing, Simulated Annealing, dan Genetic Algorithm**.
 
-| Kelompok | Persoalan | Algoritma |
-|---|---|---|
-| G09 — Sepakat | Vehicle deck loading (2D placement + knapsack) | Hill-Climbing, Simulated Annealing, Genetic Algorithm |
+Program memaksimalkan shipping fee dengan mempertimbangkan posisi integer, orientasi, overlap, batas geladak, dan kapasitas berat. Bonus mencakup objective urgensi ETA, empat varian Hill-Climbing yang disebut dalam spesifikasi, dan armada multi-kapal. Implementasi pencarian hanya memakai standard library Python.
 
----
+## Struktur
 
-## Deskripsi Persoalan
+Pemisahan data, source, notebook, dan dokumentasi mengacu pada organisasi [Task2_AI_13524061](https://github.com/parkuskus/Task2_AI_13524061). Kode dan hasil dari repository acuan tidak disalin. Karena proyek ini hanya memiliki satu persoalan, tidak ada lapisan `src/local_search/` tambahan.
 
-Diberikan sebuah geladak kapal berukuran `W × L` grid dengan kapasitas berat `C`, serta daftar kendaraan
-yang masing-masing memiliki dimensi `w × l`, *shipping fee*, berat, dan ETA. Program memilih kendaraan
-yang diangkut beserta posisi dan orientasinya (horizontal/vertikal) sehingga total *shipping fee*
-maksimum, dengan constraint:
-
-1. Kendaraan tidak saling bertumpuk (*no overlapping*).
-2. Seluruh bagian kendaraan berada di dalam batas geladak.
-3. Total berat kendaraan tidak melebihi kapasitas kapal.
-
-Detail desain (representasi state, objective, neighbor) ada di [`docs/DESIGN.md`](docs/DESIGN.md).
-
----
-
-## Fitur
-
-- **Representasi state** koordinat eksplisit `(ship, x, y, orientasi)` per kendaraan, dipakai bersama
-  oleh semua algoritma.
-- **Objective dengan penalty** untuk overlap, keluar batas, dan kelebihan berat, plus
-  **delta evaluation** sehingga evaluasi neighbor tidak menghitung ulang seluruh grid.
-- **Neighbor move** sesuai spesifikasi: pindah koordinat (termasuk ke luar/dalam kapal), tukar dua
-  kendaraan, ubah orientasi.
-- **Hill-Climbing**: Steepest Ascent, Stochastic, Sideways Move, Random Restart (Bonus 2).
-- **Simulated Annealing**: T0 otomatis, geometric cooling, pencatatan `e^(ΔE/T)` dan frekuensi *stuck*.
-- **Genetic Algorithm**: roulette wheel selection, one-point crossover, mutation, elitism.
-- **Upper bound** global optimum (DP knapsack berat + luas) untuk mengukur *gap*.
-- **Bonus 1**: objective alternatif berbasis ETA. **Bonus 3**: multi-kapal.
-- **Visualisasi** initial/final state dan plot hasil eksperimen, serta notebook analisis.
-
----
-
-## Dependencies
-
-- Python 3.10+
-- Package di [`requirements.txt`](requirements.txt): `matplotlib` (visualisasi) dan `notebook`
-  (notebook analisis). Algoritma *local search* hanya memakai standard library.
-
----
-
-## Struktur Repository
-
-```
+```text
 IF3070_G09_Sepakat/
+├── dataset/                         # input JSON: main, small, multi
 ├── docs/
-│   ├── DESIGN.md                   # keputusan desain (sumber bab Pembahasan)
-│   ├── EXPERIMENTS.md              # protokol + tabel hasil eksperimen
-│   ├── PROJECT_TRACKER.md          # jadwal, pembagian tugas, checklist
-│   └── Laporan_G09_Sepakat.pdf     # laporan akhir
+│   ├── DESIGN.md                    # representasi, objective, algoritma, heuristik
+│   ├── EXPERIMENTS.md               # protokol, interpretasi, lokasi hasil
+│   ├── PROJECT_TRACKER.md           # status aktual dan checklist pengumpulan
+│   └── Spesifikasi ... .md          # dokumen tugas asli, tidak diubah
 ├── notebooks/
-│   └── experiments.ipynb           # analisis + visualisasi hasil dari output/
-├── output/                         # hasil run: <algo>/<run_id>.json + gambar
-├── tests/                          # unit test (unittest)
+│   └── experiments.ipynb            # analisis dan visualisasi hasil resmi
+├── output/
+│   ├── experiments/                 # seluruh eksperimen resmi
+│   │   ├── hc/steepest/
+│   │   ├── sa/sa/
+│   │   ├── ga_iter/ga/
+│   │   ├── ga_pop/ga/
+│   │   ├── hc_variants/{stochastic,sideways,random_restart}/
+│   │   ├── eta/sa/
+│   │   ├── multi/steepest/
+│   │   └── summary*.md, summary*.png
+│   └── runs/                        # run manual/quick, diabaikan Git
+├── ref/notebook/                    # panduan notebook yang disediakan pengguna
 ├── src/
-│   ├── main.py                     # CLI: jalankan satu algoritma pada satu instance
-│   ├── experiments.py              # jalankan seluruh eksperimen → output/
-│   ├── eta_experiments.py          # run Bonus 1 (objective ETA) → output/sa/ + output/summary_eta.md
-│   ├── config.py                   # parameter default algoritma (HC, SA, GA)
-│   ├── data/                       # instance persoalan (JSON)
-│   │   ├── main.json               # instance utama eksperimen (30 kendaraan, deck 10x20)
-│   │   ├── small.json              # instance kecil untuk brute force global optimum
-│   │   └── multi.json              # armada 3 kapal untuk Bonus 3 (multi-kapal)
-│   ├── core/                       # model persoalan
-│   │   ├── problem.py              # Vehicle, Ship, Problem + load & validasi JSON
-│   │   ├── generator.py            # generator instance random (seeded)
-│   │   ├── state.py                # State + occupancy grid + delta evaluation
-│   │   ├── objective.py            # objective (full recompute), penalty, laporan feasibility
-│   │   ├── bounds.py               # upper bound + brute force instance kecil
-│   │   └── eta_objective.py        # objective urgensi ETA (Bonus 1)
-│   ├── search/                     # algoritma local search
-│   │   ├── neighbors.py            # move, swap, rotate, random & full neighborhood
-│   │   ├── result.py               # format hasil run yang seragam
-│   │   ├── hill_climbing.py        # 4 varian Hill-Climbing
-│   │   ├── simulated_annealing.py
-│   │   └── genetic_algorithm.py
-│   └── visualization/
-│       ├── state_view.py           # gambar geladak, kendaraan di luar, dan value
-│       └── plots.py                # plot objective, e^(ΔE/T), GA max/mean, ringkasan
+│   ├── core/                       # input, generator, state, objective, bounds, ETA
+│   ├── search/                     # neighbor, HC, SA, GA, format hasil
+│   ├── visualization/              # diagram state dan plot dari hasil tersimpan
+│   ├── scripts/build_notebook.py   # sumber notebook yang dapat diregenerasi
+│   ├── config.py                   # path dan parameter bersama
+│   ├── main.py                     # CLI satu run dan replay
+│   └── experiments.py              # runner wajib/bonus dan ringkasan
+├── tests/                          # regresi perilaku dengan unittest
 ├── requirements.txt
 └── README.md
 ```
 
----
+Laporan PDF belum dibuat. Setelah tersedia, letakkan laporan di `docs/`; status publikasi dan release ada di [tracker](docs/PROJECT_TRACKER.md).
 
 ## Setup
 
+Python **3.10+**, CPU; GPU tidak diperlukan. Matplotlib dipakai untuk gambar, Notebook untuk antarmuka analisis, serta nbclient/nbformat untuk eksekusi notebook terprogram.
+
 ```bash
 python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+source .venv/bin/activate            # Windows: .venv\Scripts\activate
+python -m pip install -r requirements.txt
 ```
 
-## Cara Menjalankan
+Seluruh perintah berikut dijalankan dari root repository dengan environment aktif.
 
-Semua perintah dijalankan dari root repository.
-
-### Satu algoritma pada satu instance
+## Menjalankan satu algoritma
 
 ```bash
-python src/main.py --algo hc --seed 1                      # Steepest Ascent HC pada main.json
-python src/main.py --algo sa --instance multi.json --seed 2 # multi-kapal (Bonus 3)
-python src/main.py --algo ga --population 50 --iterations 300 --seed 3
-python src/main.py --algo random_restart --max-restart 5
-python src/main.py --view output/sa/main_seed1.json        # tampilkan & gambar ulang hasil yang tersimpan
+python src/main.py --algo hc --seed 1
+python src/main.py --algo stochastic --seed 2
+python src/main.py --algo sideways --max-sideways 100
+python src/main.py --algo random_restart --max-restart 10
+python src/main.py --algo sa --iterations 100000 --seed 1
+python src/main.py --algo ga --population 100 --iterations 1000 --seed 1
+python src/main.py --algo sa --instance multi.json --seed 2
+python src/main.py --algo sa --objective eta --seed 1
 ```
 
-Hasil disimpan ke `output/` dan menimpa hasil eksperimen resmi dengan nama yang sama (misalnya
-`output/steepest/main_seed1.json`). Untuk mencoba-coba, tambahkan `--out tmp_demo` atau `--no-save`.
-Steepest, SA, dan GA di atas selesai dalam beberapa detik; Random Restart sekitar 15–20 detik.
-
-| Opsi | Keterangan |
+| Opsi | Fungsi |
 |---|---|
-| `--algo` | `steepest` (alias `hc`), `sideways`, `random_restart`, `stochastic` (Bonus 2), `sa`, `ga` |
-| `--instance` | path file instance, atau nama file di `src/data/` (`main.json`, `small.json`, `multi.json`). Default `main.json` |
-| `--seed` | seed random (default 1); eksperimen memakai seed 1, 2, 3 |
-| `--max-sideways`, `--max-restart`, `--max-no-improve` | parameter Sideways Move, Random Restart, Stochastic HC |
-| `--max-iterations` | batas pengaman iterasi varian HC (Random Restart: per percobaan) |
-| `--iterations` | iterasi SA / generasi GA |
-| `--population` | ukuran populasi GA |
-| `--objective` | objective yang dioptimasi; saat ini hanya `fee` (objective ETA, Bonus 1, dijalankan lewat `src/eta_experiments.py`) |
-| `--out` | folder output (default `output/`) |
-| `--no-plot`, `--no-save` | simpan JSON tanpa gambar / tidak menyimpan apa pun |
-| `--view JSON` | baca hasil run yang sudah disimpan tanpa menjalankan search lagi |
+| `--algo` | `steepest` atau alias `hc`, `stochastic`, `sideways`, `random_restart`, `sa`, `ga` |
+| `--instance` | Nama input dalam `dataset/` atau path JSON eksplisit; default `main.json` |
+| `--objective` | `fee` atau `eta`; default `fee`, tersedia untuk semua algoritma |
+| `--seed` | Seed random, default 1 |
+| `--max-sideways`, `--max-restart` | Batas total sideways atau jumlah restart setelah percobaan pertama |
+| `--max-no-improve` | Batas proposal tanpa perbaikan pada Stochastic HC |
+| `--max-iterations` | Batas pengaman HC; pada Random Restart berlaku per percobaan |
+| `--iterations` | Iterasi SA atau generasi GA |
+| `--population` | Ukuran populasi GA; harus lebih besar daripada elitism default |
+| `--out` | Direktori hasil manual; default `output/runs/` |
+| `--no-plot`, `--no-save` | Simpan JSON saja, atau tampilkan hasil tanpa menyimpan |
+| `--view JSON` | Buka dan gambar ulang hasil tersimpan, tanpa search |
 
-Parameter yang tidak diisi memakai nilai default di [`src/config.py`](src/config.py). Parameter yang tidak
-berlaku untuk algoritma yang dipilih (misalnya `--population` untuk `sa`) ditolak.
+Parameter lengkap ada di [`src/config.py`](src/config.py). Parameter yang tidak berlaku dan nilai tidak valid ditolak dengan pesan CLI.
 
-Program mencetak ringkasan (objective awal dan akhir, total fee, feasibility, gap terhadap upper bound,
-iterasi, durasi) dan final state dalam bentuk teks, lalu menyimpan ke `output/<algo>/`:
-
-| File | Isi |
-|---|---|
-| `<run_id>.json` | hasil lengkap run (format EXPERIMENTS §2): state awal/akhir, objective, history, parameter, durasi |
-| `<run_id>_initial.png`, `<run_id>_final.png` | gambar state awal dan akhir: tiap geladak, kendaraan di luar kapal, value |
-| `<run_id>_plot.png` | plot objective vs iterasi (GA: maksimum dan rata-rata populasi; SA: ditambah e^(ΔE/T)) |
-
-`run_id` = `<instance>_seed<seed>`, misalnya `main_seed1`; untuk GA `<instance>_pop<P>_iter<I>_seed<seed>`,
-misalnya `main_pop50_iter300_seed2`. Run dengan instance, algoritma, parameter GA, dan seed yang sama akan
-menimpa file sebelumnya. `duration_s` adalah durasi search saja, tidak termasuk waktu menyimpan file dan gambar.
-
-### Seluruh eksperimen
+Setiap run menghasilkan `<run_id>.json`, `<run_id>_initial.png`, `<run_id>_final.png`, dan `<run_id>_plot.png`. Nama run memakai instance dan seed; GA juga memakai populasi dan generasi. **Run manual dengan identitas yang sama di direktori yang sama mengganti hasil manual sebelumnya.** Default manual tidak menimpa eksperimen resmi.
 
 ```bash
-python src/experiments.py --dry-run          # daftar run (21 wajib, 36 dengan bonus) tanpa menjalankan
-python src/experiments.py                    # semua run -> output/<algo>/ + output/summary.md
-python src/experiments.py --only sa ga_pop   # sebagian grup: hc, sa, ga_iter, ga_pop, hc_variants, eta, multi
-python src/experiments.py --skip-existing    # lanjutkan bila terputus (run yang JSON-nya sudah ada dilewati)
-python src/experiments.py --plots-only       # gambar ulang + ringkasan dari JSON, tanpa search
-python src/experiments.py --quick --out tmp_quick   # uji coba cepat dengan small.json dan parameter kecil
+python src/main.py --view output/runs/sa/main_seed1.json
+# Input eksternal, termasuk hasil objective ETA:
+python src/main.py --view path/hasil_eta_seed1.json --instance path/input.json
 ```
 
-Runner memakai fungsi yang sama dengan `src/main.py`, sehingga file hasilnya sama seperti run lewat CLI.
-Konfigurasi kontrol GA (populasi 100, iterasi 1000) dipakai bersama oleh tabel EXPERIMENTS §4.6 dan §4.7 dan
-hanya dijalankan sekali. Grup `eta` (Bonus 1) menjalankan SA dengan objective urgensi ETA, sama persis dengan
-`src/eta_experiments.py` di bawah, jadi file hasilnya sama.
-`output/summary.md` berisi tabel per bagian EXPERIMENTS §4 (§4.1–§4.10) dan info mesin, ditambah `summary_*.png`.
+Search boleh melintasi state infeasible. Hasil yang dikembalikan adalah **incumbent feasible terbaik**. Bila budget habis sebelum search mengunjungi state feasible, kapal kosong menjadi baseline yang valid dan status `empty_baseline_used` dicatat eksplisit. Tidak ada repair tersembunyi atau iterasi tambahan; lihat [desain](docs/DESIGN.md).
 
-### Bonus 1 (objective urgensi ETA)
+## Eksperimen resmi
 
 ```bash
-python src/eta_experiments.py                # SA, seed 1, 2, 3 -> output/sa/main_eta_seed*.* + output/summary_eta.md
-python src/eta_experiments.py --no-plots     # tanpa gambar
-```
-
-Bobot tiap kendaraan `fee · (1 + 1/(eta + 1))` (DESIGN §8). `output/summary_eta.md` membandingkan run ETA dengan
-run objective fee pada seed yang sama (`output/sa/main_seed*.json`, harus sudah ada).
-
-Notebook `notebooks/experiments.ipynb` membaca `output/**/*.json` (tanpa menjalankan search) dan menampilkan
-tabel, plot per algoritma, state awal/akhir run terbaik, serta ringkasan antar-algoritma.
-
-### Lainnya
-
-```bash
-# buat instance baru (parameter tersimpan di "meta" file output)
-python src/core/generator.py --seed 1 --vehicles 30 --width 10 --length 20 --out src/data/main.json
-# armada beberapa kapal: pasangan --width/--length ke-k = geladak kapal ke-k
-python src/core/generator.py --seed 1 --vehicles 40 --width 10 8 6 --length 12 10 8 --out src/data/multi.json
-
-# seluruh eksperimen → output/
+python src/experiments.py --dry-run
 python src/experiments.py
+python src/experiments.py --only sa ga_pop
+python src/experiments.py --skip-existing
+python src/experiments.py --plots-only
+python src/experiments.py --quick
+```
 
-# notebook analisis
+- **24 run wajib, 39 run dengan bonus.** Kedua sweep GA masing-masing memiliki sembilan pelaksanaan, termasuk kontrol yang diulang secara terpisah.
+- Hasil resmi berada di `output/experiments/<grup>/<algoritma>/`; JSON dan gambar berpasangan dengan basename yang sama.
+- Mode quick memakai parameter kecil dan, tanpa `--out`, diarahkan ke `output/runs/quick/`.
+- `--skip-existing` melewati JSON yang sudah tersedia. Setelah mengubah algoritma, input, atau parameter, jalankan ulang tanpa opsi ini agar tidak memakai hasil lama.
+- `summary.md` berisi tabel wajib dan ringkasan. `summary_eta.md` membandingkan fee asli dan urgensi pada seed yang sama.
+- `duration_s` mengukur search saja. Pemeriksaan neighborhood untuk metrik stuck SA termasuk durasi dan evaluasi; plotting, serialisasi, dan upper bound pelaporan tidak termasuk.
+
+## Notebook analisis
+
+Notebook mengikuti panduan lokal [`ref/notebook/`](ref/notebook/SKILL.md): tiga banner, daftar isi, Introduction, Initialization, bridging prose, serta Insights. Seluruh angka dan simpulan kuantitatif dihitung dari hasil tersimpan, bukan diketik ulang.
+
+```bash
+# Bangun notebook bersih dari sumber Python:
+python src/scripts/build_notebook.py
+# Bangun, jalankan seluruh sel, dan simpan hasil eksekusi:
+python src/scripts/build_notebook.py --execute
+# Buka secara interaktif:
 jupyter notebook notebooks/experiments.ipynb
+```
 
-# unit test
+Jalankan eksperimen resmi lengkap sebelum eksekusi notebook. Notebook memeriksa kelengkapan artefak, menampilkan state awal/akhir, plot HC/SA/GA, dua sweep GA, perbandingan durasi/konsistensi, multi-kapal, ETA, dan optimum eksak instance kecil. Sumbu evaluasi menggunakan hitungan aktual, bukan interpolasi.
+
+**Edit `src/scripts/build_notebook.py`, bukan sel notebook secara manual**, supaya regenerasi tidak menghapus perubahan.
+
+## Generator dan pengujian
+
+```bash
+python src/core/generator.py --seed 4 --vehicles 30 --width 10 --length 20 --out output/runs/custom.json
+python src/core/generator.py --seed 4 --vehicles 40 --width 10 8 6 --length 12 10 8 --out output/runs/fleet.json
 python -m unittest discover -s tests -t .
 ```
 
----
+## Pembagian tugas
 
-## Pembagian Tugas
-
-| NIM | Nama | Tugas |
+| NIM | Nama | Tanggung jawab |
 |---|---|---|
-| 18224061 | Riantama Putra | Setup repository, input & generator instance, core model (representasi state, objective + penalty, delta evaluation, neighbor moves, upper bound), seluruh varian Hill-Climbing, multi-kapal |
-| 18224059 | Tiara Kusuma Wardhani | Simulated Annealing, Genetic Algorithm, objective alternatif (ETA) |
-| 18224057 | Levina Nathania Bunardi | Visualisasi, CLI, experiment runner & plot, notebook analisis, koordinator laporan |
+| 18224061 | Riantama Putra | Input/generator, representasi state, objective dan delta evaluation, neighbor, upper bound, Hill-Climbing, multi-kapal |
+| 18224059 | Tiara Kusuma Wardhani | Simulated Annealing, Genetic Algorithm, objective alternatif ETA |
+| 18224057 | Levina Nathania Bunardi | Visualisasi, CLI, runner eksperimen, notebook, koordinasi laporan |
+
+Pembagian ini mengikuti dokumen kelompok. Bantuan AI pada sesi perapihan dicatat terpisah dalam tracker dan harus dicantumkan secara jujur dalam formulir laporan.
+
+## Referensi
+
+Spesifikasi asli tersedia di `docs/`. Rujukan algoritma kuliah dan heuristik implementasi dijelaskan pada [`docs/DESIGN.md`](docs/DESIGN.md); protokol serta batas interpretasi hasil ada pada [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md).
