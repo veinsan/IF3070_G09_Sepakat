@@ -1,6 +1,6 @@
-# IF3070_G09_Sepakat
+# CARGO — IF3070_G09_Sepakat
 
-Tugas Besar 1 IF3070 Dasar Inteligensi Artifisial 2026/2027: pemilihan dan penataan kendaraan pada geladak kapal dengan **Hill-Climbing, Simulated Annealing, dan Genetic Algorithm**.
+**CARGO (Constraint-Aware Revenue and Geometric Optimization)** adalah kerangka optimasi pemilihan dan penataan kendaraan pada geladak kapal dengan **Hill-Climbing, Simulated Annealing, dan Genetic Algorithm**, untuk Tugas Besar 1 IF3070 Dasar Inteligensi Artifisial 2026/2027.
 
 Program memaksimalkan shipping fee dengan mempertimbangkan posisi integer, orientasi, overlap, batas geladak, dan kapasitas berat. Bonus mencakup objective urgensi ETA, empat varian Hill-Climbing yang disebut dalam spesifikasi, dan armada multi-kapal. Implementasi pencarian hanya memakai standard library Python.
 
@@ -28,8 +28,8 @@ IF3070_G09_Sepakat/
 │   │   ├── eta/sa/
 │   │   ├── multi/steepest/
 │   │   └── summary*.md, summary*.png
+│   ├── analysis/                    # gambar penyajian yang diekspor notebook
 │   └── runs/                        # run manual/quick, diabaikan Git
-├── ref/notebook/                    # panduan notebook yang disediakan pengguna
 ├── src/
 │   ├── core/                       # input, generator, state, objective, bounds, ETA
 │   ├── search/                     # neighbor, HC, SA, GA, format hasil
@@ -117,7 +117,7 @@ python src/experiments.py --quick
 
 ## Notebook analisis
 
-Notebook mengikuti panduan lokal [`ref/notebook/`](ref/notebook/SKILL.md): tiga banner, daftar isi, Introduction, Initialization, bridging prose, serta Insights. Seluruh angka dan simpulan kuantitatif dihitung dari hasil tersimpan, bukan diketik ulang.
+Notebook CARGO memakai pemisah coklat, banner judul dan kelompok, daftar isi, Pendahuluan, Inisialisasi, narasi sebelum kode, tabel hasil, serta blok Insights. Seluruh angka dan simpulan kuantitatif dihitung dari hasil tersimpan, bukan diketik ulang. Builder dan notebook mandiri; file template tidak diperlukan saat regenerasi maupun eksekusi.
 
 ```bash
 # Bangun notebook bersih dari sumber Python:
@@ -129,6 +129,8 @@ jupyter notebook notebooks/experiments.ipynb
 ```
 
 Jalankan eksperimen resmi lengkap sebelum eksekusi notebook. Notebook memeriksa kelengkapan artefak, menampilkan state awal/akhir, plot HC/SA/GA, dua sweep GA, perbandingan durasi/konsistensi, multi-kapal, ETA, dan optimum eksak instance kecil. Sumbu evaluasi menggunakan hitungan aktual, bukan interpolasi.
+
+Setiap gambar analisis ditanam langsung dalam notebook dan diekspor ke `output/analysis/`. Isi notebook mencakup karakteristik kendaraan, hasil per seed, kurva pencarian, pasangan initial/final state, serta pembahasan keterbatasan. Direktori sumber eksperimen resmi tidak diubah oleh notebook.
 
 **Edit `src/scripts/build_notebook.py`, bukan sel notebook secara manual**, supaya regenerasi tidak menghapus perubahan.
 

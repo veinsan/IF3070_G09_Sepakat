@@ -1,4 +1,4 @@
-# Desain — Optimasi Muatan Kendaraan
+# CARGO — Desain Optimasi Muatan Kendaraan
 
 Dokumen ini menjelaskan implementasi yang berjalan, bukan rencana fitur. Spesifikasi tugas asli di direktori ini tidak diubah. Source code merupakan sumber detail fungsi/kelas; hasil terukur berada di `output/experiments/` dan notebook.
 
@@ -145,10 +145,11 @@ Bonus multi-kapal memakai constraint per kapal, move/swap lintas kapal, dan obje
 
 `core/` mengelola model; `search/` mengelola algoritma; `visualization/` menggambar hasil tersimpan. CLI satu run dan runner eksperimen terpisah. Data berada di `dataset/`, notebook di `notebooks/`, builder di `src/scripts/`, dan hasil resmi terpisah dari percobaan manual.
 
+Notebook CARGO menggunakan builder mandiri dengan pemisah bagian berwarna coklat, tabel HTML, dan figure PNG tertanam. Figure analisis juga diekspor ke `output/analysis/`; hasil JSON resmi tetap hanya dibaca. File template visual tidak dibutuhkan untuk menjalankan maupun meregenerasi notebook.
+
 - M. L. Khodra, [Hill-Climbing Search](https://www.youtube.com/watch?v=L0b0CN3Fds8), 2021.
 - M. L. Khodra, [Simulated Annealing](https://www.youtube.com/watch?v=AdhG7HnhYrk), 2021.
 - M. L. Khodra, [Genetic Algorithm](https://www.youtube.com/watch?v=aI41TGo9J9c), 2021.
-- `ref/notebook/`: panduan builder dan penyusunan notebook yang disediakan pengguna.
 - [NBClient](https://nbclient.readthedocs.io/en/latest/client.html): eksekusi notebook terprogram.
 
 Penalty, baseline feasible, pemilihan T0, bias proposal removal, tie-breaking, windowing, elitism, relaksasi UB, dan observasi checkpoint adalah keputusan implementasi yang harus dijelaskan kembali pada laporan, bukan diatribusikan otomatis seluruhnya kepada salindia.

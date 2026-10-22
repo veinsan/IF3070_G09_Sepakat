@@ -52,13 +52,16 @@ Pembagian tugas anggota dipertahankan pada README. Kontribusi AI pada sesi ini d
 
 ## Notebook dan verifikasi
 
-- [x] Builder `src/scripts/build_notebook.py` mengikuti `ref/notebook/`, dengan banner, daftar isi, Introduction, Initialization, dan Insights.
+- [x] Builder notebook CARGO mandiri, dengan banner coklat, daftar isi, Pendahuluan, Inisialisasi, narasi sebelum kode, dan blok Insights.
 - [x] Analisis kualitas, durasi, konsistensi, dua sweep GA, HC/SA, ETA, multi-kapal, UB dan optimum eksak disusun dari hasil aktual.
 - [x] Sumbu konvergensi memakai evaluasi kumulatif aktual, bukan interpolasi.
 - [x] Regresi penuh: `python -m unittest discover -s tests -t .` lulus dengan 156 test.
 - [x] Smoke CLI default HC/SA/GA; singleton; budget pendek; ETA initial; ekspor bertitik; replay ETA; dan penolakan parameter invalid dijalankan.
 - [x] Evaluasi independen seluruh 39 JSON beserta pemetaan, history, feasibility, dan pasangan PNG berhasil.
-- [x] Notebook dieksekusi ulang: 63 sel (19 sel kode), 26 gambar PNG tertanam, tanpa error sel.
+- [x] Notebook CARGO dieksekusi ulang: 119 sel (25 sel kode), 28 gambar PNG tertanam, dan 16 tabel HTML, tanpa error sel.
+- [x] Builder dan seluruh sel berhasil dieksekusi pada salinan proyek tanpa file template; 28 figure analisis diekspor ke `output/analysis/`.
+- [x] Render HTML diperiksa di browser: warna border coklat, tautan daftar isi, tabel, plot GA, dan pasangan state; seluruh 28 gambar termuat dan memiliki alternative text.
+- [x] Checksum seluruh 39 JSON eksperimen resmi identik sebelum dan sesudah eksekusi notebook.
 
 Hasil eksekusi notebook yang disimpan merupakan bagian artefak analisis. Regenerasi harus dilakukan melalui builder; pemeriksaan output gambar merupakan bagian verifikasi visual, bukan hanya memeriksa exit code.
 
@@ -102,6 +105,6 @@ Keputusan di atas bukan kutipan jawaban resmi. Pertanyaan administratif atau per
 
 Assistant membantu audit spesifikasi dan kode, identifikasi/reproduksi bug, modifikasi core/search/CLI/runner/visualisasi, reorganisasi dataset/output, penulisan regresi, pembuatan ulang notebook dan analisis, pembaruan dokumentasi, serta eksekusi verifikasi dan eksperimen. Hasil review dan pemeriksaan runtime digunakan untuk memperbaiki implementasi; ini bukan audit yang hanya memberi saran.
 
-Skill notebook berasal dari `ref/notebook/` yang diberikan pengguna. Rujukan nbclient dipakai untuk API eksekusi notebook.
+Penyajian notebook mengikuti template visual yang diberikan pengguna. File template bukan dependensi runtime maupun regenerasi; rujukan nbclient dipakai untuk API eksekusi notebook.
 
 Riwayat penggunaan AI sebelum sesi ini tidak diketahui assistant. Setiap anggota perlu mencatat penggunaan aktualnya sendiri ketika mengisi formulir laporan; log ini tidak menggantikan formulir resmi dan tidak mengklaim kode sepenuhnya ditulis tanpa bantuan AI.
