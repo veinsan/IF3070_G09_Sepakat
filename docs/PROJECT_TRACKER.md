@@ -55,7 +55,7 @@ Pembagian tugas anggota dipertahankan pada README. Kontribusi AI pada sesi ini d
 - [x] Builder notebook CARGO mandiri, dengan banner coklat, daftar isi, Pendahuluan, Inisialisasi, narasi sebelum kode, dan blok Insights.
 - [x] Analisis kualitas, durasi, konsistensi, dua sweep GA, HC/SA, ETA, multi-kapal, UB dan optimum eksak disusun dari hasil aktual.
 - [x] Sumbu konvergensi memakai evaluasi kumulatif aktual, bukan interpolasi.
-- [x] Regresi penuh: `python -m unittest discover -s tests -t .` lulus dengan 156 test.
+- [x] Regresi penuh terkini: `python -m unittest discover -s tests -t .` lulus dengan 167 test, termasuk observer dan API lokal; `pip check` tidak menemukan dependency rusak.
 - [x] Smoke CLI default HC/SA/GA; singleton; budget pendek; ETA initial; ekspor bertitik; replay ETA; dan penolakan parameter invalid dijalankan.
 - [x] Evaluasi independen seluruh 39 JSON beserta pemetaan, history, feasibility, dan pasangan PNG berhasil.
 - [x] Notebook CARGO dieksekusi ulang: 119 sel (25 sel kode), 28 gambar PNG tertanam, dan 16 tabel HTML, tanpa error sel.
@@ -64,6 +64,34 @@ Pembagian tugas anggota dipertahankan pada README. Kontribusi AI pada sesi ini d
 - [x] Checksum seluruh 39 JSON eksperimen resmi identik sebelum dan sesudah eksekusi notebook.
 
 Hasil eksekusi notebook yang disimpan merupakan bagian artefak analisis. Regenerasi harus dilakukan melalui builder; pemeriksaan output gambar merupakan bagian verifikasi visual, bukan hanya memeriksa exit code.
+
+## Simulator web lokal
+
+- [x] FastAPI/Uvicorn menyajikan frontend native dan solver Python pada satu alamat loopback; tanpa deployment cloud, database, atau build Node.js.
+- [x] Observer pada enam algoritma mempertahankan history, final state, metadata pencarian, dan evaluasi; regresi juga mencakup ETA dan budget nol.
+- [x] Snapshot posisi terpisah dari state mutable, dibatasi 240 frame, dan dapat diputar tanpa membuat penempatan interpolasi.
+- [x] Konfigurasi/upload JSON, SVG kapal, current/best feasible, inspeksi keyboard/selector, perbandingan awal/akhir, grafik, tabel numerik, dan perbandingan sesi berfungsi.
+- [x] Worker terpisah menjaga HTTP responsif; satu run aktif, pembatalan, deadline, cleanup shutdown, batas input/DP, Origin/Host lokal, dan retensi hasil diverifikasi.
+- [x] Smoke HTTP menjalankan keenam algoritma, multi-kapal, ETA, dan ekspor JSON/PNG. Browser juga menjalankan SA utama 100.000 iterasi dan GA utama 1.000 generasi.
+- [x] History, final state, dan evaluasi SA utama dengan observer identik dengan hasil resmi pada seed yang sama.
+- [x] Browser memverifikasi keyboard pada SVG, playback, pembatalan, pemilih kapal, unduhan nyata, pemulihan ekspor kedaluwarsa, dan reduced motion.
+- [x] Layout 375/768/1440 px tidak menambah horizontal page overflow. Kontras teks tombol utama 6,78:1 dan batas input 3,56:1 terukur; font disajikan lokal.
+- [x] Checksum 171 berkas yang dilindungi, termasuk artefak eksperimen, notebook, template pengguna, dan `.gitignore`, tidak berubah.
+
+### Workbench 2D/3D
+
+- [x] Viewport dominan, panel kanan Konfigurasi/Inspeksi/Hasil, serta dock replay dan grafik; identitas coklat dan font lokal dipertahankan.
+- [x] Three.js 0.186.1 lokal berlisensi MIT, kapal/kendaraan prosedural, kamera orbit/atas/zoom/fokus/fullscreen, grid/label, dan picking.
+- [x] Tapak dan rotasi model berasal dari snapshot aktual; tidak ada constraint tinggi, stacking, lintasan berkendara, atau posisi fiktif kendaraan luar.
+- [x] Seleksi, current/best, kapal, replay, dan perbandingan 2D tersinkronisasi; shader/renderer tidak mengganti keputusan solver.
+- [x] Bug canvas nol setelah keluar dari comparison dan bug framing saat aspect ratio menyempit direproduksi lalu diperbaiki; layout 375/768/812/1440 px diverifikasi tanpa horizontal page overflow.
+- [x] Inersia kamera mengikuti reduced motion. Toggle berulang mempertahankan satu canvas dan alokasi scene yang diamati; render idle teramati nol.
+- [x] WebGL tidak tersedia dan kehilangan konteks dipaksakan; fallback SVG tetap mempertahankan hasil, solver, serta ekspor JSON/PNG.
+- [x] SA utama, GA utama, multi-kapal/ETA, kamera, seleksi pointer/native, keyboard tab, replay, fullscreen, dan unduhan nyata dijalankan; 167 regresi Python lulus.
+- [x] Checksum 241 berkas yang dilindungi tetap sama; algoritma/backend, artefak resmi, notebook, materi pengguna, dan `.gitignore` tidak diubah.
+
+Catatan verifikasi: Chromium headless tetap melaporkan dokumen visible saat fokus dipindah. Handler visibility tersedia, tetapi suspend melalui perpindahan tab native belum terbukti pada lingkungan pengujian ini; tidak ada klaim FPS.
+
 
 ## Pekerjaan laporan — belum dikerjakan pada sesi ini
 
@@ -106,5 +134,9 @@ Keputusan di atas bukan kutipan jawaban resmi. Pertanyaan administratif atau per
 Assistant membantu audit spesifikasi dan kode, identifikasi/reproduksi bug, modifikasi core/search/CLI/runner/visualisasi, reorganisasi dataset/output, penulisan regresi, pembuatan ulang notebook dan analisis, pembaruan dokumentasi, serta eksekusi verifikasi dan eksperimen. Hasil review dan pemeriksaan runtime digunakan untuk memperbaiki implementasi; ini bukan audit yang hanya memberi saran.
 
 Penyajian notebook mengikuti template visual yang diberikan pengguna. File template bukan dependensi runtime maupun regenerasi; rujukan nbclient dipakai untuk API eksekusi notebook.
+
+Pada sesi simulator lokal, AI membantu merancang kontrak UI/API, mengimplementasikan observer, worker/backend dan frontend, menambahkan regresi perilaku, memperbaiki masalah upload/parameter/retensi/fokus SVG/overflow yang ditemukan saat verifikasi, serta menjalankan smoke HTTP dan browser. Tidak ada eksperimen resmi yang diganti atau klaim hasil baru yang dimasukkan ke notebook.
+
+Pada sesi workbench 3D, AI membantu merancang ulang shell antarmuka, membuat renderer prosedural Three.js, mengintegrasikan kontrol dan pemilihan snapshot, memverifikasi dependency berlisensi, memperbaiki transisi comparison/framing/reduced motion, serta menjalankan smoke WebGL dan regresi. Geometri dekoratif bukan perluasan model optimasi. Inspirasi komposisi antarmuka dan asal dependency dicatat pada `DESIGN.md`; tidak ada kode algoritma atau hasil eksperimen resmi yang diganti.
 
 Riwayat penggunaan AI sebelum sesi ini tidak diketahui assistant. Setiap anggota perlu mencatat penggunaan aktualnya sendiri ketika mengisi formulir laporan; log ini tidak menggantikan formulir resmi dan tidak mengklaim kode sepenuhnya ditulis tanpa bantuan AI.

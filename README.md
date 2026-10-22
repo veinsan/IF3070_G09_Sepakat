@@ -34,6 +34,8 @@ IF3070_G09_Sepakat/
 │   ├── core/                       # input, generator, state, objective, bounds, ETA
 │   ├── search/                     # neighbor, HC, SA, GA, format hasil
 │   ├── visualization/              # diagram state dan plot dari hasil tersimpan
+│   ├── web/                        # API lokal, worker process, dan frontend statis
+│   ├── web_app.py                  # peluncur simulator browser di loopback
 │   ├── scripts/build_notebook.py   # sumber notebook yang dapat diregenerasi
 │   ├── config.py                   # path dan parameter bersama
 │   ├── main.py                     # CLI satu run dan replay
@@ -47,7 +49,7 @@ Laporan PDF belum dibuat. Setelah tersedia, letakkan laporan di `docs/`; status 
 
 ## Setup
 
-Python **3.10+**, CPU; GPU tidak diperlukan. Matplotlib dipakai untuk gambar, Notebook untuk antarmuka analisis, serta nbclient/nbformat untuk eksekusi notebook terprogram.
+Python **3.11+** untuk setup lengkap, CPU; GPU tidak diperlukan. Lingkungan yang diverifikasi memakai Python 3.14.7. Matplotlib dipakai untuk gambar, Notebook/nbclient/nbformat untuk analisis, FastAPI/Uvicorn untuk simulator lokal, dan httpx2 untuk regresi API.
 
 ```bash
 python -m venv .venv
@@ -56,6 +58,34 @@ python -m pip install -r requirements.txt
 ```
 
 Seluruh perintah berikut dijalankan dari root repository dengan environment aktif.
+
+## Simulator web lokal
+
+```bash
+python src/web_app.py
+# Port alternatif jika 8000 sudah digunakan:
+python src/web_app.py --port 8767
+```
+
+Buka **http://127.0.0.1:8000** (sesuaikan port). Semua aset, termasuk Three.js dan font IBM Plex Sans, disajikan secara lokal; tidak ada CDN, layanan AI eksternal, atau build frontend Node.js.
+
+1. Pilih dataset bawaan atau unggah JSON dengan format yang sama seperti CLI.
+2. Pilih algoritma, seed, dan objective. Buka **Parameter algoritma** bila perlu; mengubah formulir tidak otomatis menjalankan search.
+3. Klik **Jalankan simulasi**. Search berjalan pada process terpisah; proses dapat dibatalkan.
+4. Gunakan **State saat ini / Terbaik feasible**, pemilih kapal, serta **Awal / Sebelumnya / Putar / Berikutnya / Terakhir** untuk mengamati snapshot nyata. Setelah selesai, tampilan mengikuti incumbent feasible jika masih mengikuti snapshot terbaru.
+5. Gunakan **2D / 3D** untuk mengganti renderer tanpa menjalankan ulang solver. Dalam 3D, drag untuk orbit, tombol kanan untuk geser, dan scroll untuk zoom. Tombol **Reset / Atas / + / − / Putar kiri / Putar kanan / Fokus pilihan** menyediakan alternatif kontrol kamera; **Layar penuh** memperbesar viewport.
+6. Pilih kendaraan lewat geometri SVG/3D, keyboard Tab + Enter pada SVG, atau selector di tab **Inspeksi**. Pemilih kendaraan yang dimuat pada kapal lain juga berpindah ke kapal tersebut. Kendaraan di luar kapal tetap tersedia di daftar, tanpa posisi 3D fiktif.
+7. **Bandingkan awal / akhir** menampilkan initial state dan hasil feasible berdampingan dalam 2D; menutupnya mengembalikan mode tampilan sebelumnya. **Grid / Label** mengatur lapisan visual, bukan data pencarian.
+8. Lihat kurva dan tabel numerik di bawah viewport. Tab **Hasil** memuat perbandingan sesi serta unduhan JSON atau PNG grafik run, bukan screenshot viewport 3D.
+
+**Batas 3D:** diperlukan WebGL2. Jika inisialisasi grafis gagal atau konteks WebGL terputus, aplikasi kembali ke SVG 2D tanpa membatalkan search atau menghapus hasil. Ukuran/orientasi tapak tetap mengikuti data 2D; tinggi kendaraan, lambung, dan kabin hanya ilustrasi, bukan constraint tambahan. Tidak ada simulasi lintasan berkendara atau penumpukan. Kamera tidak mengikuti perpindahan kendaraan secara otomatis; **Reset** membingkai ulang keadaan terpilih, termasuk posisi di luar batas. Lisensi Three.js dan font tersedia dalam `src/web/static/vendor/three/LICENSE.txt` dan `src/web/static/fonts/OFL.txt`.
+
+**Semantik simulasi:** maksimal 240 snapshot disimpan dengan sampling adaptif; playback tidak merekonstruksi setiap transisi dan tidak menginterpolasi penempatan fiktif. Pada GA, current adalah individu dengan objective maksimum pada generasi tersebut, bukan seluruh populasi. Best feasible adalah arsip terpisah; baseline kapal kosong dinyatakan eksplisit ketika belum ada kandidat feasible yang ditemukan. Pendapatan asli tetap terpisah dari bobot objective ETA.
+
+**Batas lokal:** satu search aktif, deadline 45 detik, dan delapan run terminal terbaru di memori server. Riwayat hilang saat server dihentikan; simpan ekspor yang diperlukan. UI menyingkirkan riwayat yang sudah kedaluwarsa ketika menerima status berikutnya. Batas parameter/input ditampilkan atau divalidasi sebelum worker dimulai; misalnya populasi GA minimal tiga karena elitism dua. Batas demo dapat lebih kecil daripada CLI, termasuk maksimum 2.000 generasi GA.
+
+Run GUI mencakup overhead observasi dan **tidak menggantikan benchmark resmi**. Aplikasi tidak menulis unggahan, hasil search, atau snapshot ke `output/experiments/`. Server hanya menerima akses loopback dan menolak Origin asing; versi ini bukan deployment publik.
+
 
 ## Menjalankan satu algoritma
 
