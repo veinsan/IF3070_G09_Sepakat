@@ -115,6 +115,10 @@ python src/main.py --algo random_restart --max-restart 5
 python src/main.py --view output/sa/main_seed1.json        # tampilkan & gambar ulang hasil yang tersimpan
 ```
 
+Hasil disimpan ke `output/` dan menimpa hasil eksperimen resmi dengan nama yang sama (misalnya
+`output/steepest/main_seed1.json`). Untuk mencoba-coba, tambahkan `--out tmp_demo` atau `--no-save`.
+Steepest, SA, dan GA di atas selesai dalam beberapa detik; Random Restart sekitar 15–20 detik.
+
 | Opsi | Keterangan |
 |---|---|
 | `--algo` | `steepest` (alias `hc`), `sideways`, `random_restart`, `stochastic` (Bonus 2), `sa`, `ga` |
