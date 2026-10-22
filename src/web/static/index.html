@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#705641">
+  <title>CARGO | Simulator lokal</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script type="importmap">{"imports":{"three":"/static/vendor/three/three.module.js","three/addons/":"/static/vendor/three/addons/"}}</script>
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#workspace">Langsung ke geladak</a>
+  <header class="app-header">
+    <h1 class="brand">CARGO<span>Simulator pemuatan kendaraan</span></h1>
+    <span class="local-label">Komputasi lokal · tanpa layanan eksternal</span>
+  </header>
+  <main class="app-layout">
+    <div id="workspace" class="workspace" tabindex="-1">
+      <section class="run-status" aria-labelledby="run-title">
+        <div class="run-heading"><p class="eyebrow" id="run-context">Masukan terpilih</p><h2 id="run-title">Menyiapkan geladak</h2><p id="run-subtitle" class="muted">Memuat data asli dari server lokal.</p></div>
+        <div class="status-actions"><span id="status-label" class="status-label" role="status" aria-live="polite">Memuat</span><button id="show-active-run" type="button" hidden>Lihat proses aktif</button><button id="cancel-button" type="button" class="danger" hidden>Batalkan proses</button><button id="resume-poll" type="button" hidden>Sambungkan proses</button></div>
+        <div id="progress-region" class="progress-region" hidden><progress id="run-progress" aria-label="Kemajuan pencarian"></progress><span id="progress-text"></span></div>
+        <div id="job-error" class="message error" role="alert" hidden></div>
+      </section>
+
+      <section id="viewport-shell" class="deck-panel" data-mode="2d" aria-labelledby="deck-heading">
+        <div class="panel-toolbar viewport-heading">
+          <h2 id="deck-heading">Peta geladak</h2>
+          <div class="toolbar-controls"><label for="ship-select" class="sr-only">Kapal yang ditampilkan</label><select id="ship-select" aria-label="Kapal yang ditampilkan" disabled></select><button id="compare-button" type="button" aria-pressed="false" disabled>Bandingkan awal / akhir</button><button id="viewport-fullscreen" type="button" aria-label="Buka viewport geladak dalam layar penuh">Layar penuh</button></div>
+        </div>
+        <div class="view-toolbar">
+          <div class="segmented" role="group" aria-label="State yang ditampilkan"><button id="view-current" type="button" aria-pressed="true" disabled>State saat ini</button><button id="view-best" type="button" aria-pressed="false" disabled>Terbaik feasible</button></div>
+          <div class="display-controls">
+            <div class="segmented render-modes" role="group" aria-label="Mode tampilan geladak"><button id="render-2d" type="button" aria-pressed="true">2D</button><button id="render-3d" type="button" aria-pressed="false">3D</button></div>
+            <label class="check-control" for="scene-grid"><input id="scene-grid" type="checkbox" checked>Grid</label>
+            <label class="check-control" for="scene-labels"><input id="scene-labels" type="checkbox" checked>Label</label>
+          </div>
+        </div>
+        <div class="viewport-surface">
+          <div class="render-surface">
+            <div id="deck-canvas" class="deck-canvas"><p class="canvas-empty">Geometri kapal akan tampil di sini.</p></div>
+            <div id="scene-3d" class="scene-3d" role="group" aria-label="Visualisasi tiga dimensi geladak; gunakan pemilih kendaraan pada tab Inspeksi sebagai alternatif" hidden></div>
+          </div>
+          <div class="camera-toolbar" role="group" aria-label="Kamera 3D, tersedia dalam mode 3D">
+            <span class="camera-label">Kamera 3D</span>
+            <button id="camera-reset" type="button" aria-label="Atur ulang kamera 3D ke pandangan isometrik" disabled>Reset</button>
+            <button id="camera-top" type="button" aria-label="Lihat geladak 3D tepat dari atas" disabled>Atas</button>
+            <button id="camera-zoom-in" type="button" aria-label="Perbesar kamera 3D" disabled>+</button>
+            <button id="camera-zoom-out" type="button" aria-label="Perkecil kamera 3D" disabled>−</button>
+            <button id="camera-orbit-left" type="button" aria-label="Putar kamera 3D ke kiri" disabled>Putar kiri</button>
+            <button id="camera-orbit-right" type="button" aria-label="Putar kamera 3D ke kanan" disabled>Putar kanan</button>
+            <button id="camera-focus" type="button" aria-label="Fokus kamera 3D ke kendaraan terpilih yang dimuat" disabled>Fokus pilihan</button>
+          </div>
+        </div>
+        <div class="viewport-info">
+        <div class="viewport-caption"><span id="frame-caption">Pratinjau masukan · belum dijalankan</span><p id="scene-note">Tinggi kendaraan 3D hanya ilustrasi. Kendala optimasi tetap pada geometri 2D dan kapasitas berat.</p></div>
+        <div id="scene-error" class="message error scene-error" role="status" hidden></div>
+        <div class="deck-legend"><span><i class="legend-box" aria-hidden="true"></i>Kendaraan</span><span><i class="legend-box selected" aria-hidden="true"></i>Terpilih</span><span><i class="legend-box violation" aria-hidden="true"></i>Tumpang tindih / keluar batas</span><span class="legend-unit">1 kotak = 1 sel · koordinat x/y</span></div>
+        <p id="state-notice" class="state-notice">Pratinjau kosong bukan hasil optimasi. Jalankan simulasi untuk melihat penempatan.</p>
+        </div>
+      </section>
+
+      <section class="analysis-dock" aria-label="Snapshot dan analisis pencarian">
+        <div id="state-summary" class="state-summary"></div>
+        <div class="playback" aria-label="Pemutaran snapshot">
+          <div class="playback-heading"><h2>Snapshot pencarian</h2><div class="playback-buttons"><button id="reset-frame" type="button" disabled>Awal</button><button id="previous-frame" type="button" aria-label="Snapshot sebelumnya" disabled>Sebelumnya</button><button id="play-button" type="button" disabled>Putar</button><button id="next-frame" type="button" aria-label="Snapshot berikutnya" disabled>Berikutnya</button><button id="last-frame" type="button" disabled>Terakhir</button></div></div>
+          <div class="timeline"><label for="frame-range" id="timeline-label">Belum ada snapshot</label><input id="frame-range" type="range" min="0" max="0" value="0" disabled><label class="speed-label" for="play-speed">Kecepatan<select id="play-speed"><option value="1200">Lambat</option><option value="650" selected>Normal</option><option value="250">Cepat</option></select></label></div>
+          <p class="help">Snapshot nyata disampel adaptif, bukan setiap transisi. Tidak ada state interpolasi.</p>
+        </div>
+        <section class="chart-panel" aria-labelledby="chart-heading">
+          <div class="panel-toolbar"><h2 id="chart-heading">Konvergensi pencarian</h2><div id="chart-legend" class="chart-legend"></div></div>
+          <div id="convergence-chart" class="convergence-chart"><p class="chart-empty">Belum ada pencarian. Kurva muncul setelah snapshot pertama diterima.</p></div>
+          <details id="chart-data"><summary>Lihat data grafik dalam tabel</summary><p id="chart-note" class="help">Grafik akan menggunakan objective pencarian yang sebenarnya.</p><div class="data-toolbar"><label for="data-page">Halaman data<select id="data-page" disabled><option>Belum ada data</option></select></label><span id="data-caption" class="help"></span></div><div id="chart-data-table" class="table-scroll" tabindex="0" role="region" aria-label="Data numerik grafik"></div></details>
+        </section>
+      </section>
+
+      <aside class="control-panel" aria-label="Kontrol dan informasi simulasi">
+        <div class="panel-tabs" role="tablist" aria-label="Panel simulasi"><button id="tab-config" type="button" role="tab" data-panel="panel-config" aria-controls="panel-config" aria-selected="true">Konfigurasi</button><button id="tab-inspect" type="button" role="tab" data-panel="panel-inspect" aria-controls="panel-inspect" aria-selected="false" tabindex="-1">Inspeksi</button><button id="tab-results" type="button" role="tab" data-panel="panel-results" aria-controls="panel-results" aria-selected="false" tabindex="-1">Hasil</button></div>
+        <section id="panel-config" class="tab-panel configuration" role="tabpanel" aria-labelledby="tab-config" tabindex="0">
+          <div class="section-heading"><h2 id="configuration-title">Konfigurasi</h2><span class="muted">Eksperimen baru</span></div>
+          <p class="intro">Pilih masukan dan parameter, lalu amati pencarian di geladak.</p>
+          <div id="boot-error" class="message error" role="alert" hidden><p id="boot-error-text"></p><button id="retry-bootstrap" type="button">Coba hubungkan lagi</button></div>
+          <form id="run-form" aria-busy="true">
+            <fieldset id="config-fields" disabled>
+              <legend class="sr-only">Parameter pencarian</legend>
+              <label for="dataset">Data masukan</label>
+              <select id="dataset" name="dataset"><option>Memuat data lokal…</option></select>
+              <div class="upload-control"><label for="upload">Unggah JSON</label><input id="upload" class="sr-only" type="file" accept=".json,application/json" aria-describedby="upload-note upload-error"></div>
+              <p id="upload-note" class="help">File diproses di memori, tidak disimpan ke disk.</p>
+              <p id="upload-error" class="field-error" role="alert" hidden></p>
+              <div id="input-summary" class="input-summary">Mengambil geometri masukan…</div>
+              <label for="algorithm">Algoritma</label><select id="algorithm" name="algorithm" aria-describedby="algorithm-description"></select>
+              <p id="algorithm-description" class="help algorithm-description"></p>
+              <label for="objective">Tujuan optimasi</label><select id="objective" name="objective"><option value="fee">Pendapatan pengiriman</option><option value="eta">Pendapatan berbobot urgensi ETA</option></select>
+              <p id="objective-description" class="help">Objective = fee asli dikurangi penalti pelanggaran.</p>
+              <label for="seed">Seed acak</label><input id="seed" name="seed" type="number" step="1" value="1" required aria-describedby="seed-note"><p id="seed-note" class="help">Seed tetap membantu mereproduksi pencarian.</p>
+              <details class="parameters"><summary>Parameter algoritma <span id="parameter-count"></span></summary><div id="parameter-fields"></div><p class="help">Nilai awal dan batas mengikuti server lokal.</p></details>
+              <button id="run-button" class="primary run-button" type="submit">Jalankan simulasi</button>
+            </fieldset>
+            <p class="help run-note">Perubahan konfigurasi tidak menjalankan pencarian. Hasil yang terlihat tetap milik run terpilih.</p>
+            <div id="run-error" class="message error" role="alert" tabindex="-1" hidden></div>
+          </form>
+        </section>
+        <section id="panel-inspect" class="tab-panel inspection" role="tabpanel" aria-labelledby="tab-inspect" tabindex="0" hidden>
+          <div class="vehicle-inspector"><div class="section-heading"><h2 id="inspection-title">Inspeksi kendaraan</h2></div><p class="help">Pilih di geladak, atau gunakan daftar berikut.</p><div class="vehicle-picker"><label for="vehicle-select">Kendaraan (semua kapal)</label><select id="vehicle-select" aria-describedby="vehicle-picker-note"><option value="">Pilih kendaraan…</option></select><p id="vehicle-picker-note" class="help">Alternatif keyboard dan sentuh untuk setiap kendaraan di peta.</p></div><div id="vehicle-detail" class="vehicle-detail"><p class="muted">Pilih kendaraan untuk melihat ukuran, fee, berat, dan penempatannya.</p></div></div>
+          <section class="capacity-panel" aria-labelledby="capacity-heading"><h2 id="capacity-heading">Kapasitas kapal</h2><div id="ship-capacities" class="ship-capacities"></div></section>
+          <div class="outside-panel"><div class="section-heading"><h2 id="outside-title">Di luar kapal</h2><span id="outside-count" class="count">0</span></div><div id="outside-list" class="vehicle-list" aria-labelledby="outside-title"></div></div>
+        </section>
+        <section id="panel-results" class="tab-panel results" role="tabpanel" aria-labelledby="tab-results" tabindex="0" hidden>
+          <section class="export-panel" aria-labelledby="export-heading"><h2 id="export-heading">Ekspor hasil terpilih</h2><p class="help">Ekspor tersedia setelah run selesai. Berkas berasal dari hasil pencarian aktual.</p><div class="download-actions"><button id="download-json" type="button" disabled>Unduh JSON</button><button id="download-png" type="button" disabled>Unduh PNG</button></div></section>
+          <section class="history-panel" aria-labelledby="history-heading"><div class="section-heading"><h2 id="history-heading">Perbandingan sesi ini</h2><span id="history-count" class="muted">0 run selesai</span></div><p class="help">Riwayat run terbaru hanya tersimpan di tab ini dan hilang saat dimuat ulang. Bandingkan objective hanya untuk data dan tujuan yang sama. Durasi mencakup observer, bukan benchmark resmi.</p><div id="history-table" class="table-scroll" tabindex="0" role="region" aria-label="Tabel perbandingan run"><p class="empty-history">Run yang selesai akan muncul di sini. Gunakan seed dan masukan yang sama untuk perbandingan terkontrol.</p></div></section>
+        </section>
+      </aside>
+      <footer class="workspace-footer"><span>CARGO · Laboratorium pencarian lokal</span><span>HC, Simulated Annealing &amp; Genetic Algorithm</span></footer>
+    </div>
+  </main>
+  <noscript><p class="message error">Aktifkan JavaScript untuk menjalankan dan menginspeksi simulasi lokal.</p></noscript>
+</body>
+</html>
