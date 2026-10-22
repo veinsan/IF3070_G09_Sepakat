@@ -4,15 +4,15 @@ import json
 import random
 import unittest
 from collections import Counter
-from pathlib import Path
 
+from config import DATA_DIR
 from core.objective import evaluate
 from core.problem import load_problem
 from core.state import random_state
 from search.genetic_algorithm import crossover, genetic_algorithm, mutate, roulette_cumulative, spin
 from search.result import RunResult
 
-DATA = Path(__file__).resolve().parent.parent / "src" / "data"
+DATA = DATA_DIR
 MAIN = load_problem(DATA / "main.json")
 SMALL = load_problem(DATA / "small.json")
 MULTI = load_problem(DATA / "multi.json")
@@ -114,6 +114,7 @@ class TestGeneticAlgorithm(unittest.TestCase):
         self.assertEqual(len(result.history["mean"]), 41)
         # populasi awal + anak baru tiap generasi (elit tidak dinilai ulang)
         self.assertEqual(result.evaluations, 21 + 40 * (21 - 2))
+        self.assertEqual(result.history["evaluations"], [21 + k * 19 for k in range(41)])
 
     def test_max_never_below_mean(self):
         result = run()
@@ -127,8 +128,8 @@ class TestGeneticAlgorithm(unittest.TestCase):
     def test_initial_and_final_state(self):
         result = run(problem=MAIN)
         self.assertEqual(result.initial_state.objective, result.history["objective"][0])
-        self.assertEqual(result.final_state.objective, max(result.history["objective"]))
-        self.assertEqual(result.final_state.objective, result.history["objective"][result.extra["best_generation"]])
+        self.assertEqual(result.final_state.objective, result.history["best_feasible"][-1])
+        self.assertEqual(result.extra["raw_best_objective"], max(result.history["objective"]))
         self.assertAlmostEqual(result.final_state.objective,
                                evaluate(MAIN, result.final_state.positions).objective)
 
@@ -154,13 +155,18 @@ class TestGeneticAlgorithm(unittest.TestCase):
         result = run(problem=MAIN, p_crossover=0, p_mutation=0)
         self.assertEqual(result.extra["crossovers"], 0)
         self.assertEqual(result.extra["mutations"], 0)
-        self.assertEqual(result.final_state.objective, result.initial_state.objective)
+        self.assertEqual(result.final_state.objective, result.history["best_feasible"][0])
 
     def test_invalid_params(self):
         for overrides in ({"population_size": 1}, {"iterations": -1}, {"elitism": 20}, {"elitism": -1},
                           {"p_crossover": 1.5}, {"p_mutation": -0.1}):
             with self.subTest(**overrides), self.assertRaises(ValueError):
                 run(**overrides)
+
+    def test_nonfinite_epsilon_rejected_even_with_zero_generations(self):
+        for epsilon in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(epsilon=epsilon), self.assertRaises(ValueError):
+                run(iterations=0, epsilon=epsilon)
 
     def test_result_round_trip(self):
         result = run(problem=MAIN, iterations=20)

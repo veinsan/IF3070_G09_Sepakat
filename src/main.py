@@ -1,17 +1,14 @@
-"""CLI: jalankan satu algoritma local search pada satu instance, lalu simpan hasilnya ke `output/`.
+"""CLI penataan kendaraan: search satu instance atau buka ulang hasil JSON.
 
-Contoh (dari root repo):
-
+Dari root repository:
     python src/main.py --algo hc --seed 1
-    python src/main.py --algo sa --instance multi.json --seed 2
-    python src/main.py --algo ga --population 50 --iterations 300 --seed 3
-    python src/main.py --view output/sa/main_seed1.json
+    python src/main.py --algo sa --instance multi.json --objective eta
+    python src/main.py --algo ga --population 50 --iterations 300
+    python src/main.py --view output/runs/sa/main_seed1.json
 
-Hasil satu run disimpan ke `<out>/<algo>/<run_id>.json` (dict `RunResult.to_dict()`, EXPERIMENTS §2) beserta
-`<run_id>_initial.png`, `<run_id>_final.png` (state awal/akhir), dan `<run_id>_plot.png` (plot objective, dan
-e^(dE/T) untuk SA). `run_id` = `<instance>_seed<seed>`, untuk GA `<instance>_pop<P>_iter<I>_seed<seed>`.
-
-Fungsi `run_algorithm`, `run_id`, `save_run`, dan `format_summary` dipakai juga oleh `experiments.py`.
+Run manual disimpan ke output/runs/<algo>/ dan tidak menimpa eksperimen resmi.
+JSON serta gambar initial/final/plot memiliki basename yang sama. Runner
+experiments.py memakai fungsi ekspor yang sama dengan direktori grup terpisah.
 """
 
 # Docstring ini juga teks --help dan semua output terminal sengaja ASCII: konsol Windows yang di-redirect
@@ -23,11 +20,12 @@ import argparse
 import json
 import sys
 from collections.abc import Callable
+from functools import partial
 from pathlib import Path
 from typing import Any
 
-from config import DATA_DIR, DEFAULT_INSTANCE, OUTPUT_DIR
-from core.eta_objective import SUFFIX, eta_problem
+from config import DATA_DIR, DEFAULT_INSTANCE, RUNS_DIR
+from core.eta_objective import SUFFIX, eta_problem, run_eta
 from core.problem import Problem, load_problem
 from search.genetic_algorithm import genetic_algorithm
 from search.hill_climbing import random_restart, sideways_move, steepest_ascent, stochastic
@@ -46,9 +44,7 @@ ALGORITHMS: dict[str, tuple[Callable[..., RunResult], dict[str, str]]] = {
 }
 ALIASES = {"hc": "steepest"}
 
-# objective yang dioptimasi lewat CLI. Run Bonus 1 (objective ETA) dibuat oleh `eta_experiments.py` atau grup
-# `eta` di `experiments.py`; hasilnya tetap bisa dibuka dengan --view (`view_problem`).
-OBJECTIVES = ("fee",)
+OBJECTIVES = ("fee", "eta")
 
 PARAM_OPTIONS = ("max_sideways", "max_restart", "max_no_improve", "max_iterations", "iterations", "population")
 
@@ -74,7 +70,7 @@ def run_id(result: dict[str, Any]) -> str:
     return f"{result['instance']}_seed{result['seed']}"
 
 
-def save_run(result: dict[str, Any], problem: Problem, out_dir: str | Path = OUTPUT_DIR,
+def save_run(result: dict[str, Any], problem: Problem, out_dir: str | Path = RUNS_DIR,
              plots: bool = True) -> list[Path]:
     """Simpan JSON hasil run ke `<out_dir>/<algo>/<run_id>.json`, plus gambar state dan plot bila `plots`.
 
@@ -83,7 +79,7 @@ def save_run(result: dict[str, Any], problem: Problem, out_dir: str | Path = OUT
     """
     prefix = Path(out_dir) / result["algorithm"] / run_id(result)
     prefix.parent.mkdir(parents=True, exist_ok=True)
-    path = prefix.with_suffix(".json")
+    path = prefix.with_name(prefix.name + ".json")
     # tanpa indentasi: history SA berisi ~100 000 titik
     path.write_text(json.dumps(result) + "\n", encoding="utf-8")
     return [path] + (save_plots(result, problem, prefix) if plots else [])
@@ -109,8 +105,8 @@ def format_summary(result: dict[str, Any]) -> str:
         f"algoritma   : {result['algorithm']} | instance {result['instance']} | seed {result['seed']}",
         f"parameter   : {json.dumps(result['params'])}",
         f"objective   : awal {result['initial_objective']:g} -> akhir {result['final_objective']:g}",
-        f"total fee   : {result['total_fee']:g} | upper bound {result['upper_bound']:g} | "
-        f"gap {100 * result['gap_ub']:.2f}%",
+        f"total fee   : {result['extra'].get('shipping_fee_total', result['total_fee']):g} | "
+        f"upper bound objective {result['upper_bound']:g} | gap {100 * result['gap_ub']:.2f}%",
         f"feasible    : {result['is_feasible']} (overlap {violations['overlap_cells']}, keluar batas "
         f"{violations['out_of_bound_cells']}, kelebihan berat {violations['weight_units']})",
         f"muatan      : {result['loaded']} kendaraan | berat {weight} | luas terpakai "
@@ -127,7 +123,7 @@ def format_summary(result: dict[str, Any]) -> str:
 
 
 def resolve_instance(value: str) -> Path:
-    """Path instance: path apa adanya bila ada, selain itu dicari di `src/data/` (`multi.json` atau `multi`)."""
+    """Path instance: path eksplisit, atau nama file dalam `dataset/` (`multi.json` atau `multi`)."""
     path = Path(value)
     if path.is_file():
         return path
@@ -138,12 +134,11 @@ def resolve_instance(value: str) -> Path:
 
 
 def view_problem(result: dict[str, Any], instance: str | None = None) -> Problem:
-    """Instance untuk --view: `instance` bila diberikan, selain itu dari hasil run. Hasil run Bonus 1 (instance
-    `<nama>_eta`) memakai instance turunan bobot urgensi, sama seperti saat run-nya dijalankan."""
-    name = instance or result["instance"]
-    if instance is None and name.endswith(SUFFIX):
-        return eta_problem(load_problem(resolve_instance(name.removesuffix(SUFFIX))))
-    return load_problem(resolve_instance(name))
+    """Muat input asli lalu terapkan objective hasil run, termasuk ketika path diberikan eksplisit."""
+    is_eta = result["extra"].get("objective", "fee") == "eta"
+    name = instance or (result["instance"].removesuffix(SUFFIX) if is_eta else result["instance"])
+    problem = load_problem(resolve_instance(name))
+    return eta_problem(problem) if is_eta else problem
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -151,10 +146,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--algo", choices=[*ALGORITHMS, *ALIASES],
                         help="algoritma (hc = steepest). Wajib kecuali memakai --view")
     parser.add_argument("--instance", help=f"file instance JSON (default {DEFAULT_INSTANCE.name}); nama "
-                                           "file di src/data/ juga diterima, misalnya multi.json")
+                                           "file di dataset/ juga diterima, misalnya multi.json")
     parser.add_argument("--seed", type=int, default=1)
-    parser.add_argument("--objective", choices=OBJECTIVES, default="fee",
-                        help="objective yang dioptimasi (ETA, Bonus 1, belum tersedia)")
+    parser.add_argument("--objective", choices=OBJECTIVES, default=None,
+                        help="fee (default) atau urgensi ETA (Bonus 1)")
     params = parser.add_argument_group("parameter algoritma (default: config.py)")
     params.add_argument("--max-sideways", type=int, help="sideways")
     params.add_argument("--max-restart", type=int, help="random_restart")
@@ -163,7 +158,7 @@ def build_parser() -> argparse.ArgumentParser:
                         help="batas pengaman iterasi semua varian HC (per percobaan untuk random_restart)")
     params.add_argument("--iterations", type=int, help="sa (iterasi), ga (generasi)")
     params.add_argument("--population", type=int, help="ga")
-    parser.add_argument("--out", type=Path, default=OUTPUT_DIR, help="folder output (default output/)")
+    parser.add_argument("--out", type=Path, default=RUNS_DIR, help="folder run manual (default output/runs/)")
     parser.add_argument("--no-save", action="store_true", help="hanya tampilkan hasil, tidak menulis file")
     parser.add_argument("--no-plot", action="store_true", help="simpan JSON saja, tanpa gambar")
     parser.add_argument("--view", type=Path, metavar="JSON",
@@ -179,18 +174,20 @@ def main(argv: list[str] | None = None) -> int:
     given = {k: getattr(args, k) for k in PARAM_OPTIONS if getattr(args, k) is not None}
 
     if args.view is not None:
-        if args.algo is not None or given:
-            parser.error("--view tidak bisa digabung dengan --algo atau parameter algoritma")
+        if args.algo is not None or given or args.objective is not None:
+            parser.error("--view tidak bisa digabung dengan --algo, --objective, atau parameter algoritma")
         try:
             result = json.loads(args.view.read_text(encoding="utf-8"))
             problem = view_problem(result, args.instance)
             # validasi: hasil run harus cocok dengan instance-nya
-            RunResult.from_dict(problem, result)
+            result = RunResult.from_dict(problem, result).to_dict()
         except (OSError, ValueError, KeyError) as e:
             parser.error(f"--view {args.view}: {e}")
         print(format_summary(result))
         print()
-        print(render_state_text(problem, result["final_state"]))
+        print(render_state_text(problem, result["final_state"],
+                                objective=result["extra"].get("objective", "fee"),
+                                shipping_fee=result["extra"].get("shipping_fee_total")))
         if not args.no_plot:
             paths = save_plots(result, problem, args.view.with_suffix(""))
             print("\ngambar:", *paths, sep="\n  ")
@@ -211,12 +208,19 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError) as e:
         parser.error(str(e))
 
-    result = run_algorithm(algo, problem, args.seed, **given).to_dict()
+    try:
+        run = (run_eta(partial(run_algorithm, algo), problem, seed=args.seed, **given)
+               if args.objective == "eta" else run_algorithm(algo, problem, args.seed, **given))
+        result = run.to_dict()
+    except ValueError as e:
+        parser.error(str(e))
     print(format_summary(result))
     print()
-    print(render_state_text(problem, result["final_state"]))
+    print(render_state_text(run.problem, result["final_state"],
+                            objective=result["extra"].get("objective", "fee"),
+                            shipping_fee=result["extra"].get("shipping_fee_total")))
     if not args.no_save:
-        paths = save_run(result, problem, args.out, plots=not args.no_plot)
+        paths = save_run(result, run.problem, args.out, plots=not args.no_plot)
         print("\ndisimpan:", *paths, sep="\n  ")
     return 0
 

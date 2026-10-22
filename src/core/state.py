@@ -204,6 +204,18 @@ class State:
         self._weight[s] += sign * vehicle.weight
 
 
+def initial_state(problem: Problem, rng: random.Random, initial: State | None,
+                  p_inside: float) -> State:
+    """Salin initial yang cocok, atau pertahankan inisialisasi random biasa."""
+    if initial is None:
+        return random_state(problem, rng, p_inside)
+    if initial.problem.ships != problem.ships or initial.problem.vehicles != problem.vehicles:
+        raise ValueError("initial state harus berasal dari problem yang sama")
+    if initial.problem is problem:
+        return initial.copy()
+    return State(problem, initial.positions)
+
+
 def random_placement(problem: Problem, rng: random.Random) -> tuple[int, int, int, str]:
     """Kapal, anchor, dan orientasi acak. Anchor selalu di dalam geladak, badan kendaraan bisa keluar."""
     s = rng.randrange(len(problem.ships))

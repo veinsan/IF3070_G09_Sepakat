@@ -116,7 +116,7 @@ class TestStochastic(unittest.TestCase):
         history = result.history["objective"]
         self.assertEqual(result.extra["stop_reason"], "max_no_improve")
         self.assertEqual(len(history), result.iterations + 1)
-        self.assertEqual(result.evaluations, result.iterations)
+        self.assertEqual(result.evaluations, result.iterations + 1)
         self.assertTrue(all(b >= a for a, b in zip(history, history[1:])))
         self.assertEqual(len(set(history[-501:])), 1)  # 500 iterasi terakhir tanpa perbaikan
         self.assertEqual(result.extra["improvements"], sum(b > a for a, b in zip(history, history[1:])))

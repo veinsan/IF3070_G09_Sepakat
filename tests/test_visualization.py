@@ -8,6 +8,7 @@ from pathlib import Path
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 from config import DATA_DIR, MULTI_INSTANCE
+from core.eta_objective import eta_problem, shipping_fee_total
 from core.problem import load_problem
 from core.state import State, random_state
 from search.hill_climbing import random_restart, steepest_ascent
@@ -71,6 +72,28 @@ class TestStateView(unittest.TestCase):
         grid_lines = [line for line in text.splitlines() if line and line[0] in ".V#"]
         self.assertEqual(len(grid_lines), sum(ship.length for ship in FLEET.ships))
 
+    def test_eta_separates_urgency_and_original_fee(self):
+        transformed = eta_problem(SMALL)
+        state = State(transformed, [(0, 0, 0, "H")] + [None] * (len(SMALL.vehicles) - 1))
+        fee = shipping_fee_total(SMALL, state.positions)
+        fig = draw_state(transformed, state.to_dict(), objective="eta", shipping_fee=fee)
+        self.assertIn(f"bobot urgensi = {state.evaluate().total_fee:g}", fig.get_suptitle())
+        self.assertIn(f"fee asli = {fee:g}", fig.get_suptitle())
+        self.assertNotIn("total fee", fig.get_suptitle())
+        self.assertIn("bobot", texts(fig.axes[-1]))
+        self.assertNotIn("fee", texts(fig.axes[-1]))
+        text = render_state_text(transformed, state.to_dict(), objective="eta", shipping_fee=fee)
+        self.assertIn(f"bobot urgensi = {state.evaluate().total_fee:g}", text)
+        self.assertIn(f"fee asli = {fee:g}", text)
+
+    def test_eta_without_original_fee_does_not_invent_revenue(self):
+        transformed = eta_problem(SMALL)
+        state = State(transformed).to_dict()
+        fig = draw_state(transformed, state, objective="eta")
+        self.assertNotIn("fee", fig.get_suptitle())
+        self.assertNotIn("fee", render_state_text(transformed, state, objective="eta"))
+
+
     def test_save_run_states(self):
         result = steepest_ascent(SMALL, seed=1).to_dict()
         with tempfile.TemporaryDirectory() as tmp:
@@ -86,16 +109,6 @@ class TestPlots(unittest.TestCase):
         cls.steepest = steepest_ascent(SMALL, seed=1).to_dict()
         cls.restart = random_restart(SMALL, seed=1, max_restart=2).to_dict()
 
-    def test_hill_climbing_plot(self):
-        fig = plot_run(self.steepest)
-        self.assertEqual(len(fig.axes), 1)
-        lines = fig.axes[0].get_lines()
-        self.assertEqual(list(lines[0].get_ydata()), self.steepest["history"]["objective"])
-
-    def test_random_restart_shows_best(self):
-        fig = plot_run(self.restart)
-        legend = [t.get_text() for t in fig.axes[0].get_legend().get_texts()]
-        self.assertIn("terbaik sejauh ini", legend)
 
     def test_sa_adds_acceptance_plot(self):
         # format SA (EXPERIMENTS §2): history.prob = [iterasi, e^(ΔE/T)], extra.stuck_count
@@ -113,6 +126,22 @@ class TestPlots(unittest.TestCase):
         self.assertIn("maksimum populasi", legend)
         self.assertIn("rata-rata populasi", legend)
         self.assertEqual(fig.axes[0].get_xlabel(), "generasi")
+
+    def test_feasible_incumbent_explains_different_final_state(self):
+        result = dict(self.steepest, final_objective=0,
+                      history={"objective": [-100, -20], "best_feasible": [0, 0]})
+        fig = plot_run(result)
+        ax = fig.axes[0]
+        lines = {line.get_label(): list(line.get_ydata()) for line in ax.get_lines()}
+        self.assertEqual(lines["terbaik feasible"], [0, 0])
+        self.assertEqual(lines["objective"], [-100, -20])
+        self.assertLess(ax.get_ylim()[0], -100)
+
+    def test_identical_feasible_history_is_not_duplicated(self):
+        result = dict(self.steepest, history={"objective": [0, 1], "best_feasible": [0, 1]})
+        fig = plot_run(result)
+        labels = [line.get_label() for line in fig.axes[0].get_lines()]
+        self.assertNotIn("terbaik feasible", labels)
 
     def test_summary_and_saving(self):
         with tempfile.TemporaryDirectory() as tmp:

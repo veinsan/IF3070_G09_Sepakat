@@ -4,7 +4,7 @@
   geladak) yang mengabaikan geometri. Semua susunan feasible juga feasible di relaksasi ini, jadi
   UB >= global optimum sebenarnya dan `gap()` terhadap UB adalah batas atas gap sebenarnya.
 - `brute_force()`: global optimum persis lewat backtracking + branch and bound. Eksponensial, hanya
-  untuk instance kecil (`src/data/small.json`), sekaligus untuk mengukur seberapa longgar UB.
+  untuk instance kecil (`dataset/small.json`), sekaligus untuk mengukur seberapa longgar UB.
 """
 
 from __future__ import annotations
@@ -30,11 +30,11 @@ def upper_bound(problem: Problem) -> float:
     """Fee maksimum relaksasi knapsack (berat + luas, gabungan semua kapal) via dynamic programming.
 
     Berat dibulatkan ke bawah (`floor`) bersama kapasitas: untuk himpunan feasible, sum(floor(w)) <=
-    sum(w) <= C sehingga sum(floor(w)) <= floor(C). Jadi relaksasi tetap valid untuk berat pecahan, dan
-    persis sama untuk berat bulat. Kendaraan yang tidak muat di geladak mana pun dibuang.
+    sum(w) <= C + EPS per kapal. Toleransi kapasitas yang sama dengan objective ikut direlaksasi agar
+    UB tidak lebih rendah dari solusi yang diterima evaluator. Kendaraan yang tidak muat dibuang.
     """
     area_cap = sum(ship.area for ship in problem.ships)
-    weight_cap = math.floor(sum(ship.max_capacity for ship in problem.ships))
+    weight_cap = math.floor(sum(ship.max_capacity + EPS for ship in problem.ships))
 
     # best[a][w] = fee maksimum dengan total luas <= a dan total berat (floor) <= w
     best = [[0.0] * (weight_cap + 1) for _ in range(area_cap + 1)]

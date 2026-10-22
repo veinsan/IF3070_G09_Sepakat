@@ -106,7 +106,7 @@ def random_neighbor(state: State, rng: random.Random) -> Move:
         rotatable = [i for i in inside if can_rotate(problem, i)]
         if rotatable:
             return rotate(state, rng.choice(rotatable))
-    elif kind == "swap" and inside:
+    elif kind == "swap" and inside and len(problem.vehicles) > 1:
         i = rng.choice(inside)
         j = rng.choice([k for k in range(len(problem.vehicles)) if k != i])
         return swap(state, i, j)

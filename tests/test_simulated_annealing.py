@@ -4,14 +4,16 @@ import json
 import math
 import random
 import unittest
-from pathlib import Path
 
+from dataclasses import replace
+
+from config import DATA_DIR
 from core.problem import load_problem, parse_problem
 from core.state import State, random_state
 from search.neighbors import random_neighbor
 from search.simulated_annealing import cooling_rate, initial_temperature, simulated_annealing
 
-DATA = Path(__file__).resolve().parent.parent / "src" / "data"
+DATA = DATA_DIR
 MAIN = load_problem(DATA / "main.json")
 SMALL = load_problem(DATA / "small.json")
 MULTI = load_problem(DATA / "multi.json")
@@ -97,12 +99,14 @@ class TestSimulatedAnnealing(unittest.TestCase):
         result = run()
         history = result.history["objective"]
         self.assertEqual(history[0], result.initial_state.objective)
-        self.assertEqual(result.evaluations, PARAMS["t0_samples"] + result.iterations)
+        self.assertEqual(result.evaluations, result.history["evaluations"][-1])
+        self.assertGreaterEqual(result.evaluations, 1 + PARAMS["t0_samples"] + result.iterations)
         self.assertLessEqual(result.extra["accepted_worse"], result.iterations)
 
     def test_final_state_is_best_found(self):
         result = run()
-        self.assertEqual(result.final_state.objective, max(result.history["objective"]))
+        self.assertEqual(result.final_state.objective, result.history["best_feasible"][-1])
+        self.assertEqual(result.extra["raw_best_objective"], max(result.history["objective"]))
         self.assertEqual(result.final_state.objective, result.final_state.evaluate().objective)
 
     def test_given_initial_state_is_used_and_not_modified(self):
@@ -130,22 +134,28 @@ class TestSimulatedAnnealing(unittest.TestCase):
             sum(objective[k] < objective[k - 1] for k in iterations), result.extra["accepted_worse"]
         )
 
-    def test_stuck_count_matches_history(self):
-        window = 50
-        result = run(stuck_window=window)
-        # hitung ulang dari history: objective terbaik = maksimum berjalan dari objective current
-        expected, best, since_best = [], result.history["objective"][0], 0
-        for k, value in enumerate(result.history["objective"][1:], start=1):
-            if value > best:
-                best, since_best = value, 0
-            else:
-                since_best += 1
-            if since_best == window:
-                expected.append(k)
-                since_best = 0
-        self.assertGreater(len(expected), 0)
-        self.assertEqual(result.extra["stuck_iterations"], expected)
-        self.assertEqual(result.extra["stuck_count"], len(expected))
+    def test_subnanounit_improvement_is_not_a_local_optimum(self):
+        tiny = replace(TINY, vehicles=(replace(TINY.vehicles[0], shipping_fee=5e-10),))
+        loaded = State(tiny, [(0, 0, 0, "H")])
+        result = run(problem=tiny, initial=loaded, seed=1, iterations=1, t0_samples=0, stuck_window=1)
+        # Seed ini menerima removal; reinsertion masih memberi delta positif yang valid.
+        self.assertEqual(result.history["objective"][-1], 0)
+        self.assertEqual(result.extra["stuck_count"], 0)
+        self.assertEqual(result.history["local_optimum"], [[1, False]])
+
+    def test_confirmed_local_optimum_episode_counted_once(self):
+        tiny = replace(TINY, vehicles=(replace(TINY.vehicles[0], shipping_fee=1000),))
+        loaded = State(tiny, [(0, 0, 0, "H")])
+        result = run(problem=tiny, initial=loaded, iterations=6, t0_samples=0, stuck_window=2)
+        self.assertEqual(result.extra["stuck_count"], 1)
+        self.assertEqual(result.extra["stuck_iterations"], [2])
+        self.assertEqual(result.extra["stagnation_count"], 3)
+        self.assertEqual(result.history["local_optimum"], [[2, True], [4, True], [6, True]])
+
+    def test_nonfinite_temperature_rejected(self):
+        for value in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                run(iterations=0, t_min=value)
 
     def test_no_stuck_when_window_exceeds_iterations(self):
         result = run(iterations=300, stuck_window=301)

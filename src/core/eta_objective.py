@@ -28,6 +28,7 @@ from typing import Any
 
 from core.objective import Placement
 from core.problem import Problem, Vehicle
+from core.state import State
 
 SUFFIX = "_eta"
 
@@ -59,7 +60,13 @@ def run_eta(algorithm: Callable[..., Any], problem: Problem, seed: int | None = 
     Dengan seed yang sama, initial state acaknya sama dengan run objective fee, karena pengacakan posisi
     tidak bergantung pada fee.
     """
-    result = algorithm(eta_problem(problem), seed=seed, **params)
+    transformed = eta_problem(problem)
+    initial = params.get("initial")
+    if initial is not None:
+        if initial.problem.ships != problem.ships or initial.problem.vehicles != problem.vehicles:
+            raise ValueError("initial state ETA harus berasal dari problem asli yang sama")
+        params["initial"] = State(transformed, initial.positions)
+    result = algorithm(transformed, seed=seed, **params)
     result.extra["objective"] = "eta"
     result.extra["shipping_fee_total"] = shipping_fee_total(problem, result.final_state.positions)
     return result

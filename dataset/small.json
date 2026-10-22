@@ -12,7 +12,7 @@
       "suv",
       "pickup"
     ],
-    "out": "src/data/small.json"
+    "out": "dataset/small.json"
   },
   "ships": [
     {

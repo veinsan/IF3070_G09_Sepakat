@@ -7,8 +7,10 @@ supaya semua nilai default ada di satu tempat dan sama persis dengan yang dituli
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DATA_DIR = ROOT / "src" / "data"
+DATA_DIR = ROOT / "dataset"
 OUTPUT_DIR = ROOT / "output"
+RUNS_DIR = OUTPUT_DIR / "runs"
+EXPERIMENTS_DIR = OUTPUT_DIR / "experiments"
 
 # instance utama seluruh eksperimen (EXPERIMENTS §1)
 DEFAULT_INSTANCE = DATA_DIR / "main.json"
@@ -52,7 +54,7 @@ SA_T0_ACCEPT = 0.8
 SA_ITERATIONS = 100_000
 SA_T_MIN = 0.01
 
-# satu kejadian "stuck" = objective terbaik tidak membaik selama SA_STUCK_WINDOW iterasi berturut-turut
+# interval observasi local optimum SA; stagnasi best dicatat terpisah
 SA_STUCK_WINDOW = 500
 
 # --- Genetic Algorithm (DESIGN §7.3) ----------------------------------------------------------

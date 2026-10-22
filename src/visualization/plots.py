@@ -41,11 +41,15 @@ def plot_objective(ax, result: Result) -> None:
         ax.plot(range(len(history["mean"])), history["mean"], linewidth=1, label="rata-rata populasi")
     if "best" in history:
         ax.plot(range(len(history["best"])), history["best"], linewidth=1.2, linestyle="--", label="terbaik sejauh ini")
+    feasible = history.get("best_feasible")
+    if feasible is not None and feasible != objective and feasible != history.get("best"):
+        ax.plot(range(len(feasible)), feasible, linewidth=1.4, linestyle="-.",
+                label="terbaik feasible")
     if result.get("upper_bound") is not None:
         ax.axhline(result["upper_bound"], color="gray", linewidth=0.8, linestyle=":",
                    label=f"upper bound ({result['upper_bound']:g})")
     ax.set_xlabel("generasi" if is_population else "iterasi")
-    ax.set_ylabel("objective")
+    ax.set_ylabel("objective (bobot urgensi)" if result.get("extra", {}).get("objective") == "eta" else "objective")
     ax.set_title(f"Objective vs {'generasi' if is_population else 'iterasi'} | awal {result['initial_objective']:g}"
                  f" → akhir {result['final_objective']:g}", fontsize=9)
     ax.grid(alpha=0.3)

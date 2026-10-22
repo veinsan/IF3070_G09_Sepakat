@@ -15,7 +15,7 @@
     ],
     "capacity_ratio": 0.8,
     "types": null,
-    "out": "src/data/multi.json"
+    "out": "dataset/multi.json"
   },
   "ships": [
     {

@@ -35,9 +35,9 @@ from config import (
 )
 from core.objective import EPS
 from core.problem import Problem
-from core.state import State, random_state
+from core.state import State, initial_state, random_state
 from search.neighbors import Move, all_neighbors, random_neighbor
-from search.result import RunResult
+from search.result import FeasibleIncumbent, RunResult
 
 
 def best_neighbor(state: State, rng: random.Random) -> tuple[float, Move | None, int]:
@@ -65,8 +65,11 @@ class _Climb:
     """Jejak satu kali pendakian Steepest/Sideways pada `state` (state diubah in-place)."""
 
     state: State
+    incumbent: FeasibleIncumbent
+    feasible_history: list[float] = field(default_factory=list)
+    evaluation_history: list[int] = field(default_factory=list)
     history: list[float] = field(default_factory=list)
-    evaluations: int = 0
+    evaluations: int = 1
     sideways_moves: int = 0
     stop_reason: str = "max_iterations"
 
@@ -77,25 +80,36 @@ class _Climb:
 
 def _climb(state: State, rng: random.Random, max_iterations: int, max_sideways: int) -> _Climb:
     """Pendakian dengan neighbor terbaik. `max_sideways = 0` adalah Steepest Ascent murni."""
-    climb = _Climb(state, history=[state.objective])
+    if max_iterations < 0:
+        raise ValueError("max_iterations harus >= 0")
+    incumbent = FeasibleIncumbent(state.problem)
+    incumbent.observe(state)
+    climb = _Climb(state, incumbent, history=[state.objective],
+                   feasible_history=[incumbent.state.objective], evaluation_history=[1])
     for _ in range(max_iterations):
         delta, move, evaluated = best_neighbor(state, rng)
         climb.evaluations += evaluated
         if move is None or delta < -EPS or (delta <= EPS and climb.sideways_moves >= max_sideways):
             climb.stop_reason = "local_optimum"
+            climb.evaluation_history[-1] = climb.evaluations
             break
         state.apply(move)
+        incumbent.observe(state)
+        climb.feasible_history.append(incumbent.state.objective)
+        climb.evaluation_history.append(climb.evaluations)
         climb.history.append(state.objective)
         if delta <= EPS:  # sideways move: nilai sama, state berbeda
             climb.sideways_moves += 1
             if climb.sideways_moves >= max_sideways:
                 climb.stop_reason = "max_sideways"
                 break
+    if state.is_feasible and state.objective >= incumbent.state.objective:
+        incumbent.state = state  # preserve the ordinary climb endpoint on a feasible plateau
     return climb
 
 
 def _initial(problem: Problem, rng: random.Random, initial: State | None) -> State:
-    return initial.copy() if initial is not None else random_state(problem, rng, INITIAL_P_INSIDE)
+    return initial_state(problem, rng, initial, INITIAL_P_INSIDE)
 
 
 def steepest_ascent(
@@ -118,12 +132,14 @@ def steepest_ascent(
         seed=seed,
         params={"max_iterations": max_iterations, "initial_p_inside": INITIAL_P_INSIDE},
         initial_state=initial,
-        final_state=climb.state,
+        final_state=climb.incumbent.state,
         duration_s=duration,
         iterations=climb.iterations,
         evaluations=climb.evaluations,
-        history={"objective": climb.history},
-        extra={"stop_reason": climb.stop_reason},
+        history={"objective": climb.history, "best_feasible": climb.feasible_history,
+                 "evaluations": climb.evaluation_history},
+        extra={"stop_reason": climb.stop_reason,
+               **climb.incumbent.metadata(climb.state, max(climb.history))},
     )
 
 
@@ -152,12 +168,14 @@ def sideways_move(
         seed=seed,
         params={"max_sideways": max_sideways, "max_iterations": max_iterations, "initial_p_inside": INITIAL_P_INSIDE},
         initial_state=initial,
-        final_state=climb.state,
+        final_state=climb.incumbent.state,
         duration_s=duration,
         iterations=climb.iterations,
         evaluations=climb.evaluations,
-        history={"objective": climb.history},
-        extra={"stop_reason": climb.stop_reason, "sideways_moves": climb.sideways_moves},
+        history={"objective": climb.history, "best_feasible": climb.feasible_history,
+                 "evaluations": climb.evaluation_history},
+        extra={"stop_reason": climb.stop_reason, "sideways_moves": climb.sideways_moves,
+               **climb.incumbent.metadata(climb.state, max(climb.history))},
     )
 
 
@@ -185,30 +203,40 @@ def random_restart(
         climbs.append(_climb(random_state(problem, rng, INITIAL_P_INSIDE), rng, max_iterations, max_sideways=0))
     duration = time.perf_counter() - start
 
-    best_climb = max(climbs, key=lambda c: c.state.objective)  # percobaan terawal yang menang bila seri
+    best_climb = max(climbs, key=lambda c: (c.incumbent.state.objective, c.incumbent.found))
     # disambung per percobaan: lompatan ke initial state acak berikutnya tercatat sebagai satu iterasi
     history = [value for climb in climbs for value in climb.history]
     best_so_far, best = [], float("-inf")
     for value in history:
         best = max(best, value)
         best_so_far.append(best)
+    feasible_history, evaluation_history = [], []
+    best_feasible, offset = 0.0, 0
+    for climb in climbs:
+        for value in climb.feasible_history:
+            best_feasible = max(best_feasible, value)
+            feasible_history.append(best_feasible)
+        evaluation_history.extend(offset + count for count in climb.evaluation_history)
+        offset += climb.evaluations
 
     return RunResult(
         algorithm="random_restart",
         seed=seed,
         params={"max_restart": max_restart, "max_iterations": max_iterations, "initial_p_inside": INITIAL_P_INSIDE},
         initial_state=initial,
-        final_state=best_climb.state,
+        final_state=best_climb.incumbent.state,
         duration_s=duration,
         iterations=len(history) - 1,
         evaluations=sum(c.evaluations for c in climbs),
-        history={"objective": history, "best": best_so_far},
+        history={"objective": history, "best": best_so_far, "best_feasible": feasible_history,
+                 "evaluations": evaluation_history},
         extra={
             "restarts": len(climbs) - 1,
             "iters_per_restart": [c.iterations for c in climbs],
             "final_objective_per_restart": [c.state.objective for c in climbs],
             "best_restart": climbs.index(best_climb),
             "stop_reasons": [c.stop_reason for c in climbs],
+            **best_climb.incumbent.metadata(climbs[-1].state, max(history)),
         },
     )
 
@@ -224,10 +252,16 @@ def stochastic(
 
     `extra["stop_reason"]` = "max_no_improve" atau "max_iterations".
     """
+    if max_iterations < 0 or max_no_improve < 1:
+        raise ValueError("max_iterations harus >= 0 dan max_no_improve harus >= 1")
     rng = random.Random(seed)
     initial = _initial(problem, rng, initial)
     current = initial.copy()
     history = [current.objective]
+    incumbent = FeasibleIncumbent(problem)
+    incumbent.observe(current)
+    feasible_history = [incumbent.state.objective]
+    evaluation_history = [1]
     no_improve = 0
     stop_reason = "max_iterations"
 
@@ -240,6 +274,9 @@ def stochastic(
         else:
             no_improve += 1
         history.append(current.objective)
+        incumbent.observe(current)
+        feasible_history.append(incumbent.state.objective)
+        evaluation_history.append(evaluation_history[-1] + 1)
         if no_improve >= max_no_improve:
             stop_reason = "max_no_improve"
             break
@@ -250,10 +287,12 @@ def stochastic(
         seed=seed,
         params={"max_no_improve": max_no_improve, "max_iterations": max_iterations, "initial_p_inside": INITIAL_P_INSIDE},
         initial_state=initial,
-        final_state=current,
+        final_state=incumbent.state,
         duration_s=duration,
         iterations=len(history) - 1,
-        evaluations=len(history) - 1,
-        history={"objective": history},
-        extra={"stop_reason": stop_reason, "improvements": sum(b > a for a, b in zip(history, history[1:]))},
+        evaluations=evaluation_history[-1],
+        history={"objective": history, "best_feasible": feasible_history,
+                 "evaluations": evaluation_history},
+        extra={"stop_reason": stop_reason, "improvements": sum(b > a for a, b in zip(history, history[1:])),
+               **incumbent.metadata(current, max(history))},
     )

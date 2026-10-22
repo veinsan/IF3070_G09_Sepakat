@@ -4,15 +4,15 @@ import itertools
 import math
 import random
 import unittest
-from pathlib import Path
 
+from config import DATA_DIR
 from core.bounds import brute_force, fits_somewhere, gap, upper_bound
 from core.generator import generate_instance
 from core.problem import load_problem, parse_problem
 from core.state import State
 from search.neighbors import all_placements
 
-DATA = Path(__file__).resolve().parent.parent / "src" / "data"
+DATA = DATA_DIR
 
 
 def random_problems(count, n, width, length, seed, types=("motor", "sedan", "suv")):
@@ -61,6 +61,16 @@ class TestUpperBound(unittest.TestCase):
         optimum = brute_force(problem)
         self.assertEqual(optimum.objective, 15)  # hanya 3 kendaraan seberat 0.5 yang muat di kapasitas 1.5
         self.assertGreaterEqual(upper_bound(problem), optimum.objective)
+
+    def test_capacity_tolerance_does_not_underestimate_optimum(self):
+        problem = parse_problem({
+            "ships": [{"id": "D", "width": 1, "length": 1, "max_capacity": 1 - 5e-10}],
+            "vehicles": [{"id": "A", "width": 1, "length": 1,
+                          "shipping_fee": 7, "weight": 1, "eta": 0}],
+        })
+        loaded = State(problem, [(0, 0, 0, "H")])
+        self.assertTrue(loaded.is_feasible)
+        self.assertGreaterEqual(upper_bound(problem), 7)
 
     def test_gap(self):
         self.assertAlmostEqual(gap(90, 100), 0.1)

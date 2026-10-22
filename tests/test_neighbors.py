@@ -118,6 +118,19 @@ class TestRandomNeighbor(unittest.TestCase):
             self.assertEqual(len(changes), 1)
             self.assertIsNotNone(changes[0][1])
 
+    def test_single_loaded_vehicle_never_attempts_swap(self):
+        singleton = parse_problem({
+            "ships": [{"id": "D", "width": 2, "length": 2, "max_capacity": 5}],
+            "vehicles": [{"id": "A", "width": 1, "length": 2,
+                          "shipping_fee": 3, "weight": 1, "eta": 0}],
+        })
+        state = State(singleton, [(0, 0, 0, "H")])
+        rng = random.Random(0)
+        for _ in range(100):
+            changes = random_neighbor(state, rng)
+            self.assertEqual(len(changes), 1)
+            self.assertEqual(changes[0][0], 0)
+
 
 if __name__ == "__main__":
     unittest.main()

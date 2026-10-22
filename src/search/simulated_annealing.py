@@ -1,5 +1,8 @@
 """Simulated Annealing (DESIGN §7.2).
 
+Sumber kuliah: M. L. Khodra, "Beyond Classical Search: Simulated Annealing", 2021,
+https://www.youtube.com/watch?v=AdhG7HnhYrk (referensi [4] spesifikasi).
+
 Move yang lebih baik selalu diterima. Move yang lebih buruk (ΔE < 0) diterima dengan peluang e^(ΔE/T),
 dengan suhu T turun secara geometris setiap iterasi: T_k = T0 · α^k.
 
@@ -26,9 +29,9 @@ from config import (
     SA_T_MIN,
 )
 from core.problem import Problem
-from core.state import State, random_state
-from search.neighbors import random_neighbor
-from search.result import RunResult
+from core.state import State, initial_state
+from search.neighbors import all_neighbors, random_neighbor
+from search.result import FeasibleIncumbent, RunResult
 
 
 def initial_temperature(
@@ -46,6 +49,8 @@ def initial_temperature(
     """
     if not 0 < accept_prob < 1:
         raise ValueError(f"accept_prob harus di antara 0 dan 1, bukan {accept_prob}")
+    if samples < 0:
+        raise ValueError("samples harus >= 0")
     worse = []
     for _ in range(samples):
         d = state.delta(random_neighbor(state, rng))
@@ -63,8 +68,10 @@ def cooling_rate(t0: float, t_min: float, iterations: int) -> float:
     """
     if iterations < 1:
         raise ValueError(f"iterations harus >= 1, bukan {iterations}")
-    if t_min <= 0:
-        raise ValueError(f"t_min harus > 0, bukan {t_min}")
+    if not math.isfinite(t_min) or t_min <= 0:
+        raise ValueError(f"t_min harus finite dan > 0, bukan {t_min}")
+    if not math.isfinite(t0) or t0 <= 0:
+        raise ValueError(f"t0 harus finite dan > 0, bukan {t0}")
     if t0 <= t_min:
         return 1.0
     return (t_min / t0) ** (1 / iterations)
@@ -85,31 +92,44 @@ def simulated_annealing(
     Setiap iterasi: ambil satu random neighbor, terima bila ΔE >= 0 atau dengan peluang e^(ΔE/T), lalu
     T = T · α. Suhu iterasi pertama = T0 dan setelah iterasi terakhir = `t_min` (`cooling_rate`).
 
-    `final_state` adalah state terbaik selama pencarian (objective tertinggi), karena SA bisa berakhir di state
-    yang lebih buruk dari yang pernah ditemukan (pola yang sama dengan Random Restart HC).
+    `final_state` adalah incumbent FEASIBLE terbaik yang dikunjungi, atau baseline kosong eksplisit
+    bila pencarian belum mengunjungi state feasible. Tidak ada perbaikan tersembunyi setelah loop.
     `history["objective"]` mencatat objective state current di setiap iterasi (indeks 0 = state awal).
     `history["prob"]` berisi pasangan `[iterasi, e^(ΔE/T)]` hanya untuk iterasi dengan ΔE < 0, karena untuk
     ΔE >= 0 nilainya selalu 1 dan tidak informatif (DESIGN §7.2).
 
-    Frekuensi stuck di local optima: satu kejadian stuck = objective terbaik tidak membaik selama
-    `stuck_window` iterasi berturut-turut, lalu hitungan di-reset. `extra["stuck_count"]` = jumlah kejadian,
-    `extra["stuck_iterations"]` = iterasi tempat tiap kejadian terdeteksi.
+    Setiap `stuck_window` iterasi, neighborhood current diperiksa sampai ditemukan perbaikan atau habis.
+    Satu episode stuck = rangkaian checkpoint tanpa neighbor membaik, dihitung hanya pada checkpoint
+    pertama. Checkpoint dengan neighbor membaik mengakhiri episode. Ini observasi berkala, bukan deteksi
+    setiap transisi. `stagnation_count` terpisah menghitung window tanpa raw-best baru.
     """
+    if iterations < 0 or stuck_window < 1:
+        raise ValueError("iterations harus >= 0 dan stuck_window harus >= 1")
+    if not math.isfinite(t_min) or t_min <= 0:
+        raise ValueError("t_min harus finite dan > 0")
     rng = random.Random(seed)
-    initial = initial.copy() if initial is not None else random_state(problem, rng, INITIAL_P_INSIDE)
+    initial = initial_state(problem, rng, initial, INITIAL_P_INSIDE)
 
     start = time.perf_counter()
     current = initial.copy()
     t0 = initial_temperature(current, rng, t0_samples, t0_accept)
-    alpha = cooling_rate(t0, t_min, iterations)
-    evaluations = t0_samples
-    best = current.copy()
+    alpha = cooling_rate(t0, t_min, iterations) if iterations else 1.0
+    evaluations = 1 + t0_samples
+    best = current.objective
     history = [current.objective]
+    incumbent = FeasibleIncumbent(problem)
+    incumbent.observe(current)
+    feasible_history = [incumbent.state.objective]
+    evaluation_history = [evaluations]
     probabilities: list[list[float]] = []
     temperature = t0
     accepted_worse = 0
     since_best = 0  # iterasi berturut-turut tanpa objective terbaik baru
     stuck_iterations: list[int] = []
+    stagnation_count = 0
+    in_stuck_episode = False
+    local_optimum_checks: list[list[int | bool]] = []
+    confirmation_evaluations = 0
 
     for k in range(1, iterations + 1):
         changes = random_neighbor(current, rng)
@@ -126,16 +146,32 @@ def simulated_annealing(
             current.apply(changes)
             if d < 0:
                 accepted_worse += 1
-            if current.objective > best.objective:
-                best = current.copy()
+            if current.objective > best:
+                best = current.objective
                 improved = True
         history.append(current.objective)
+        incumbent.observe(current)
+        feasible_history.append(incumbent.state.objective)
         temperature *= alpha
 
         since_best = 0 if improved else since_best + 1
         if since_best == stuck_window:
-            stuck_iterations.append(k)
+            stagnation_count += 1
             since_best = 0
+        if k % stuck_window == 0:
+            local_optimum = True
+            for neighbor in all_neighbors(current):
+                delta = current.delta(neighbor)
+                evaluations += 1
+                confirmation_evaluations += 1
+                if delta > 0:
+                    local_optimum = False
+                    break
+            local_optimum_checks.append([k, local_optimum])
+            if local_optimum and not in_stuck_episode:
+                stuck_iterations.append(k)
+            in_stuck_episode = local_optimum
+        evaluation_history.append(evaluations)
     duration = time.perf_counter() - start
 
     return RunResult(
@@ -150,11 +186,12 @@ def simulated_annealing(
             "initial_p_inside": INITIAL_P_INSIDE,
         },
         initial_state=initial,
-        final_state=best,
+        final_state=incumbent.state,
         duration_s=duration,
         iterations=iterations,
         evaluations=evaluations,
-        history={"objective": history, "prob": probabilities},
+        history={"objective": history, "prob": probabilities, "best_feasible": feasible_history,
+                 "evaluations": evaluation_history, "local_optimum": local_optimum_checks},
         extra={
             "t0": t0,
             "alpha": alpha,
@@ -163,5 +200,8 @@ def simulated_annealing(
             "final_current_objective": current.objective,
             "stuck_count": len(stuck_iterations),
             "stuck_iterations": stuck_iterations,
+            "stagnation_count": stagnation_count,
+            "confirmation_evaluations": confirmation_evaluations,
+            **incumbent.metadata(current, best),
         },
     )

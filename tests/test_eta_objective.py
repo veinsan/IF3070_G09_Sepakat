@@ -1,24 +1,20 @@
 """Test objective urgensi ETA (Bonus 1): bobot, instance turunan, penalty, delta evaluation, dan run."""
 
-import contextlib
-import io
-import json
 import random
-import tempfile
 import unittest
-from pathlib import Path
 
-import eta_experiments
+from config import DATA_DIR
 from core.bounds import upper_bound
 from core.eta_objective import eta_problem, run_eta, shipping_fee_total, urgency_weight
 from core.objective import evaluate, penalty_coefficient
 from core.problem import load_problem, parse_problem
 from core.state import State, random_state
 from search.genetic_algorithm import genetic_algorithm
+from search.hill_climbing import steepest_ascent
 from search.neighbors import random_neighbor
 from search.simulated_annealing import simulated_annealing
 
-DATA = Path(__file__).resolve().parent.parent / "src" / "data"
+DATA = DATA_DIR
 MAIN = load_problem(DATA / "main.json")
 SMALL = load_problem(DATA / "small.json")
 MULTI = load_problem(DATA / "multi.json")
@@ -130,26 +126,19 @@ class TestRunEta(unittest.TestCase):
         self.assertTrue(result.final_state.is_feasible)
         self.assertEqual(result.problem.name, "small_eta")
 
+    def test_supplied_initial_uses_transformed_objective(self):
+        initial = State(TINY, [(0, 0, 0, "H"), (0, 2, 0, "H"), None])
+        result = run_eta(steepest_ascent, TINY, initial=initial, max_iterations=0)
+        self.assertEqual(result.initial_state.objective, 28)
+        self.assertEqual(result.final_state.objective, 28)
+        self.assertEqual(result.extra["shipping_fee_total"], 16)
+        self.assertEqual(initial.objective, 16)
 
-class TestEtaExperiments(unittest.TestCase):
-    def test_runner_saves_runs_and_comparison(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            out = Path(tmp)
-            # run fee seed 1 sebagai pembanding, seed 2 tanpa pembanding
-            fee = simulated_annealing(SMALL, seed=1).to_dict()
-            (out / "sa").mkdir()
-            (out / "sa" / "small_seed1.json").write_text(json.dumps(fee), encoding="utf-8")
-            with contextlib.redirect_stdout(io.StringIO()):
-                code = eta_experiments.main(["--instance", str(DATA / "small.json"), "--seeds", "1", "2",
-                                             "--out", tmp, "--no-plots"])
-            self.assertEqual(code, 0)
-            for seed in (1, 2):
-                data = json.loads((out / "sa" / f"small_eta_seed{seed}.json").read_text(encoding="utf-8"))
-                self.assertEqual(data["extra"]["objective"], "eta")
-                self.assertTrue(data["is_feasible"])
-            rows = [line for line in (out / "summary_eta.md").read_text(encoding="utf-8").splitlines()
-                    if line.startswith("| 1 ") or line.startswith("| 2 ")]
-            self.assertEqual([row.split(" | ")[1] for row in rows], ["fee", "eta", "eta"])
+    def test_mismatched_initial_is_rejected(self):
+        with self.assertRaises(ValueError):
+            run_eta(steepest_ascent, TINY, initial=State(SMALL), max_iterations=0)
+
+
 
 
 if __name__ == "__main__":

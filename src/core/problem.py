@@ -15,6 +15,7 @@ Semua pemeriksaan input dilakukan di sini. Modul lain boleh berasumsi `Problem` 
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -142,6 +143,8 @@ def _number(obj: dict, key: str, where: str) -> float:
     # bool adalah subclass int di Python, jadi ditolak secara eksplisit
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ValueError(f"{where}.{key}: harus berupa angka")
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError(f"{where}.{key}: harus berupa angka finite")
     return value
 
 

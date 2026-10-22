@@ -7,7 +7,7 @@
     "length": 20,
     "capacity_ratio": 0.8,
     "types": null,
-    "out": "src/data/main.json"
+    "out": "dataset/main.json"
   },
   "ships": [
     {

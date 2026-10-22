@@ -1,37 +1,18 @@
-"""Runner eksperimen: jalankan semua run di EXPERIMENTS §3-§4, simpan ke `output/`, lalu tulis ringkasan.
+"""Eksperimen wajib dan bonus; hasil resmi terpisah dari percobaan manual.
 
-Contoh (dari root repo):
+    python src/experiments.py --dry-run
+    python src/experiments.py
+    python src/experiments.py --only sa ga_pop
+    python src/experiments.py --skip-existing
+    python src/experiments.py --plots-only
+    python src/experiments.py --quick
 
-    python src/experiments.py --dry-run          # daftar run tanpa menjalankan
-    python src/experiments.py                    # semua run -> output/ + output/summary.md
-    python src/experiments.py --only sa ga_pop   # sebagian grup saja
-    python src/experiments.py --skip-existing    # lanjutkan run yang terputus
-    python src/experiments.py --plots-only       # gambar ulang + ringkasan dari JSON yang sudah ada
-
-Tiap run dijalankan dan disimpan dengan fungsi yang sama dengan CLI (`main.run_algorithm`, `main.save_run`),
-jadi hasilnya identik dengan `python src/main.py --algo <algo> --instance <instance> --seed <seed> ...`.
-
-Grup run (seed 1, 2, 3, parameter dari config.py):
-
-| Grup          | EXPERIMENTS | Isi                                                            | Run |
-|---------------|-------------|----------------------------------------------------------------|-----|
-| `hc`          | §4.1        | Steepest Ascent                                                | 3   |
-| `sa`          | §4.5        | Simulated Annealing                                            | 3   |
-| `ga_iter`     | §4.6        | GA populasi kontrol, variasi iterasi                           | 9   |
-| `ga_pop`      | §4.7        | GA iterasi kontrol, variasi populasi                           | 9   |
-| `hc_variants` | §4.2-§4.4   | Stochastic, Sideways Move, Random Restart (Bonus 2)            | 9   |
-| `eta`         | §4.10       | SA dengan objective urgensi ETA (Bonus 1, `core.eta_objective`) | 3   |
-| `multi`       | §4.8        | Steepest Ascent pada `multi.json` (Bonus 3)                    | 3   |
-
-Konfigurasi kontrol GA (populasi 100, iterasi 1000) masuk ke `ga_iter` dan `ga_pop` tetapi hanya dijalankan
-sekali, sehingga totalnya 21 run wajib dan 36 run dengan bonus.
-
-Run Bonus 1 dijalankan dengan `core.eta_objective.run_eta`, sama seperti `src/eta_experiments.py`, jadi file
-`output/sa/main_eta_seed<k>.json` dari kedua runner identik. Perbandingan run fee vs ETA tetap ditulis oleh
-`eta_experiments.py` ke `output/summary_eta.md`.
-
-`--quick` memakai `small.json` dan parameter kecil (dipakai test). Hasilnya tetap ke `--out`, jadi pakai
-folder lain dari `output/` supaya tidak tercampur dengan hasil resmi.
+Terdapat 24 run wajib dan 39 run termasuk bonus. Kedua sweep GA dijalankan
+terpisah, termasuk tiga pengulangan konfigurasi kontrol. Setiap hasil berada
+di output/experiments/<grup>/<algoritma>/<run_id>.json dengan tiga PNG
+initial/final/plot di direktori yang sama. Tabel dan gambar ringkasan berada
+di akar direktori eksperimen. Mode --quick secara default memakai
+output/runs/quick/, sehingga tidak menimpa hasil resmi.
 """
 
 # Teks --help dan output terminal sengaja ASCII (lihat main.py).
@@ -53,16 +34,18 @@ from typing import Any
 
 from config import (
     DEFAULT_INSTANCE,
+    EXPERIMENTS_DIR,
     GA_ITERATION_VARIANTS,
     GA_ITERATIONS,
     GA_POPULATION,
     GA_POPULATION_VARIANTS,
     MULTI_INSTANCE,
-    OUTPUT_DIR,
+    RUNS_DIR,
     SEEDS,
 )
-from core.eta_objective import eta_problem, run_eta
+from core.eta_objective import eta_problem, run_eta, shipping_fee_total, urgency_weight
 from core.problem import Problem, load_problem
+from core.state import State
 from main import resolve_instance, run_algorithm, run_id, save_plots, save_run
 from search.result import RunResult
 
@@ -94,20 +77,19 @@ class Run:
     @property
     def run_id(self) -> str:
         params = {"population": self.params.get("population"), "iterations": self.params.get("iterations")}
-        name = run_id({"algorithm": self.algo, "instance": self.instance.stem, "seed": self.seed, "params": params})
-        # run Bonus 1 dibedakan dari run fee biasa supaya file tidak saling menimpa
-        return name if self.objective == "fee" else name.replace("_seed", f"_{self.objective}_seed")
+        instance = self.instance.stem if self.objective == "fee" else f"{self.instance.stem}_{self.objective}"
+        return run_id({"algorithm": self.algo, "instance": instance, "seed": self.seed, "params": params})
 
     @property
     def required(self) -> bool:
         return any(GROUPS[g][1] for g in self.groups)
 
     def path(self, out_dir: Path) -> Path:
-        return Path(out_dir) / self.algo / f"{self.run_id}.json"
+        return Path(out_dir) / self.groups[0] / self.algo / f"{self.run_id}.json"
 
 
 def planned_runs(quick: bool = False, seeds: Sequence[int] = SEEDS) -> list[Run]:
-    """Semua run eksperimen, tanpa duplikat (run kontrol GA tercatat di dua grup).
+    """Rencana eksperimen; setiap sweep GA mempunyai eksekusi dan direktori sendiri.
 
     `quick`: `small.json` menggantikan `main.json` dan semua parameter diperkecil, untuk test dan uji coba.
     """
@@ -131,16 +113,12 @@ def planned_runs(quick: bool = False, seeds: Sequence[int] = SEEDS) -> list[Run]
         # parameter lain = default fungsi (config.py)
         params = {"steepest": {}, "sa": {}, "stochastic": {}, "sideways": {}, "random_restart": {}, "multi": {}}
 
-    runs: dict[tuple[str, str], Run] = {}
+    runs: list[Run] = []
 
     def add(group: str, algo: str, instance: Path, extra: dict[str, int], objective: str = "fee") -> None:
         for seed in seeds:
             run = Run((group,), algo, instance, seed, dict(extra), objective)
-            key = (run.algo, run.run_id)
-            if key in runs:
-                runs[key].groups += (group,)
-            else:
-                runs[key] = run
+            runs.append(run)
 
     add("hc", "steepest", main_instance, params["steepest"])
     add("sa", "sa", main_instance, params["sa"])
@@ -150,10 +128,10 @@ def planned_runs(quick: bool = False, seeds: Sequence[int] = SEEDS) -> list[Run]
         add("ga_pop", "ga", main_instance, {"population": population, "iterations": ga_iterations})
     for algo in ("stochastic", "sideways", "random_restart"):
         add("hc_variants", algo, main_instance, params[algo])
-    # Bonus 1: SA dengan parameter §4.5, sama dengan src/eta_experiments.py (EXPERIMENTS §4.10)
+    # Bonus 1: SA dengan objective ETA; seed dan parameter sama dengan grup sa.
     add("eta", "sa", main_instance, params["sa"], objective="eta")
     add("multi", "steepest", MULTI_INSTANCE, params["multi"])
-    return list(runs.values())
+    return runs
 
 
 def select(runs: Sequence[Run], only: Sequence[str] | None) -> list[Run]:
@@ -176,12 +154,14 @@ def describe(run: Run, out_dir: Path, skip_existing: bool) -> str:
 
 def problem_for(run: Run, problems: dict[Path, Problem]) -> Problem:
     """Instance yang dioptimasi `run`: instance asli, atau turunan bobot urgensi untuk objective ETA."""
-    problem = problems.setdefault(run.instance, load_problem(run.instance))
+    if run.instance not in problems:
+        problems[run.instance] = load_problem(run.instance)
+    problem = problems[run.instance]
     return eta_problem(problem) if run.objective == "eta" else problem
 
 
 def search(run: Run, problem: Problem) -> RunResult:
-    """Jalankan `run` pada instance asli `problem` (run ETA lewat `run_eta`, seperti eta_experiments.py)."""
+    """Jalankan satu rencana pada input asli; wrapper ETA mengubah objective bila diperlukan."""
     if run.objective == "eta":
         return run_eta(partial(run_algorithm, run.algo), problem, seed=run.seed, **run.params)
     return run_algorithm(run.algo, problem, run.seed, **run.params)
@@ -197,10 +177,12 @@ def execute(runs: Sequence[Run], out_dir: Path, skip_existing: bool = False, plo
         if skip_existing and run.path(out_dir).is_file():
             log(f"{head}: sudah ada, dilewati")
             continue
-        problems.setdefault(run.instance, load_problem(run.instance))
+        if run.instance not in problems:
+            problems[run.instance] = load_problem(run.instance)
         run_result = search(run, problems[run.instance])
+        run_result.extra["machine"] = machine_info()
         result = run_result.to_dict()
-        written.append(save_run(result, run_result.problem, out_dir, plots=plots)[0])
+        written.append(save_run(result, run_result.problem, out_dir / run.groups[0], plots=plots)[0])
         log(f"{head}: objective {result['initial_objective']:g} -> {result['final_objective']:g}, "
             f"feasible {result['is_feasible']}, {result['duration_s']:.2f} s")
     return written
@@ -362,8 +344,8 @@ def summary_sections(pairs: Sequence[tuple[Run, Result]]) -> list[str]:
             {3: lambda r: r["final_objective"], 4: lambda r: r["extra"]["shipping_fee_total"],
              11: lambda r: r["duration_s"]})
     if eta:
-        lines.extend(["", "Bobot urgensi `fee * (1 + 1/(eta + 1))`, gap terhadap UB bobot. Perbandingan dengan run "
-                      "objective fee pada seed yang sama: `output/summary_eta.md`."])
+        lines.extend(["", "Bobot urgensi `fee * (1 + 1/(eta + 1))`, gap terhadap UB bobot. Perbandingan "
+                      "objective fee dan ETA pada seed yang sama ada di `summary_eta.md`."])
     return lines
 
 
@@ -381,10 +363,15 @@ def comparison_groups(pairs: Sequence[tuple[Run, Result]]) -> dict[str, list[Res
     """Run objective fee di instance utama per algoritma; GA diwakili konfigurasi dengan mean objective terbaik."""
     groups: dict[str, list[Result]] = {}
     ga: dict[str, list[Result]] = {}
+    seen_ga: set[tuple[int, int, int]] = set()
     for run, result in pairs:
         if run.objective != "fee" or "multi" in run.groups:
             continue
         if run.algo == "ga":
+            key = (run.params["population"], run.params["iterations"], run.seed)
+            if key in seen_ga:
+                continue
+            seen_ga.add(key)
             ga.setdefault(f"ga (pop {run.params['population']}, iter {run.params['iterations']})", []).append(result)
         else:
             groups.setdefault(run.algo, []).append(result)
@@ -392,6 +379,40 @@ def comparison_groups(pairs: Sequence[tuple[Run, Result]]) -> dict[str, list[Res
         best = max(ga, key=lambda k: statistics.mean(r["final_objective"] for r in ga[k]))
         groups[best + " - terbaik"] = ga[best]
     return groups
+
+
+def eta_comparison(pairs: Sequence[tuple[Run, Result]]) -> list[str]:
+    """Bandingkan pendapatan asli dan bobot urgensi dari penempatan akhir fee/ETA pada seed yang sama."""
+    eta = [(run, result) for run, result in pairs if run.objective == "eta"]
+    if not eta:
+        return []
+    fee = {(run.instance, run.algo, run.seed): result for run, result in pairs
+           if "sa" in run.groups and run.objective == "fee"}
+    problems: dict[Path, Problem] = {}
+    rows = []
+    for run, result in eta:
+        if run.instance not in problems:
+            problems[run.instance] = load_problem(run.instance)
+        problem = problems[run.instance]
+        baseline = fee.get((run.instance, run.algo, run.seed))
+        compared = ([("fee", baseline)] if baseline is not None else []) + [("eta", result)]
+        for kind, data in compared:
+            state = State.from_dict(problem, data["final_state"])
+            loaded = [v for v, placement in zip(problem.vehicles, state.positions) if placement is not None]
+            rows.append([
+                run.seed, kind, f"{shipping_fee_total(problem, state.positions):g}",
+                f"{sum(urgency_weight(v) for v in loaded):.2f}", len(loaded),
+                f"{statistics.mean(v.eta for v in loaded):.2f}" if loaded else "-",
+                data["is_feasible"], _gap(data),
+            ])
+    return [
+        "# Perbandingan objective fee dan urgensi ETA", "",
+        "Bobot urgensi = fee * (1 + 1/(eta + 1)). Shipping fee asli tidak diubah dalam tabel ini.",
+        "Seed SA yang sama memakai penempatan initial yang sama. Gap setiap baris memakai UB objective-nya sendiri.",
+        "Baris fee hanya ditampilkan bila eksperimen pasangannya tersedia.", "",
+        *_table(["Seed", "Objective", "Fee asli", "Bobot urgensi", "Dimuat", "Mean ETA", "Feasible", "Gap UB"], rows),
+        "",
+    ]
 
 
 def write_summary(pairs: Sequence[tuple[Run, Result]], out_dir: Path, missing: Sequence[Run] = (),
@@ -403,12 +424,18 @@ def write_summary(pairs: Sequence[tuple[Run, Result]], out_dir: Path, missing: S
         "# Ringkasan eksperimen",
         "",
         f"Dibuat oleh `src/experiments.py` pada {time.strftime('%Y-%m-%d %H:%M')}.",
-        f"Mesin: {machine_info()}.",
+        f"Mesin pembuat ringkasan: {machine_info()}.",
         f"Run tersedia: {len(pairs)}. Durasi = search saja (`duration_s`), tidak termasuk menyimpan file dan gambar.",
     ]
+    machines = sorted({result["extra"]["machine"] for _, result in pairs if "machine" in result["extra"]})
+    if machines:
+        lines.extend(["", "Mesin search tersimpan:"] + [f"- {machine}" for machine in machines])
     if missing:
         lines.append(f"Belum ada / dilewati ({len(missing)}): " + ", ".join(f"`{r.algo}/{r.run_id}`" for r in missing))
     lines.extend(summary_sections(pairs))
+    eta_lines = eta_comparison(pairs)
+    if eta_lines:
+        (out_dir / "summary_eta.md").write_text("\n".join(eta_lines) + "\n", encoding="utf-8")
 
     if plots and pairs:
         from visualization.plots import plot_summary
@@ -445,8 +472,9 @@ def main(argv: list[str] | None = None) -> int:
                         help="tanpa search: gambar ulang semua run dari JSON yang ada, lalu tulis ringkasan")
     parser.add_argument("--quick", action="store_true", help="small.json + parameter kecil (uji coba / test)")
     parser.add_argument("--no-plot", action="store_true", help="simpan JSON dan summary.md saja, tanpa gambar")
-    parser.add_argument("--out", type=Path, default=OUTPUT_DIR, help="folder output (default output/)")
+    parser.add_argument("--out", type=Path, help="folder hasil (default output/experiments; quick: output/runs/quick)")
     args = parser.parse_args(argv)
+    args.out = args.out or (RUNS_DIR / "quick" if args.quick else EXPERIMENTS_DIR)
     if args.dry_run and args.plots_only:
         parser.error("--dry-run tidak bisa digabung dengan --plots-only")
 

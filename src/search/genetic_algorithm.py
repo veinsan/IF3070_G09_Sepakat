@@ -1,5 +1,8 @@
 """Genetic Algorithm dengan roulette wheel selection (DESIGN §7.3).
 
+Sumber kuliah: M. L. Khodra, "Beyond Classical Search: Genetic Algorithm", 2021,
+https://www.youtube.com/watch?v=aI41TGo9J9c (referensi [5] spesifikasi).
+
 - Chromosome = list `pos` milik `State` (satu gene per kendaraan, urutan index tetap), sehingga GA memakai
   objective dan delta evaluation yang sama dengan HC dan SA.
 - Fitness roulette dari objective dengan windowing: fit_i = f_i − min_j f_j + ε. Objective bisa negatif karena
@@ -18,6 +21,7 @@ from __future__ import annotations
 
 import bisect
 import itertools
+import math
 import random
 import time
 from collections.abc import Sequence
@@ -34,7 +38,7 @@ from config import (
 from core.problem import Problem
 from core.state import State, random_state
 from search.neighbors import random_neighbor
-from search.result import RunResult
+from search.result import FeasibleIncumbent, RunResult
 
 
 def roulette_cumulative(objectives: Sequence[float], epsilon: float = GA_EPSILON) -> list[float]:
@@ -44,8 +48,10 @@ def roulette_cumulative(objectives: Sequence[float], epsilon: float = GA_EPSILON
     """
     if not objectives:
         raise ValueError("populasi kosong")
-    if epsilon <= 0:
-        raise ValueError(f"epsilon harus > 0, bukan {epsilon}")
+    if not math.isfinite(epsilon) or epsilon <= 0:
+        raise ValueError(f"epsilon harus finite dan > 0, bukan {epsilon}")
+    if not all(math.isfinite(value) for value in objectives):
+        raise ValueError("objective roulette harus finite")
     worst = min(objectives)
     return list(itertools.accumulate(f - worst + epsilon for f in objectives))
 
@@ -98,8 +104,8 @@ def genetic_algorithm(
     `p_mutation`).
 
     - `initial_state` = individu terbaik populasi awal, sehingga `history["objective"][0]` = objective-nya.
-    - `final_state` = individu terbaik selama pencarian. Dengan elitism ≥ 1 ini sama dengan individu terbaik
-      generasi terakhir.
+    - `final_state` = individu FEASIBLE terbaik yang dikunjungi pada generasi mana pun, atau baseline
+      kosong eksplisit bila belum ada individu feasible. Populasi random dan seleksi tetap tidak diubah.
     - `history["objective"][k]` = objective maksimum populasi generasi ke-k (indeks 0 = populasi awal),
       `history["mean"][k]` = rata-rata objective populasi.
     - `evaluations` = banyak individu yang dinilai: populasi awal + semua anak baru (elit tidak dinilai ulang).
@@ -113,6 +119,8 @@ def genetic_algorithm(
     for name, p in (("p_crossover", p_crossover), ("p_mutation", p_mutation)):
         if not 0 <= p <= 1:
             raise ValueError(f"{name} harus di antara 0 dan 1, bukan {p}")
+    if not math.isfinite(epsilon) or epsilon <= 0:
+        raise ValueError("epsilon harus finite dan > 0")
     n = len(problem.vehicles)
 
     rng = random.Random(seed)
@@ -121,15 +129,22 @@ def genetic_algorithm(
     evaluations = population_size
     objectives = [s.objective for s in population]
     initial = population[_argmax(objectives)].copy()
-    best = initial.copy()
-    best_generation = 0
-    history_max = [best.objective]
+    raw_best = initial.objective
+    raw_best_generation = 0
+    incumbent = FeasibleIncumbent(problem)
+    for state in population:
+        incumbent.observe(state)
+    best_generation = 0 if incumbent.found else None
+    history_max = [raw_best]
+    feasible_history = [incumbent.state.objective]
+    evaluation_history = [evaluations]
     history_mean = [sum(objectives) / population_size]
     crossovers = mutations = 0
 
     for generation in range(1, iterations + 1):
         ranked = sorted(range(population_size), key=objectives.__getitem__, reverse=True)
         offspring = [population[i] for i in ranked[:elitism]]
+        offspring_objectives = [objectives[i] for i in ranked[:elitism]]
         cumulative = roulette_cumulative(objectives, epsilon)
 
         while len(offspring) < population_size:
@@ -146,16 +161,21 @@ def genetic_algorithm(
                     mutate(child, rng)
                     mutations += 1
                 offspring.append(child)
+                offspring_objectives.append(child.objective)
+                if incumbent.observe(child):
+                    best_generation = generation
                 evaluations += 1
 
         population = offspring
-        objectives = [s.objective for s in population]
+        objectives = offspring_objectives
         top = _argmax(objectives)
-        if objectives[top] > best.objective:
-            best = population[top].copy()
-            best_generation = generation
+        if objectives[top] > raw_best:
+            raw_best = objectives[top]
+            raw_best_generation = generation
         history_max.append(objectives[top])
         history_mean.append(sum(objectives) / population_size)
+        feasible_history.append(incumbent.state.objective)
+        evaluation_history.append(evaluations)
     duration = time.perf_counter() - start
 
     return RunResult(
@@ -172,17 +192,20 @@ def genetic_algorithm(
             "initial_p_inside": INITIAL_P_INSIDE,
         },
         initial_state=initial,
-        final_state=best,
+        final_state=incumbent.state,
         duration_s=duration,
         iterations=iterations,
         evaluations=evaluations,
-        history={"objective": history_max, "mean": history_mean},
+        history={"objective": history_max, "mean": history_mean,
+                 "best_feasible": feasible_history, "evaluations": evaluation_history},
         extra={
             "best_generation": best_generation,
+            "raw_best_generation": raw_best_generation,
             "crossovers": crossovers,
             "mutations": mutations,
             "final_mean": history_mean[-1],
             "final_feasible_count": sum(s.is_feasible for s in population),
+            **incumbent.metadata(population[_argmax(objectives)], raw_best),
         },
     )
 

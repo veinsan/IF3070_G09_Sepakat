@@ -4,13 +4,13 @@ import json
 import math
 import random
 import unittest
-from pathlib import Path
 
+from config import DATA_DIR
 from core.objective import evaluate, weight_units
 from core.problem import load_problem, parse_problem
 from core.state import State, random_placement, random_state
 
-DATA = Path(__file__).resolve().parent.parent / "src" / "data"
+DATA = DATA_DIR
 
 # deck 4x4, kapasitas 10, berat minimum 3, P = 10 + 1 = 11
 TINY = parse_problem({
@@ -66,6 +66,7 @@ class TestObjective(unittest.TestCase):
         self.assertEqual(weight_units(11, 10, 1), 1)
         self.assertEqual(weight_units(10.25, 10, 0.5), 1)
         self.assertEqual(weight_units(11.5, 10, 0.5), 3)
+        self.assertEqual(weight_units(1e12 + 1, 1e12, 1e12), 1)
 
 
 class TestDeltaEvaluation(unittest.TestCase):

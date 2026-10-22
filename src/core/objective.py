@@ -60,7 +60,7 @@ def weight_units(used: float, capacity: float, unit: float) -> int:
     excess = used - capacity
     if excess <= EPS:
         return 0
-    return math.ceil(excess / unit - EPS)
+    return max(1, math.ceil(excess / unit - EPS))
 
 
 @dataclass(frozen=True, slots=True)

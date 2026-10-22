@@ -11,8 +11,8 @@ berdasarkan luas geladaknya masing-masing.
 
 Contoh (dari root repo):
 
-    python src/core/generator.py --seed 1 --vehicles 30 --width 10 --length 20 --out src/data/main.json
-    python src/core/generator.py --seed 1 --vehicles 40 --width 10 8 6 --length 12 10 8 --out src/data/multi.json
+    python src/core/generator.py --seed 1 --vehicles 30 --width 10 --length 20 --out dataset/main.json
+    python src/core/generator.py --seed 1 --vehicles 40 --width 10 8 6 --length 12 10 8 --out dataset/multi.json
 """
 
 from __future__ import annotations

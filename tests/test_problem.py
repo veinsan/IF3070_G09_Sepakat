@@ -3,12 +3,12 @@
 import copy
 import random
 import unittest
-from pathlib import Path
 
+from config import DATA_DIR
 from core.generator import generate_instance
 from core.problem import load_problem, parse_problem
 
-DATA = Path(__file__).resolve().parent.parent / "src" / "data"
+DATA = DATA_DIR
 
 VALID = {
     "ships": [{"id": "Deck-1", "width": 10, "length": 20, "max_capacity": 500}],
@@ -66,6 +66,13 @@ class TestParseProblem(unittest.TestCase):
             with self.subTest(label), self.assertRaises(ValueError):
                 parse_problem(data)
 
+
+    def test_rejects_nonfinite_numeric_fields(self):
+        for section, field in (("ships", "max_capacity"), ("vehicles", "weight"),
+                               ("vehicles", "shipping_fee"), ("vehicles", "eta")):
+            for value in (float("nan"), float("inf"), float("-inf")):
+                with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                    parse_problem(with_change([section, 0, field], value))
 
 class TestDataFiles(unittest.TestCase):
     def test_instances_load(self):

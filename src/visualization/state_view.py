@@ -41,11 +41,14 @@ def vehicle_color(i: int) -> tuple[float, float, float, float]:
     return PALETTE[i % len(PALETTE)]
 
 
-def draw_state(problem: Problem, state_data: dict[str, Any], title: str = "") -> Figure:
+def draw_state(
+    problem: Problem, state_data: dict[str, Any], title: str = "", *,
+    objective: str = "fee", shipping_fee: float | None = None,
+) -> Figure:
     """Gambar satu state (dict hasil `State.to_dict()`) sebagai Figure.
 
     Panel ke-k adalah geladak kapal ke-k (axes label `deck:<id>`), panel terakhir daftar kendaraan di luar
-    kapal (axes label `outside`). Judul memuat objective, total fee, jumlah pelanggaran, dan status feasible.
+    kapal (axes label `outside`). Objective ETA diberi label bobot urgensi, bukan pendapatan.
     """
     state = State.from_dict(problem, state_data)
     evaluation = state.evaluate()
@@ -59,23 +62,31 @@ def draw_state(problem: Problem, state_data: dict[str, Any], title: str = "") ->
 
     for s, (ship, ax) in enumerate(zip(ships, axes)):
         _draw_deck(ax, state, s, evaluation.used_weight[s])
-    _draw_outside(axes[-1], problem, state)
+    _draw_outside(axes[-1], problem, state, objective=objective)
 
     status = "feasible" if evaluation.is_feasible else (
         f"TIDAK feasible (overlap {evaluation.overlap_cells} sel, keluar batas {evaluation.out_of_bound_cells} sel, "
         f"kelebihan berat {evaluation.weight_units} unit)"
     )
     # status di baris sendiri: rincian pelanggaran state tidak feasible lebih lebar dari geladak kecil
-    header = f"objective = {evaluation.objective:g} | total fee = {evaluation.total_fee:g}\n{status}"
+    header = f"{_value_text(evaluation, objective, shipping_fee)}\n{status}"
     fig.suptitle(f"{title}\n{header}" if title else header, fontsize=10)
     return fig
+
+
+def _value_text(evaluation, objective: str, shipping_fee: float | None) -> str:
+    label = "bobot urgensi" if objective == "eta" else "total fee"
+    text = f"objective = {evaluation.objective:g} | {label} = {evaluation.total_fee:g}"
+    if objective == "eta" and shipping_fee is not None:
+        text += f" | fee asli = {shipping_fee:g}"
+    return text
 
 
 def _draw_deck(ax, state: State, s: int, used_weight: float) -> None:
     problem = state.problem
     ship = problem.ships[s]
     ax.set_label(f"deck:{ship.id}")
-    ax.add_patch(Rectangle((0, 0), ship.width, ship.length, facecolor="#f4f4f4", edgecolor="black", linewidth=1.5))
+    ax.add_patch(Rectangle((0, 0), ship.width, ship.length, facecolor="#f4f4f4", edgecolor="black", linewidth=1.5, zorder=0))
     for x in range(1, ship.width):
         ax.plot([x, x], [0, ship.length], color="#d0d0d0", linewidth=0.5, zorder=0.5)
     for y in range(1, ship.length):
@@ -133,12 +144,13 @@ def _extent(state: State, s: int) -> tuple[int, int]:
     return right, bottom
 
 
-def _draw_outside(ax, problem: Problem, state: State) -> None:
+def _draw_outside(ax, problem: Problem, state: State, *, objective: str) -> None:
     ax.set_label("outside")
     ax.axis("off")
     outside = [(i, v) for i, (v, p) in enumerate(zip(problem.vehicles, state.positions)) if p is None]
     ax.set_title(f"Di luar kapal ({len(outside)})", fontsize=9)
-    lines = [f"{v.id}  {v.width}x{v.length}  fee {v.shipping_fee:g}  berat {v.weight:g}" for _, v in outside]
+    label = "bobot" if objective == "eta" else "fee"
+    lines = [f"{v.id}  {v.width}x{v.length}  {label} {v.shipping_fee:g}  berat {v.weight:g}" for _, v in outside]
     # dua kolom bila daftarnya panjang supaya tetap muat setinggi geladak
     per_column = max(1, -(-len(lines) // 2)) if len(lines) > 24 else max(1, len(lines))
     for k, (i, _) in enumerate(outside):
@@ -150,13 +162,16 @@ def _draw_outside(ax, problem: Problem, state: State) -> None:
         ax.text(0.02, 0.98, "(tidak ada)", transform=ax.transAxes, fontsize=8, va="top")
 
 
-def render_state_text(problem: Problem, state_data: dict[str, Any]) -> str:
+def render_state_text(
+    problem: Problem, state_data: dict[str, Any], *,
+    objective: str = "fee", shipping_fee: float | None = None,
+) -> str:
     """State sebagai teks: value, grid tiap geladak (`.` kosong, `##` overlap), dan daftar kendaraan di luar."""
     state = State.from_dict(problem, state_data)
     evaluation = state.evaluate()
     width = max(len(v.id) for v in problem.vehicles)
     lines = [
-        f"objective = {evaluation.objective:g} | total fee = {evaluation.total_fee:g} | "
+        f"{_value_text(evaluation, objective, shipping_fee)} | "
         f"feasible = {evaluation.is_feasible} (overlap {evaluation.overlap_cells}, keluar batas "
         f"{evaluation.out_of_bound_cells}, kelebihan berat {evaluation.weight_units})"
     ]
@@ -180,9 +195,13 @@ def save_run_states(problem: Problem, result: dict[str, Any], prefix: str | Path
     prefix = Path(prefix)
     prefix.parent.mkdir(parents=True, exist_ok=True)
     run = f"{result['algorithm']} | {result['instance']} | seed {result['seed']}"
+    extra = result.get("extra", {})
+    objective = extra.get("objective", "fee")
     paths = []
     for key, label in (("initial_state", "initial"), ("final_state", "final")):
         path = prefix.with_name(f"{prefix.name}_{label}.png")
-        draw_state(problem, result[key], title=f"{label.capitalize()} state | {run}").savefig(path, dpi=150)
+        fee = extra.get("shipping_fee_total") if key == "final_state" else None
+        draw_state(problem, result[key], title=f"{label.capitalize()} state | {run}",
+                   objective=objective, shipping_fee=fee).savefig(path, dpi=150)
         paths.append(path)
     return paths

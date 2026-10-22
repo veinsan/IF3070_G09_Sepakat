@@ -30,6 +30,30 @@ from core.problem import Problem
 from core.state import State
 
 
+class FeasibleIncumbent:
+    """Arsip feasible dari state yang benar-benar dikunjungi; kosong adalah baseline eksplisit."""
+
+    def __init__(self, problem: Problem) -> None:
+        self.state = State(problem)
+        self.found = False
+
+    def observe(self, state: State) -> bool:
+        if state.is_feasible and (not self.found or state.objective > self.state.objective):
+            self.state = state.copy()
+            self.found = True
+            return True
+        return False
+
+    def metadata(self, raw_final: State, raw_best: float) -> dict[str, Any]:
+        return {
+            "empty_baseline_used": not self.found,
+            "found_feasible": self.found,
+            "raw_final_objective": raw_final.objective,
+            "raw_final_is_feasible": raw_final.is_feasible,
+            "raw_best_objective": raw_best,
+        }
+
+
 @dataclass
 class RunResult:
     """Hasil satu run algoritma.
@@ -37,6 +61,14 @@ class RunResult:
     `history["objective"][k]` = objective setelah iterasi ke-k (indeks 0 = state awal). Untuk GA, iterasi =
     generasi dan nilainya objective maksimum populasi. Key history lain bebas ditambah selama berupa list
     angka atau list pasangan `[iterasi, nilai]`.
+
+    Search baru mencatat `best_feasible[k]` (incumbent feasible termasuk baseline kosong) dan
+    `evaluations[k]` (biaya kumulatif pada checkpoint k). Evaluasi = initial state/individu baru yang
+    dinilai + setiap delta probe; penyalinan, pelaporan, dan baseline kosong yang diketahui bernilai nol
+    tidak dihitung. SA memasukkan probe T0 di indeks 0 dan konfirmasi neighborhood pada checkpoint.
+    HC memasukkan scan terminal tanpa langkah pada indeks terakhir; RR meng-offset setiap percobaan
+    termasuk penilaian initial restart. GA memakai ulang skor elit dan hanya menghitung anak yang dinilai.
+    `extra.empty_baseline_used` membedakan fallback dari feasible yang benar-benar dikunjungi.
     """
 
     algorithm: str
@@ -46,7 +78,7 @@ class RunResult:
     final_state: State
     duration_s: float
     iterations: int
-    # jumlah evaluasi objective: satu pemanggilan State.delta() atau satu state/individu baru yang dinilai
+    # Initial state/individu yang dinilai + delta probes; baseline kosong tidak dihitung.
     evaluations: int
     history: dict[str, list] = field(default_factory=dict)
     extra: dict[str, Any] = field(default_factory=dict)
