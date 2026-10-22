@@ -76,7 +76,6 @@ class TestSearchBoundaries(unittest.TestCase):
         self.assertEqual(result.problem.name, "boundary_eta")
 
     def test_ga_keeps_feasible_individual_even_when_infeasible_raw_best_is_higher(self):
-        # Seed 8 memberi raw-max 199 (overlap), tetapi anggota feasible bernilai 100.
         result = genetic_algorithm(PROBLEM, population_size=2, elitism=0, iterations=0, seed=8)
         self.assertEqual(result.history["objective"], [199])
         self.assertEqual(result.history["best_feasible"], [100])
@@ -100,11 +99,10 @@ class TestSearchBoundaries(unittest.TestCase):
         initial = State(tiny, [(0, 0, 0, "H")])
         result = steepest_ascent(tiny, initial=initial)
         self.assertEqual(result.iterations, 0)
-        self.assertEqual(result.history["evaluations"], [4])  # initial + 3 neighbors
+        self.assertEqual(result.history["evaluations"], [4])
 
     def test_sa_keeps_feasible_visit_below_raw_best(self):
         raw = State(PROBLEM, [(0, 0, 0, "H"), (0, 1, 0, "H"), (0, 0, 0, "H")])
-        # Seed 586 menerima dua removal dan mengunjungi feasible meski nilainya di bawah raw-best.
         result = simulated_annealing(PROBLEM, initial=raw, seed=586, iterations=2,
                                      t0_samples=1, stuck_window=10)
         self.assertEqual(result.history["objective"], [199, 99, 100])
@@ -117,7 +115,6 @@ class TestSearchBoundaries(unittest.TestCase):
         tiny = replace(PROBLEM, vehicles=PROBLEM.vehicles[:1])
         initial = State(tiny, [(0, 0, 0, "H")])
         result = random_restart(tiny, initial=initial, max_restart=1, seed=0)
-        # Scan terminal pertama, initial restart kosong, lalu insertion dan scan terminal kedua.
         self.assertEqual(result.history["evaluations"], [4, 5, 12])
         self.assertEqual(result.evaluations, 12)
         self.assertEqual(result.iterations, 2)

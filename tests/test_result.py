@@ -71,7 +71,6 @@ class TestRunResult(unittest.TestCase):
 
 class TestDeckGrid(unittest.TestCase):
     def test_grid_marks_vehicles_and_overlap(self):
-        # V1 di (0, 0) dan V2 di anchor yang sama -> sel (0, 0) overlap
         positions = [(0, 0, 0, "H"), (0, 0, 0, "H")] + [None] * (len(PROBLEM.vehicles) - 2)
         state = State(PROBLEM, positions)
         grid = state.to_dict()["decks"][0]["grid"]

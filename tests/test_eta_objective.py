@@ -19,7 +19,6 @@ MAIN = load_problem(DATA / "main.json")
 SMALL = load_problem(DATA / "small.json")
 MULTI = load_problem(DATA / "multi.json")
 
-# deck 4x4, kapasitas 10. Bobot: A = 10 · (1 + 1/1) = 20, B = 6 · (1 + 1/3) = 8, C = 4 · (1 + 1/5) = 4.8
 TINY = parse_problem({
     "ships": [{"id": "D", "width": 4, "length": 4, "max_capacity": 10}],
     "vehicles": [
@@ -54,7 +53,6 @@ class TestEtaProblem(unittest.TestCase):
             self.assertEqual((new.id, new.width, new.length, new.weight, new.eta),
                              (old.id, old.width, old.length, old.weight, old.eta))
             self.assertEqual(new.shipping_fee, urgency_weight(old))
-        # instance asli tidak berubah
         self.assertEqual(MAIN.name, "main")
         self.assertEqual(MAIN.vehicles[0].shipping_fee, 48)
 
@@ -62,14 +60,13 @@ class TestEtaProblem(unittest.TestCase):
         self.assertEqual(penalty_coefficient(eta_problem(TINY)), 21)
 
     def test_objective_is_total_weight(self):
-        positions = [(0, 0, 0, "H"), (0, 2, 0, "H"), None]  # A dan B dimuat, feasible
+        positions = [(0, 0, 0, "H"), (0, 2, 0, "H"), None]
         state = State(eta_problem(TINY), positions)
         self.assertTrue(state.is_feasible)
         self.assertEqual(state.objective, 28)
         self.assertEqual(shipping_fee_total(TINY, positions), 16)
 
     def test_violation_penalised_with_weight_based_p(self):
-        # A dan C overlap satu sel, berat 9 <= 10
         state = State(eta_problem(TINY), [(0, 0, 0, "H"), None, (0, 1, 1, "H")])
         self.assertEqual(state.objective, 20 + 4.8 - 21 * 1)
 
@@ -110,7 +107,6 @@ class TestRunEta(unittest.TestCase):
         self.assertEqual(result.extra["objective"], "eta")
         self.assertEqual(result.extra["shipping_fee_total"],
                          shipping_fee_total(SMALL, result.final_state.positions))
-        # final objective = total bobot, dan UB dihitung dengan bobot yang sama
         self.assertAlmostEqual(data["final_objective"], data["total_fee"])
         self.assertEqual(data["upper_bound"], upper_bound(eta_problem(SMALL)))
         self.assertLessEqual(data["final_objective"], data["upper_bound"] + 1e-9)
@@ -137,8 +133,6 @@ class TestRunEta(unittest.TestCase):
     def test_mismatched_initial_is_rejected(self):
         with self.assertRaises(ValueError):
             run_eta(steepest_ascent, TINY, initial=State(SMALL), max_iterations=0)
-
-
 
 
 if __name__ == "__main__":

@@ -44,7 +44,6 @@ class TestStateView(unittest.TestCase):
         self.assertIn(f"objective = {state.objective:g}", fig.get_suptitle())
 
     def test_violations_are_marked(self):
-        # dua kendaraan pertama di anchor yang sama -> overlap, header menyebut tidak feasible
         positions = [(0, 0, 0, "H"), (0, 0, 0, "H")] + [None] * (len(SMALL.vehicles) - 2)
         fig = draw_state(SMALL, State(SMALL, positions).to_dict())
         self.assertIn("TIDAK feasible", fig.get_suptitle())
@@ -52,7 +51,6 @@ class TestStateView(unittest.TestCase):
         self.assertGreater(len(hatched), 0)
 
     def test_title_fits_figure(self):
-        # state awal acak di geladak kecil: judul terpanjang (rincian pelanggaran) tetap muat di gambar
         for problem in (SMALL, FLEET):
             state = random_state(problem, random.Random(4)).to_dict()
             fig = draw_state(problem, state, title="Initial state | random_restart | small | seed 3")
@@ -68,7 +66,6 @@ class TestStateView(unittest.TestCase):
             self.assertIn(ship.id, text)
         outside = [v.id for v, p in zip(FLEET.vehicles, state.positions) if p is None]
         self.assertIn(", ".join(outside), text)
-        # baris grid per kapal = panjang geladak
         grid_lines = [line for line in text.splitlines() if line and line[0] in ".V#"]
         self.assertEqual(len(grid_lines), sum(ship.length for ship in FLEET.ships))
 
@@ -111,7 +108,6 @@ class TestPlots(unittest.TestCase):
 
 
     def test_sa_adds_acceptance_plot(self):
-        # format SA (EXPERIMENTS §3): history.prob = [iterasi, e^(ΔE/T)], extra.stuck_count
         result = dict(self.steepest, algorithm="sa", extra={"stuck_count": 3})
         result["history"] = {"objective": self.steepest["history"]["objective"], "prob": [[1, 0.9], [5, 0.4]]}
         fig = plot_run(result)

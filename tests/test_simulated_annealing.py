@@ -18,7 +18,6 @@ MAIN = load_problem(DATA / "main.json")
 SMALL = load_problem(DATA / "small.json")
 MULTI = load_problem(DATA / "multi.json")
 
-# parameter kecil supaya test cepat; nilai eksperimen ada di config.py
 PARAMS = {"iterations": 5000, "t_min": 0.01, "t0_samples": 100, "t0_accept": 0.8, "stuck_window": 200}
 
 
@@ -26,7 +25,6 @@ def run(problem=SMALL, seed=1, **overrides):
     return simulated_annealing(problem, seed, **{**PARAMS, **overrides})
 
 
-# deck 1x1 dan satu kendaraan 1x1: dari state kosong, satu-satunya move adalah memasukkan kendaraan (ΔE > 0)
 TINY = parse_problem({
     "ships": [{"id": "D", "width": 1, "length": 1, "max_capacity": 5}],
     "vehicles": [{"id": "A", "width": 1, "length": 1, "shipping_fee": 3, "weight": 1, "eta": 1}],
@@ -38,7 +36,6 @@ class TestInitialTemperature(unittest.TestCase):
         state = random_state(MAIN, random.Random(1))
         t0 = initial_temperature(state, random.Random(7), samples=100, accept_prob=0.8)
 
-        # ulangi sampling yang sama untuk mendapatkan ΔE move yang memperburuk
         rng = random.Random(7)
         worse = [d for d in (state.delta(random_neighbor(state, rng)) for _ in range(100)) if d < 0]
         self.assertGreater(t0, 0)
@@ -124,12 +121,10 @@ class TestSimulatedAnnealing(unittest.TestCase):
         self.assertEqual(iterations, sorted(set(iterations)))
         self.assertTrue(all(1 <= k <= result.iterations for k in iterations))
         self.assertTrue(all(0 <= p <= 1 for _, p in prob))
-        # di iterasi tanpa catatan prob (ΔE >= 0), objective tidak pernah turun
         recorded = set(iterations)
         for k in range(1, len(objective)):
             if k not in recorded:
                 self.assertGreaterEqual(objective[k], objective[k - 1])
-        # setiap langkah buruk yang diterima tercatat di prob dan membuat objective turun
         self.assertEqual(
             sum(objective[k] < objective[k - 1] for k in iterations), result.extra["accepted_worse"]
         )
@@ -138,7 +133,6 @@ class TestSimulatedAnnealing(unittest.TestCase):
         tiny = replace(TINY, vehicles=(replace(TINY.vehicles[0], shipping_fee=5e-10),))
         loaded = State(tiny, [(0, 0, 0, "H")])
         result = run(problem=tiny, initial=loaded, seed=1, iterations=1, t0_samples=0, stuck_window=1)
-        # Seed ini menerima removal; reinsertion masih memberi delta positif yang valid.
         self.assertEqual(result.history["objective"][-1], 0)
         self.assertEqual(result.extra["stuck_count"], 0)
         self.assertEqual(result.history["local_optimum"], [[1, False]])

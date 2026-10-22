@@ -17,7 +17,6 @@ MAIN = load_problem(DATA / "main.json")
 SMALL = load_problem(DATA / "small.json")
 MULTI = load_problem(DATA / "multi.json")
 
-# parameter kecil supaya test cepat; nilai eksperimen ada di config.py
 PARAMS = {"population_size": 20, "iterations": 60, "p_crossover": 0.8, "p_mutation": 0.2, "elitism": 2}
 
 
@@ -28,7 +27,6 @@ def run(problem=SMALL, seed=1, **overrides):
 class TestRoulette(unittest.TestCase):
     def test_windowing_makes_all_fitness_positive(self):
         cumulative = roulette_cumulative([-50, 10, -20], epsilon=1)
-        # fit = f - min + ε = [1, 61, 31]
         self.assertEqual(cumulative, [1, 62, 93])
 
     def test_equal_objectives_give_uniform_wheel(self):
@@ -75,7 +73,6 @@ class TestOperators(unittest.TestCase):
         c1, c2 = crossover(a, b, cut)
         self.assertEqual(c1.positions, a_pos[:cut] + b_pos[cut:])
         self.assertEqual(c2.positions, b_pos[:cut] + a_pos[cut:])
-        # induk tidak berubah
         self.assertEqual((a.positions, b.positions), (a_pos, b_pos))
 
     def test_crossover_child_objective_matches_full_recompute(self):
@@ -112,7 +109,6 @@ class TestGeneticAlgorithm(unittest.TestCase):
         self.assertEqual(result.iterations, 40)
         self.assertEqual(len(result.history["objective"]), 41)
         self.assertEqual(len(result.history["mean"]), 41)
-        # populasi awal + anak baru tiap generasi (elit tidak dinilai ulang)
         self.assertEqual(result.evaluations, 21 + 40 * (21 - 2))
         self.assertEqual(result.history["evaluations"], [21 + k * 19 for k in range(41)])
 
@@ -151,7 +147,6 @@ class TestGeneticAlgorithm(unittest.TestCase):
         self.assertNotEqual(a.history, run(seed=8).history)
 
     def test_without_crossover_and_mutation_population_only_resamples(self):
-        # tanpa variasi genetik, tidak mungkin muncul individu lebih baik dari populasi awal
         result = run(problem=MAIN, p_crossover=0, p_mutation=0)
         self.assertEqual(result.extra["crossovers"], 0)
         self.assertEqual(result.extra["mutations"], 0)

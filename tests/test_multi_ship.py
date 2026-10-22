@@ -12,7 +12,6 @@ from core.state import State
 from search.hill_climbing import random_restart, sideways_move, steepest_ascent, stochastic
 from search.neighbors import all_neighbors, all_placements, swap
 
-# armada kecil: dua kapal berbeda ukuran, cukup kecil untuk brute force
 FLEET = parse_problem(generate_instance(random.Random(5), 10, [(5, 6), (4, 4)], types=["motor", "sedan", "suv"]))
 
 
@@ -35,7 +34,7 @@ class TestFleetInstance(unittest.TestCase):
         self.assertEqual([s["id"] for s in data["ships"]], ["Deck-1", "Deck-2", "Deck-3"])
         self.assertEqual([(s["width"], s["length"]) for s in data["ships"]], [(10, 12), (8, 10), (6, 8)])
         capacities = [s["max_capacity"] for s in data["ships"]]
-        self.assertEqual(capacities, sorted(capacities, reverse=True))  # sebanding dengan luas geladak
+        self.assertEqual(capacities, sorted(capacities, reverse=True))
         with self.assertRaises(ValueError):
             generate_instance(random.Random(1), 5, [])
 
@@ -55,11 +54,10 @@ class TestFleetMoves(unittest.TestCase):
             "vehicles": [{"id": "x", "width": 2, "length": 2, "shipping_fee": 10, "weight": 4, "eta": 1},
                          {"id": "y", "width": 2, "length": 2, "shipping_fee": 7, "weight": 4, "eta": 1}],
         })
-        # berat total 8 > kapasitas kapal mana pun (4), tapi feasible karena dibagi ke dua kapal
         state = State(problem, [(0, 0, 0, "H"), (1, 0, 0, "H")])
         self.assertTrue(state.is_feasible)
         self.assertEqual(state.objective, 17)
-        state.set(1, (0, 1, 1, "H"))  # keduanya di kapal A: overlap + kelebihan berat
+        state.set(1, (0, 1, 1, "H"))
         self.assertFalse(state.is_feasible)
 
     def test_placements_cover_all_ships(self):
@@ -71,7 +69,7 @@ class TestFleetMoves(unittest.TestCase):
         state = State(FLEET, [(0, 1, 1, "H"), (1, 2, 0, "V")] + [None] * (len(FLEET.vehicles) - 2))
         targets = {changes[0][1][0] for changes in all_neighbors(state)
                    if len(changes) == 1 and changes[0][0] == 0 and changes[0][1] is not None}
-        self.assertEqual(targets, {0, 1})  # kendaraan di kapal 1 bisa dipindah ke kapal 2
+        self.assertEqual(targets, {0, 1})
         clone = state.copy()
         clone.apply(swap(state, 0, 1))
         self.assertEqual(clone.placement(0), (1, 2, 0, "H"))
@@ -115,7 +113,7 @@ class TestFleetOptimum(unittest.TestCase):
                 self.assertEqual(len(data["used_weight"]), 2)
                 self.assertEqual([len(d["grid"]) for d in data["final_state"]["decks"]], [6, 4])
         used_ships = {p[0] for p in runs[2].final_state.positions if p is not None}
-        self.assertEqual(used_ships, {0, 1})  # armada benar-benar dipakai, bukan hanya kapal pertama
+        self.assertEqual(used_ships, {0, 1})
 
 
 if __name__ == "__main__":

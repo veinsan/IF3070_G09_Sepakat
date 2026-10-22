@@ -1,10 +1,7 @@
-/* IBM Plex Sans is bundled locally; see fonts/OFL.txt for its SIL Open Font License. */
 @font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 300; font-display: swap; src: url("/static/fonts/ibm-plex-sans-300.ttf") format("truetype"); }
 @font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 400; font-display: swap; src: url("/static/fonts/ibm-plex-sans-400.ttf") format("truetype"); }
 @font-face { font-family: "IBM Plex Sans"; font-style: normal; font-weight: 600; font-display: swap; src: url("/static/fonts/ibm-plex-sans-600.ttf") format("truetype"); }
 
-/* Design system: IBM DESIGN.md dari katalog getdesign.md (VoltAgent/awesome-design-md), turunan Carbon.
-   Aturan: sudut 0px, tanpa bayangan, IBM Plex Sans, abu-abu netral, IBM Blue sebagai satu-satunya aksen. */
 :root {
   color-scheme: light;
   --page: #f4f4f4;
@@ -132,7 +129,6 @@ progress { accent-color: var(--accent); flex: 1; min-width: 0; height: 7px; max-
 .deck-svg .ship-outline { fill: var(--deck-surface); stroke: var(--ink); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .deck-svg .grid-line { stroke: var(--grid); stroke-width: .65; vector-effect: non-scaling-stroke; }
 .deck-svg .axis-label { fill: var(--muted); font-family: "IBM Plex Sans", sans-serif; }
-/* Tracking Carbon dalam satuan SVG ikut terskala; teks geladak memakai tracking 0. */
 .deck-svg text { letter-spacing: 0; }
 .deck-svg .vehicle { cursor: pointer; }
 .deck-svg .vehicle rect.body { fill: var(--vehicle); stroke: var(--vehicle-stroke); stroke-width: 1; vector-effect: non-scaling-stroke; }
@@ -141,7 +137,6 @@ progress { accent-color: var(--accent); flex: 1; min-width: 0; height: 7px; max-
 .deck-svg .vehicle:hover rect.body { stroke: var(--accent-hover); stroke-width: 2.5; }
 .deck-svg .vehicle.is-selected rect.body { stroke: var(--accent-pressed); stroke-width: 2; fill: var(--selected); }
 .deck-svg .vehicle.is-selected text { fill: var(--on-accent); }
-/* Keep keyboard focus in screen pixels rather than scaling CSS outlines in SVG units. */
 .deck-svg .vehicle:focus, .deck-svg .vehicle:focus-visible { outline: none; }
 .deck-svg .vehicle:focus rect.body { stroke: var(--focus); stroke-width: 4; vector-effect: non-scaling-stroke; }
 #deck-canvas.hidden-grid .grid-line, #deck-canvas.hidden-labels .vehicle text { display: none; }
@@ -216,7 +211,6 @@ progress { accent-color: var(--accent); flex: 1; min-width: 0; height: 7px; max-
 .history-panel { border-top: 1px solid var(--border); padding-top: 16px; min-width: 0; }
 .history-panel > .help { margin: 8px 0 14px; }
 .empty-history { color: var(--muted); font-size: 13px; padding: 16px 0; }
-/* Panel samping terlalu sempit untuk 7 kolom: tiap run tampil sebagai kartu berlabel, header menjadi tombol urut. */
 .history-panel table, .history-panel thead, .history-panel tbody, .history-panel tr, .history-panel th, .history-panel td { display: block; }
 .history-panel caption { display: block; padding: 0 0 10px; font-size: 12px; }
 .history-panel thead tr { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }

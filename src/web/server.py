@@ -116,7 +116,6 @@ def bounded_problem(raw: Any, name: str) -> Problem:
         raise ValueError("Total luas geladak melebihi batas.")
     if capacity > LIMITS["max_total_capacity"]:
         raise ValueError("Total kapasitas kapal melebihi batas.")
-    # Match core.bounds.upper_bound, including its evaluator tolerance.
     weight_cap = math.floor(sum(ship.max_capacity + EPS for ship in problem.ships))
     dp_cells = (area + 1) * (weight_cap + 1)
     if dp_cells > LIMITS["max_dp_cells"] or dp_cells * len(problem.vehicles) > LIMITS["max_dp_work"]:
@@ -277,7 +276,6 @@ class JobManager:
                     if time.monotonic() - self.started > self.timeout_s:
                         run["status"], run["error"] = "failed", "Pencarian melewati batas waktu 45 detik. Kecilkan iterasi atau populasi."
                     elif not self.process.is_alive():
-                        # A child flushes its queue before exit, so drain once more after observing death.
                         self.drain(run)
                         if run["status"] == "running":
                             run["status"], run["error"] = "failed", "Proses pencarian berhenti tanpa hasil."
@@ -327,7 +325,6 @@ def create_app(*, timeout_s: float = LIMITS["timeout_s"], history_size: int = LI
 
     @app.middleware("http")
     async def local_boundary(request: Request, call_next):
-        # Pemeriksaan Host juga mencegah DNS rebinding dari browser terhadap layanan lokal.
         try:
             host = urlsplit("http://" + request.headers.get("host", "")).hostname
         except ValueError:

@@ -8,7 +8,6 @@ from core.problem import parse_problem
 from core.state import State, random_state
 from search.neighbors import all_neighbors, all_placements, random_neighbor, rotate, swap
 
-# deck 3x4 (24 placement), kendaraan C persegi sehingga tidak bisa diputar
 PROBLEM = parse_problem({
     "ships": [{"id": "D", "width": 3, "length": 4, "max_capacity": 10}],
     "vehicles": [
@@ -42,7 +41,7 @@ class TestMoves(unittest.TestCase):
         state = State(PROBLEM, [(0, 2, 1, "V"), None, None, None])
         positions = result_of(state, swap(state, 0, 1))
         self.assertIsNone(positions[0])
-        self.assertEqual(positions[1], (0, 2, 1, "V"))  # B mengambil orientasi A
+        self.assertEqual(positions[1], (0, 2, 1, "V"))
 
     def test_rotate(self):
         state = State(PROBLEM, [(0, 1, 2, "H"), None, None, None])
@@ -59,10 +58,9 @@ class TestAllNeighbors(unittest.TestCase):
 
         n_placements = len(all_placements(PROBLEM))
         self.assertEqual(n_placements, 3 * 4 * 2)
-        # kendaraan di dalam: placement dengan anchor lain + keluar; di luar: semua placement
         moves = 3 * (n_placements - 2 + 1) + n_placements
-        swaps = 6  # C(4, 2), tidak ada pasangan yang sama-sama di luar
-        rotates = 2  # A dan B (C persegi, D di luar)
+        swaps = 6
+        rotates = 2
         self.assertEqual(kinds[1], moves + rotates)
         self.assertEqual(kinds[2], swaps)
 
@@ -99,7 +97,6 @@ class TestRandomNeighbor(unittest.TestCase):
                 seen["rotate"] += 1
             else:
                 seen["move"] += 1
-        # tiap tipe ~1/3; remove = setengah dari move kendaraan di dalam (2 dari 4 kendaraan) ~ 1/12
         for kind in ("swap", "rotate", "move"):
             self.assertGreater(seen[kind], 500, kind)
         self.assertGreater(seen["remove"], 150)

@@ -15,7 +15,6 @@ di akar direktori eksperimen. Mode --quick secara default memakai
 output/runs/quick/, sehingga tidak menimpa hasil resmi.
 """
 
-# Teks --help dan output terminal sengaja ASCII (lihat main.py).
 
 from __future__ import annotations
 
@@ -51,7 +50,6 @@ from search.result import RunResult
 
 Result = dict[str, Any]
 
-# grup -> (judul di ringkasan, wajib?)
 GROUPS: dict[str, tuple[str, bool]] = {
     "hc": ("4.1 Hill-Climbing - Steepest Ascent", True),
     "sa": ("4.5 Simulated Annealing", True),
@@ -103,14 +101,12 @@ def planned_runs(quick: bool = False, seeds: Sequence[int] = SEEDS) -> list[Run]
             "stochastic": {"max_no_improve": 200, "max_iterations": 1000},
             "sideways": {"max_sideways": 5, "max_iterations": 20},
             "random_restart": {"max_restart": 1, "max_iterations": 20},
-            # multi.json: Steepest butuh ~0.5 s per iterasi
             "multi": hc,
         }
     else:
         main_instance = DEFAULT_INSTANCE
         ga_population, ga_iterations = GA_POPULATION, GA_ITERATIONS
         ga_pop_variants, ga_iter_variants = GA_POPULATION_VARIANTS, GA_ITERATION_VARIANTS
-        # parameter lain = default fungsi (config.py)
         params = {"steepest": {}, "sa": {}, "stochastic": {}, "sideways": {}, "random_restart": {}, "multi": {}}
 
     runs: list[Run] = []
@@ -128,7 +124,6 @@ def planned_runs(quick: bool = False, seeds: Sequence[int] = SEEDS) -> list[Run]
         add("ga_pop", "ga", main_instance, {"population": population, "iterations": ga_iterations})
     for algo in ("stochastic", "sideways", "random_restart"):
         add("hc_variants", algo, main_instance, params[algo])
-    # Bonus 1: SA dengan objective ETA; seed dan parameter sama dengan grup sa.
     add("eta", "sa", main_instance, params["sa"], objective="eta")
     add("multi", "steepest", MULTI_INSTANCE, params["multi"])
     return runs
@@ -209,9 +204,6 @@ def load_result(path: Path) -> Result:
 def load_results(runs: Sequence[Run], out_dir: Path) -> list[tuple[Run, Result]]:
     """Pasangan (run, hasil) untuk semua run yang JSON-nya sudah ada di `out_dir`."""
     return [(r, load_result(r.path(out_dir))) for r in runs if r.path(out_dir).is_file()]
-
-
-# --- ringkasan ---------------------------------------------------------------------------------------
 
 
 def machine_info() -> str:
@@ -459,9 +451,6 @@ def write_summary(pairs: Sequence[tuple[Run, Result]], out_dir: Path, missing: S
     return path
 
 
-# --- CLI ---------------------------------------------------------------------------------------------
-
-
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--only", nargs="+", choices=list(GROUPS), metavar="GRUP",
@@ -491,7 +480,6 @@ def main(argv: list[str] | None = None) -> int:
     else:
         execute(runs, args.out, skip_existing=args.skip_existing, plots=not args.no_plot)
 
-    # ringkasan selalu mencakup semua run yang direncanakan (bukan hanya --only) yang JSON-nya sudah ada
     everything = planned_runs(quick=args.quick)
     pairs = load_results(everything, args.out)
     missing = [r for r in everything if not r.path(args.out).is_file()]

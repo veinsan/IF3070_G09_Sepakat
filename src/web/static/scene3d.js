@@ -1,13 +1,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const VEHICLE_HEIGHT = .72; // Illustration only; the solver has no height dimension.
-// Palet Carbon (IBM DESIGN.md): kendaraan abu-abu dingin, IBM Blue hanya untuk pilihan, merah hanya untuk pelanggaran.
+const VEHICLE_HEIGHT = .72;
 const COLORS = [0xf2f4f8, 0xdde1e6, 0xc1c7cd, 0xa2a9b0, 0xe0e0e0, 0xc6c6c6];
 const FOV = 38;
 
 export function createCargoScene(host, { onSelect, onError } = {}) {
-  // Let WebGL creation failures reach the application's honest 2D fallback.
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'low-power' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.shadowMap.enabled = true;
@@ -112,7 +110,6 @@ export function createCargoScene(host, { onSelect, onError } = {}) {
     return keep(new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: intensity, roughness: .5, metalness: .1 }), shared);
   }
 
-  // Riak statis seperti air Ember Scope: variasi warna di shader, tanpa animasi sehingga render tetap on-demand.
   materials.water.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec2 vWave;')
@@ -151,7 +148,7 @@ export function createCargoScene(host, { onSelect, onError } = {}) {
   function render() {
     frame = 0;
     if (!canRender()) return;
-    controls.update(); // Change events request only the frames needed for damping.
+    controls.update();
     renderer.render(scene, camera);
   }
 
@@ -198,7 +195,6 @@ export function createCargoScene(host, { onSelect, onError } = {}) {
       [width * .76, length + bow], [width * .24, length + bow], [-edge, length + edge],
     ];
     const hullShape = new THREE.Shape(outline.map(([x, z]) => new THREE.Vector2(x, z)));
-    // Lambung dua warna: badan gelap di atas, cat antifouling merah di sekitar garis air.
     for (const [material, top, height] of [[materials.hull, -.12, depth * .55], [materials.boot, -.12 - depth * .55, depth * .45]]) {
       const geometry = keep(new THREE.ExtrudeGeometry(hullShape, { depth: height, bevelEnabled: false, steps: 1 }));
       geometry.rotateX(Math.PI / 2);
@@ -215,8 +211,6 @@ export function createCargoScene(host, { onSelect, onError } = {}) {
     shipRoot.add(walkway);
     mesh(shipRoot, materials.deck, width / 2, -.035, length / 2, width, .07, length);
 
-    // Bound GPU memory on unusually large decks while retaining every integer grid line.
-    // Repeating a one-cell canvas texture avoids allocating W+L line vertices.
     const gridCanvas = document.createElement('canvas');
     gridCanvas.width = gridCanvas.height = 64;
     const ctx = gridCanvas.getContext('2d');
@@ -306,7 +300,6 @@ export function createCargoScene(host, { onSelect, onError } = {}) {
       for (const end of [-1, 1]) {
         const wheel = mesh(root, materials.tire, side * width * .435, h * .18, end * length * .30, h * .16, h * .18, h * .18, tire);
         wheel.rotation.z = Math.PI / 2;
-        // Cylinder radius is illustrative; its width never exceeds the footprint.
         wheel.scale.set(Math.min(h * .18, length * .14), Math.min(h * .16, width * .12), Math.min(h * .18, length * .14));
         mesh(root, end === 1 ? materials.headlight : materials.taillight, side * width * .27, h * .35, end * length * .465, width * .17, h * .12, length * .015);
       }
@@ -376,7 +369,6 @@ export function createCargoScene(host, { onSelect, onError } = {}) {
       }
     });
     const intersections = [];
-    // Exact rectangle intersections; violations are shown, never repaired or stacked.
     for (let a = 0; a < placements.length; a++) {
       for (let b = a + 1; b < placements.length; b++) {
         const first = placements[a], second = placements[b];
@@ -400,7 +392,6 @@ export function createCargoScene(host, { onSelect, onError } = {}) {
         selection.scale.set(item.width, 1, item.length);
       }
     }
-    // A bounded pool: one instanced overlay per structure, reused for every snapshot.
     if (intersections.length && (!violationMesh || violationMesh.instanceMatrix.count < intersections.length)) {
       if (violationMesh) {
         cargoRoot.remove(violationMesh);
@@ -453,7 +444,6 @@ export function createCargoScene(host, { onSelect, onError } = {}) {
     controls.minTargetRadius = 0;
     controls.maxTargetRadius = radius * 8;
     controls.cursor.copy(sphere.center);
-    // Jarak kamera agar seluruh bola pembatas masuk ke FOV vertikal maupun horizontal.
     const aspect = Math.max(1, host.clientWidth) / Math.max(1, host.clientHeight);
     const halfFov = THREE.MathUtils.degToRad(FOV / 2);
     const distance = radius / Math.sin(Math.min(halfFov, Math.atan(Math.tan(halfFov) * aspect))) * .66;

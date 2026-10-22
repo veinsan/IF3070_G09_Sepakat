@@ -80,7 +80,6 @@ class TestDataFiles(unittest.TestCase):
             with self.subTest(name):
                 problem = load_problem(DATA / f"{name}.json")
                 self.assertEqual(problem.name, name)
-                # instance harus "ketat": tidak semua kendaraan muat, dari sisi luas maupun berat
                 ship = problem.ships[0]
                 self.assertGreater(sum(v.area for v in problem.vehicles), ship.area)
                 self.assertGreater(sum(v.weight for v in problem.vehicles), ship.max_capacity)

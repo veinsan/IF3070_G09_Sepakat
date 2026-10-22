@@ -11,8 +11,6 @@ JSON serta gambar initial/final/plot memiliki basename yang sama. Runner
 experiments.py memakai fungsi ekspor yang sama dengan direktori grup terpisah.
 """
 
-# Docstring ini juga teks --help dan semua output terminal sengaja ASCII: konsol Windows yang di-redirect
-# memakai encoding cp1252 yang tidak bisa mencetak karakter seperti Δ.
 
 from __future__ import annotations
 
@@ -32,8 +30,6 @@ from search.hill_climbing import random_restart, sideways_move, steepest_ascent,
 from search.result import RunResult
 from search.simulated_annealing import simulated_annealing
 
-# nama algoritma di CLI -> (fungsi, {opsi CLI: nama parameter fungsi}). Parameter yang tidak diberikan
-# memakai default fungsi, yaitu nilai di config.py.
 ALGORITHMS: dict[str, tuple[Callable[..., RunResult], dict[str, str]]] = {
     "steepest": (steepest_ascent, {"max_iterations": "max_iterations"}),
     "sideways": (sideways_move, {"max_sideways": "max_sideways", "max_iterations": "max_iterations"}),
@@ -80,14 +76,12 @@ def save_run(result: dict[str, Any], problem: Problem, out_dir: str | Path = RUN
     prefix = Path(out_dir) / result["algorithm"] / run_id(result)
     prefix.parent.mkdir(parents=True, exist_ok=True)
     path = prefix.with_name(prefix.name + ".json")
-    # tanpa indentasi: history SA berisi ~100 000 titik
     path.write_text(json.dumps(result) + "\n", encoding="utf-8")
     return [path] + (save_plots(result, problem, prefix) if plots else [])
 
 
 def save_plots(result: dict[str, Any], problem: Problem, prefix: Path) -> list[Path]:
     """Gambar state awal/akhir dan plot run ke `<prefix>_initial.png`, `_final.png`, `_plot.png`."""
-    # import di sini supaya run tanpa gambar tidak perlu memuat matplotlib
     from visualization.plots import plot_run
     from visualization.state_view import save_run_states
 
@@ -114,7 +108,6 @@ def format_summary(result: dict[str, Any]) -> str:
         f"iterasi     : {result['iterations']} | evaluasi {result['evaluations']} | "
         f"durasi {result['duration_s']:.3f} s",
     ]
-    # info khusus algoritma (restart, sideways, stuck, T0, ...); list panjang tidak ditampilkan
     extra = {k: v for k, v in result["extra"].items() if isinstance(v, (int, float, str))}
     if extra:
         lines.append("info        : " + ", ".join(f"{k}={v:g}" if isinstance(v, float) else f"{k}={v}"
@@ -179,7 +172,6 @@ def main(argv: list[str] | None = None) -> int:
         try:
             result = json.loads(args.view.read_text(encoding="utf-8"))
             problem = view_problem(result, args.instance)
-            # validasi: hasil run harus cocok dengan instance-nya
             result = RunResult.from_dict(problem, result).to_dict()
         except (OSError, ValueError, KeyError) as e:
             parser.error(f"--view {args.view}: {e}")
