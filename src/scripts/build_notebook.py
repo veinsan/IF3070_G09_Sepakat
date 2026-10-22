@@ -36,9 +36,6 @@ def section(title: str, anchor: str) -> dict:
     return md(f'{HR}\n\n# {title} <a name="{anchor}"></a>\n\n{HR}')
 
 
-# ---------------------------------------------------------------------------
-# Banner, kelompok, dan daftar isi
-# ---------------------------------------------------------------------------
 cells.append(md(
     f'{HR}\n<br>\n'
     '<h1 style="font-family:verdana; font-size:26px"><center>~ IF3070: Optimasi Muatan Kendaraan pada Kapal ~</center></h1>\n'
@@ -71,9 +68,6 @@ cells.append(md(
     '13. [**Daftar Pustaka**](#13)'
 ))
 
-# ---------------------------------------------------------------------------
-# 1. Pendahuluan
-# ---------------------------------------------------------------------------
 cells.append(section('Pendahuluan', '1'))
 cells.append(md(
     '## Persoalan\n\n'
@@ -123,15 +117,11 @@ cells.append(md(
 ))
 cells.append(md(
     '## Referensi Utama\n\n'
-    '- [Desain implementasi](../docs/DESIGN.md) - state, objective, neighborhood, algoritma, dan heuristik.\n'
-    '- [Protokol eksperimen](../docs/EXPERIMENTS.md) - konfigurasi dan batas interpretasi.\n'
+    '- [Laporan tugas besar](../docs/TugasBesar1_Sepakat.pdf) - state, objective, neighborhood, algoritma, heuristik, dan analisis hasil.\n'
     '- [Ringkasan hasil resmi](../output/experiments/summary.md) - tabel seluruh run.\n'
-    '- Materi Hill-Climbing, Simulated Annealing, dan Genetic Algorithm oleh M. L. Khodra, sebagaimana dirujuk pada spesifikasi tugas.'
+    '- Materi kuliah IF3070_Materi03-BeyondClassicalSearch: Hill-Climbing (slide 20-30), Simulated Annealing (slide 31-40), dan Genetic Algorithm (slide 41-50).'
 ))
 
-# ---------------------------------------------------------------------------
-# 2. Inisialisasi
-# ---------------------------------------------------------------------------
 cells.append(section('Inisialisasi', '2'))
 cells.append(md(
     'Bagian ini menyiapkan lingkungan analisis, memusatkan konfigurasi, dan memuat artefak eksperimen. '
@@ -288,9 +278,6 @@ cells.append(code(
     "    print('Gambar:', path.relative_to(ROOT))"
 ))
 
-# ---------------------------------------------------------------------------
-# 3. Analisis data eksploratif
-# ---------------------------------------------------------------------------
 cells.append(section('Analisis Data Eksploratif', '3'))
 cells.append(md(
     'Analisis data dilakukan pada input persoalan sebelum membandingkan algoritma. '
@@ -389,9 +376,6 @@ cells.append(code(
     "         'Validitas fisik diperiksa dari penempatan, bukan diasumsikan dari angka objective akhir.')"
 ))
 
-# ---------------------------------------------------------------------------
-# 4. Protokol dan hasil eksperimen
-# ---------------------------------------------------------------------------
 cells.append(section('Protokol dan Hasil Eksperimen', '4'))
 cells.append(md(
     'Setiap konfigurasi menggunakan tiga seed. Dua sweep GA dilaksanakan terpisah: populasi menjadi kontrol saat generasi '
@@ -435,9 +419,6 @@ cells.append(md(
     'maksimum populasi. Perbedaan tersebut penting ketika search masih berada pada susunan berpenalti.'
 ))
 
-# ---------------------------------------------------------------------------
-# 5. Hill-Climbing
-# ---------------------------------------------------------------------------
 cells.append(section('Hill-Climbing', '5'))
 cells.append(md(
     'Hill-Climbing memperbaiki konfigurasi melalui neighborhood move, swap, dan rotate. '
@@ -485,9 +466,6 @@ cells.append(code(
     "         'Hasil antarvarian dibaca bersama biaya evaluasi dan parameter penghentiannya.')"
 ))
 
-# ---------------------------------------------------------------------------
-# 6. Simulated Annealing
-# ---------------------------------------------------------------------------
 cells.append(section('Simulated Annealing', '6'))
 cells.append(md(
     'Simulated Annealing dapat menerima perpindahan yang memperburuk objective dengan peluang `exp(delta/T)`. '
@@ -522,9 +500,6 @@ cells.append(code(
     "         'Kunjungan di antara checkpoint dapat tidak terdeteksi. Biaya konfirmasi sudah termasuk jumlah evaluasi dan durasi SA.')"
 ))
 
-# ---------------------------------------------------------------------------
-# 7. Genetic Algorithm
-# ---------------------------------------------------------------------------
 cells.append(section('Genetic Algorithm', '7'))
 cells.append(md(
     'Genetic Algorithm mempertahankan populasi konfigurasi kendaraan. Seleksi roulette memakai fitness positif hasil '
@@ -596,9 +571,6 @@ cells.append(code(
     "             'Hasil tersebut berlaku pada konfigurasi dan seed yang dibandingkan.')"
 ))
 
-# ---------------------------------------------------------------------------
-# 8. Perbandingan algoritma
-# ---------------------------------------------------------------------------
 cells.append(section('Perbandingan Algoritma', '8'))
 cells.append(md(
     'Perbandingan memakai objective fee pada instance utama. GA diwakili konfigurasi dengan mean tertinggi dari sweep. '
@@ -657,9 +629,6 @@ cells.append(md(
     'Kurva evaluasi menjelaskan pekerjaan algoritma, sedangkan durasi tetap diperlukan untuk membandingkan biaya pada mesin yang digunakan.'
 ))
 
-# ---------------------------------------------------------------------------
-# 9. Visualisasi state
-# ---------------------------------------------------------------------------
 cells.append(section('Visualisasi Penataan Kendaraan', '9'))
 cells.append(md(
     'State awal dan akhir dari run terbaik setiap algoritma ditampilkan berpasangan. '
@@ -692,9 +661,6 @@ cells.append(md(
     'Area kosong dapat muncul akibat kombinasi bentuk kendaraan dan kapasitas berat; gambar saja tidak memisahkan penyebab keduanya.'
 ))
 
-# ---------------------------------------------------------------------------
-# 10. Bonus multi-kapal dan ETA
-# ---------------------------------------------------------------------------
 cells.append(section('Multi-kapal dan Objective ETA', '10'))
 cells.append(md(
     'Dua perluasan diuji tanpa mengubah variabel dasar persoalan: armada dengan beberapa kapal dan objective yang memberi '
@@ -773,9 +739,6 @@ cells.append(md(
     '`extra.shipping_fee_total`; kedua istilah tersebut tidak dapat dipertukarkan ketika membahas keuntungan pengiriman.'
 ))
 
-# ---------------------------------------------------------------------------
-# 11. Batas atas dan optimum eksak
-# ---------------------------------------------------------------------------
 cells.append(section('Batas Atas dan Optimum Eksak', '11'))
 cells.append(md(
     'Relaksasi knapsack mengabaikan sebagian kendala geometri sehingga memberi upper bound. '
@@ -804,9 +767,6 @@ cells.append(code(
     "            else 'Sisa gap dapat berasal dari relaksasi yang longgar, pencarian yang belum optimal, atau keduanya.'))"
 ))
 
-# ---------------------------------------------------------------------------
-# 12. Pasca-analisis
-# ---------------------------------------------------------------------------
 cells.append(section('Pasca-Analisis', '12'))
 cells.append(md(
     'Bagian akhir merangkum hasil kuantitatif serta batas interpretasi CARGO. '
@@ -841,16 +801,11 @@ cells.append(md(
     'Untuk pelaporan saat ini, seluruh pembandingan tetap menggunakan konfigurasi resmi yang tercatat tanpa menambahkan hasil sintetis.'
 ))
 
-# ---------------------------------------------------------------------------
-# 13. Daftar pustaka dan penutup
-# ---------------------------------------------------------------------------
 cells.append(section('Daftar Pustaka', '13'))
 cells.append(md(
-    'Tim Asisten Laboratorium Inteligensi Artifisial. (2026). *Spesifikasi Tugas Besar 1 IF3070 Dasar Inteligensi Artifisial 2026/2027*, versi 1.1. Dokumen tersedia pada direktori `docs/`.\n\n'
-    'Khodra, M. L. (2021). *Beyond Classical Search: Hill-Climbing Search*. [Video](https://www.youtube.com/watch?v=L0b0CN3Fds8).\n\n'
-    'Khodra, M. L. (2021). *Beyond Classical Search: Simulated Annealing*. [Video](https://www.youtube.com/watch?v=AdhG7HnhYrk).\n\n'
-    'Khodra, M. L. (2021). *Beyond Classical Search: Genetic Algorithm*. [Video](https://www.youtube.com/watch?v=aI41TGo9J9c).\n\n'
-    'Kelompok G09 - Sepakat. *Desain Implementasi dan Protokol Eksperimen CARGO*. [Desain](../docs/DESIGN.md), [Eksperimen](../docs/EXPERIMENTS.md).\n\n'
+    'Tim Asisten Laboratorium Inteligensi Artifisial. (2026). *Spesifikasi Tugas Besar 1 IF3070 Dasar Inteligensi Artifisial 2026/2027*, versi 1.1.\n\n'
+    'Tim Pengajar IF3070. (2026). *IF3070_Materi03-BeyondClassicalSearch*. Materi kuliah IF3070 Dasar Inteligensi Artifisial, Institut Teknologi Bandung.\n\n'
+    'Kelompok G09 - Sepakat. (2026). *Laporan Tugas Besar 1 IF3070: CARGO*. [PDF](../docs/TugasBesar1_Sepakat.pdf).\n\n'
     'Project Jupyter. *NBClient: Executing Notebooks*. [Dokumentasi](https://nbclient.readthedocs.io/en/latest/client.html).'
 ))
 cells.append(section('Thanks!', 'thanks'))
