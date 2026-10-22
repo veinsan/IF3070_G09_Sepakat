@@ -102,6 +102,6 @@ Keputusan di atas bukan kutipan jawaban resmi. Pertanyaan administratif atau per
 
 Assistant membantu audit spesifikasi dan kode, identifikasi/reproduksi bug, modifikasi core/search/CLI/runner/visualisasi, reorganisasi dataset/output, penulisan regresi, pembuatan ulang notebook dan analisis, pembaruan dokumentasi, serta eksekusi verifikasi dan eksperimen. Hasil review dan pemeriksaan runtime digunakan untuk memperbaiki implementasi; ini bukan audit yang hanya memberi saran.
 
-Repository acuan dipakai untuk organisasi folder, bukan untuk menyalin implementasi. Skill notebook berasal dari `ref/notebook/` yang diberikan pengguna. Rujukan nbclient dipakai untuk API eksekusi notebook.
+Skill notebook berasal dari `ref/notebook/` yang diberikan pengguna. Rujukan nbclient dipakai untuk API eksekusi notebook.
 
 Riwayat penggunaan AI sebelum sesi ini tidak diketahui assistant. Setiap anggota perlu mencatat penggunaan aktualnya sendiri ketika mengisi formulir laporan; log ini tidak menggantikan formulir resmi dan tidak mengklaim kode sepenuhnya ditulis tanpa bantuan AI.

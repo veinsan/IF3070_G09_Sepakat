@@ -148,7 +148,6 @@ Bonus multi-kapal memakai constraint per kapal, move/swap lintas kapal, dan obje
 - M. L. Khodra, [Hill-Climbing Search](https://www.youtube.com/watch?v=L0b0CN3Fds8), 2021.
 - M. L. Khodra, [Simulated Annealing](https://www.youtube.com/watch?v=AdhG7HnhYrk), 2021.
 - M. L. Khodra, [Genetic Algorithm](https://www.youtube.com/watch?v=aI41TGo9J9c), 2021.
-- [Task2_AI_13524061](https://github.com/parkuskus/Task2_AI_13524061): acuan pemisahan repository saja, bukan sumber kode.
 - `ref/notebook/`: panduan builder dan penyusunan notebook yang disediakan pengguna.
 - [NBClient](https://nbclient.readthedocs.io/en/latest/client.html): eksekusi notebook terprogram.
 

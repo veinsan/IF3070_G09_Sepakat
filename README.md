@@ -6,7 +6,7 @@ Program memaksimalkan shipping fee dengan mempertimbangkan posisi integer, orien
 
 ## Struktur
 
-Pemisahan data, source, notebook, dan dokumentasi mengacu pada organisasi [Task2_AI_13524061](https://github.com/parkuskus/Task2_AI_13524061). Kode dan hasil dari repository acuan tidak disalin. Karena proyek ini hanya memiliki satu persoalan, tidak ada lapisan `src/local_search/` tambahan.
+Data, source code, notebook, dokumentasi, dan hasil eksperimen dipisahkan menurut tanggung jawabnya. Karena proyek ini hanya memiliki satu persoalan, tidak ada lapisan `src/local_search/` tambahan.
 
 ```text
 IF3070_G09_Sepakat/
