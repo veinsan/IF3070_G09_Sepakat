@@ -1,4 +1,6 @@
-"""Objective function dengan penalty (DESIGN §3) dan evaluasi penuh (full recompute).
+"""Objective function dengan penalty dan evaluasi penuh (full recompute).
+
+Konsep state value: IF3070_Materi03-BeyondClassicalSearch, slide 12-13.
 
     f(s) = total_fee - P * (overlap_cells + out_of_bound_cells + weight_units)
 
@@ -26,10 +28,8 @@ from core.problem import Problem, Vehicle
 H, V = "H", "V"
 ORIENTATIONS = (H, V)
 
-# (index kapal, x, y, orientasi) dengan (x, y) = sel kiri-atas. None = kendaraan di luar kapal.
 Placement = tuple[int, int, int, str] | None
 
-# toleransi pembulatan float pada perbandingan berat
 EPS = 1e-9
 
 
@@ -70,8 +70,8 @@ class Evaluation:
     overlap_cells: int
     out_of_bound_cells: int
     weight_units: int
-    used_weight: tuple[float, ...]  # per kapal
-    occupied_cells: tuple[int, ...]  # per kapal, sel yang terisi minimal satu kendaraan
+    used_weight: tuple[float, ...]
+    occupied_cells: tuple[int, ...]
 
     @property
     def is_feasible(self) -> bool:

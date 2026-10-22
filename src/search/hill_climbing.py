@@ -1,7 +1,7 @@
-"""Hill-Climbing: Steepest Ascent, Sideways Move, Random Restart, dan Stochastic (DESIGN §5).
+"""Hill-Climbing: Steepest Ascent, Sideways Move, Random Restart, dan Stochastic.
 
-Semua varian mengikuti salindia kuliah. Sumber: M. L. Khodra, "Beyond Classical Search: Hill-climbing
-Search", 2021, https://www.youtube.com/watch?v=L0b0CN3Fds8 (referensi [3] spesifikasi).
+Semua varian mengikuti materi kuliah IF3070_Materi03-BeyondClassicalSearch: Steepest Ascent (slide 21-22),
+Sideways Move (slide 26-27), Random Restart (slide 28), dan Stochastic (slide 29).
 
 - Steepest Ascent : evaluasi seluruh neighbor, pindah ke yang terbaik bila lebih baik (Δ > 0).
                     Berhenti di local optimum.
@@ -107,13 +107,13 @@ def _climb(state: State, rng: random.Random, max_iterations: int, max_sideways: 
         if observer is not None:
             details = {"restart": restart} if restart is not None else None
             observer(step_offset + climb.iterations, state, incumbent.state, details)
-        if delta <= EPS:  # sideways move: nilai sama, state berbeda
+        if delta <= EPS:
             climb.sideways_moves += 1
             if climb.sideways_moves >= max_sideways:
                 climb.stop_reason = "max_sideways"
                 break
     if state.is_feasible and state.objective >= incumbent.state.objective:
-        incumbent.state = state  # pertahankan endpoint climb biasa pada plateau feasible
+        incumbent.state = state
     return climb
 
 
@@ -238,7 +238,6 @@ def random_restart(
     duration = time.perf_counter() - start
 
     best_climb = max(climbs, key=lambda c: (c.incumbent.state.objective, c.incumbent.found))
-    # disambung per percobaan: lompatan ke initial state acak berikutnya tercatat sebagai satu iterasi
     history = [value for climb in climbs for value in climb.history]
     best_so_far, best = [], float("-inf")
     for value in history:

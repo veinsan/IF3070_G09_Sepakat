@@ -1,4 +1,4 @@
-"""Neighbor move sesuai spesifikasi (DESIGN §4).
+"""Neighbor move sesuai spesifikasi; konsep neighbor dan successor: IF3070_Materi03-BeyondClassicalSearch, slide 15-18.
 
 Satu `Move` adalah daftar `Change` yang bisa langsung diberikan ke `State.delta()` / `State.apply()`:
 

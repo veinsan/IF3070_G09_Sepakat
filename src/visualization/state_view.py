@@ -2,8 +2,8 @@
 
 Spesifikasi meminta state dan visualisasi menunjukkan (1) keadaan semua kendaraan di dalam maupun di luar,
 (2) keadaan geladak kapal, dan (3) value state tersebut. Modul ini menggambar ketiganya dari dict state hasil
-`State.to_dict()` (field `initial_state` / `final_state` di JSON hasil run, EXPERIMENTS §3), sehingga gambar
-bisa dibuat ulang dari `output/` tanpa menjalankan search lagi (DESIGN §9).
+`State.to_dict()` (field `initial_state` / `final_state` di JSON hasil run), sehingga gambar
+bisa dibuat ulang dari `output/` tanpa menjalankan search lagi.
 
 - `draw_state`        : satu Figure matplotlib, satu panel per kapal (multi-kapal, Bonus 3) + daftar kendaraan
                         di luar kapal. Sel overlap diarsir merah, bagian kendaraan yang keluar geladak digambar
@@ -28,10 +28,8 @@ from core.objective import dimensions
 from core.problem import Problem
 from core.state import State
 
-# ukuran satu sel grid di gambar (inci) dan lebar panel daftar kendaraan di luar kapal (dalam satuan sel)
 CELL_INCH = 0.42
 OUTSIDE_PANEL_CELLS = 9
-# 60 warna yang cukup berbeda; kendaraan ke-i selalu memakai warna yang sama di semua gambar
 PALETTE = [colormaps[name](k) for name in ("tab20", "tab20b", "tab20c") for k in range(20)]
 VIOLATION_COLOR = "#d62728"
 
@@ -55,7 +53,6 @@ def draw_state(
     ships = problem.ships
 
     max_rows = max(ship.length for ship in ships)
-    # +2 sel per panel geladak sebagai ruang untuk bagian kendaraan yang keluar batas dan label sumbu
     ratios = [ship.width + 2 for ship in ships] + [OUTSIDE_PANEL_CELLS]
     fig = Figure(figsize=(CELL_INCH * sum(ratios), CELL_INCH * (max_rows + 6)), layout="constrained")
     axes = fig.subplots(1, len(ratios), gridspec_kw={"width_ratios": ratios})
@@ -68,7 +65,6 @@ def draw_state(
         f"TIDAK feasible (overlap {evaluation.overlap_cells} sel, keluar batas {evaluation.out_of_bound_cells} sel, "
         f"kelebihan berat {evaluation.weight_units} unit)"
     )
-    # status di baris sendiri: rincian pelanggaran state tidak feasible lebih lebar dari geladak kecil
     header = f"{_value_text(evaluation, objective, shipping_fee)}\n{status}"
     fig.suptitle(f"{title}\n{header}" if title else header, fontsize=10)
     return fig
@@ -108,7 +104,6 @@ def _draw_deck(ax, state: State, s: int, used_weight: float) -> None:
         ax.text(x + cols / 2, y + rows / 2, f"{vehicle.id}\n{orientation}", ha="center", va="center",
                 fontsize=6 if min(cols, rows) == 1 else 7, zorder=4)
 
-    # sel yang ditempati lebih dari satu kendaraan (grid berisi "A+B")
     for y, row in enumerate(state.deck_grids()[s]):
         for x, cell in enumerate(row):
             if "+" in cell:
@@ -120,10 +115,8 @@ def _draw_deck(ax, state: State, s: int, used_weight: float) -> None:
                  f"{used_weight:g}/{ship.max_capacity:g}{over}", fontsize=9)
     right, bottom = _extent(state, s)
     ax.set_xlim(-1, right + 1)
-    # y ke bawah: anchor (x, y) = sel kiri-atas (DESIGN §2)
     ax.set_ylim(bottom + 1, -1)
     ax.set_aspect("equal")
-    # nomor kolom/baris di tengah sel, sumbu x di atas supaya dekat dengan anchor y = 0
     ax.set_xticks([x + 0.5 for x in range(ship.width)], labels=range(ship.width))
     ax.set_yticks([y + 0.5 for y in range(ship.length)], labels=range(ship.length))
     ax.xaxis.tick_top()
@@ -151,7 +144,6 @@ def _draw_outside(ax, problem: Problem, state: State, *, objective: str) -> None
     ax.set_title(f"Di luar kapal ({len(outside)})", fontsize=9)
     label = "bobot" if objective == "eta" else "fee"
     lines = [f"{v.id}  {v.width}x{v.length}  {label} {v.shipping_fee:g}  berat {v.weight:g}" for _, v in outside]
-    # dua kolom bila daftarnya panjang supaya tetap muat setinggi geladak
     per_column = max(1, -(-len(lines) // 2)) if len(lines) > 24 else max(1, len(lines))
     for k, (i, _) in enumerate(outside):
         col, row = divmod(k, per_column)

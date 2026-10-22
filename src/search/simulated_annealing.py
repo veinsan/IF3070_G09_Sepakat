@@ -1,7 +1,7 @@
-"""Simulated Annealing (DESIGN §6).
+"""Simulated Annealing.
 
-Sumber kuliah: M. L. Khodra, "Beyond Classical Search: Simulated Annealing", 2021,
-https://www.youtube.com/watch?v=AdhG7HnhYrk (referensi [4] spesifikasi).
+Sumber kuliah: IF3070_Materi03-BeyondClassicalSearch, slide 32-37 (penerimaan move buruk dengan peluang e^(ΔE/T) pada
+slide 34-36). Pemilihan T0 otomatis dan jadwal pendinginan geometris adalah heuristik kelompok.
 
 Move yang lebih baik selalu diterima. Move yang lebih buruk (ΔE < 0) diterima dengan peluang e^(ΔE/T),
 dengan suhu T turun secara geometris setiap iterasi: T_k = T0 · α^k.
@@ -99,7 +99,7 @@ def simulated_annealing(
     bila pencarian belum mengunjungi state feasible. Tidak ada perbaikan tersembunyi setelah loop.
     `history["objective"]` mencatat objective state current di setiap iterasi (indeks 0 = state awal).
     `history["prob"]` berisi pasangan `[iterasi, e^(ΔE/T)]` hanya untuk iterasi dengan ΔE < 0, karena untuk
-    ΔE >= 0 nilainya selalu 1 dan tidak informatif (DESIGN §6).
+    ΔE >= 0 nilainya selalu 1 dan tidak informatif.
 
     Setiap `stuck_window` iterasi, neighborhood current diperiksa sampai ditemukan perbaikan atau habis.
     Satu episode stuck = rangkaian checkpoint tanpa neighbor membaik, dihitung hanya pada checkpoint
@@ -127,7 +127,7 @@ def simulated_annealing(
     probabilities: list[list[float]] = []
     temperature = t0
     accepted_worse = 0
-    since_best = 0  # iterasi berturut-turut tanpa objective terbaik baru
+    since_best = 0
     stuck_iterations: list[int] = []
     stagnation_count = 0
     in_stuck_episode = False

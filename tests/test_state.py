@@ -12,7 +12,6 @@ from core.state import State, random_placement, random_state
 
 DATA = DATA_DIR
 
-# deck 4x4, kapasitas 10, berat minimum 3, P = 10 + 1 = 11
 TINY = parse_problem({
     "ships": [{"id": "D", "width": 4, "length": 4, "max_capacity": 10}],
     "vehicles": [
@@ -22,7 +21,6 @@ TINY = parse_problem({
     ],
 })
 
-# dua kapal + berat pecahan, untuk menguji agregat per kapal dan pembulatan weight_units
 MULTI = parse_problem({
     "ships": [
         {"id": "D1", "width": 5, "length": 6, "max_capacity": 4.5},
@@ -42,27 +40,27 @@ class TestObjective(unittest.TestCase):
         self.assertEqual(state.objective, 0)
         self.assertTrue(state.is_feasible)
 
-        state.set(0, (0, 0, 0, "H"))  # A di sel (0..1, 0..1)
-        state.set(1, (0, 1, 0, "V"))  # B diputar: (1..3, 0), menimpa A di (1, 0)
+        state.set(0, (0, 0, 0, "H"))
+        state.set(1, (0, 1, 0, "V"))
         self.assertEqual(state.evaluate().overlap_cells, 1)
         self.assertEqual(state.objective, 15 - 11)
 
-        state.set(1, (0, 3, 2, "H"))  # B di (3, 2..4): satu sel keluar geladak
+        state.set(1, (0, 3, 2, "H"))
         self.assertEqual(state.evaluate().out_of_bound_cells, 1)
         self.assertEqual(state.objective, 15 - 11)
 
-        state.set(1, (0, 3, 1, "H"))  # B di (3, 1..3): feasible
+        state.set(1, (0, 3, 1, "H"))
         self.assertTrue(state.is_feasible)
         self.assertEqual(state.objective, 15)
 
-        state.set(2, (0, 0, 3, "H"))  # berat 12 > 10, kelebihan 2 -> ceil(2 / 3) = 1 unit
+        state.set(2, (0, 0, 3, "H"))
         self.assertEqual(state.evaluate().weight_units, 1)
         self.assertEqual(state.objective, 16 - 11)
         self.assertFalse(state.is_feasible)
 
     def test_weight_units(self):
         self.assertEqual(weight_units(10, 10, 1), 0)
-        self.assertEqual(weight_units(10 + 1e-12, 10, 1), 0)  # noise float bukan pelanggaran
+        self.assertEqual(weight_units(10 + 1e-12, 10, 1), 0)
         self.assertEqual(weight_units(11, 10, 1), 1)
         self.assertEqual(weight_units(10.25, 10, 0.5), 1)
         self.assertEqual(weight_units(11.5, 10, 0.5), 3)
@@ -79,12 +77,12 @@ class TestDeltaEvaluation(unittest.TestCase):
         if kind == 1:
             return [(i, None)]
         if kind == 2:
-            return [(i, state.placement(j)), (j, state.placement(i))]  # tukar posisi
+            return [(i, state.placement(j)), (j, state.placement(i))]
         placement = state.placement(i)
         if placement is None:
             return [(i, random_placement(state.problem, rng))]
         s, x, y, orientation = placement
-        return [(i, (s, x, y, "V" if orientation == "H" else "H"))]  # rotate
+        return [(i, (s, x, y, "V" if orientation == "H" else "H"))]
 
     def test_matches_full_recompute(self):
         problems = [TINY, MULTI, load_problem(DATA / "main.json"), load_problem(DATA / "small.json")]
@@ -109,7 +107,7 @@ class TestDeltaEvaluation(unittest.TestCase):
                     self.assertEqual(state.is_feasible, full.is_feasible)
 
     def test_infeasible_state_always_has_improving_removal(self):
-        """Properti DESIGN §3: dari state infeasible, ada kendaraan yang jika dikeluarkan menaikkan f."""
+        """Properti penalty: dari state infeasible, ada kendaraan yang jika dikeluarkan menaikkan f."""
         for problem in (load_problem(DATA / "main.json"), MULTI):
             rng = random.Random(7)
             for _ in range(300):
@@ -131,7 +129,7 @@ class TestStateUtilities(unittest.TestCase):
 
     def test_dict_round_trip(self):
         state = random_state(MULTI, random.Random(3))
-        data = json.loads(json.dumps(state.to_dict()))  # harus bisa diserialisasi ke JSON
+        data = json.loads(json.dumps(state.to_dict()))
         restored = State.from_dict(MULTI, data)
         self.assertEqual(restored.positions, state.positions)
         self.assertEqual(restored.objective, state.objective)

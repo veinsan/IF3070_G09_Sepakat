@@ -1,6 +1,6 @@
 """Model data persoalan: kendaraan, kapal (geladak), dan instance persoalan.
 
-Instance dibaca dari JSON dengan format (DESIGN §1):
+Instance dibaca dari JSON dengan format:
 
     {
       "ships":    [{"id": "Deck-1", "width": 10, "length": 20, "max_capacity": 500}],
@@ -103,13 +103,9 @@ def _parse_vehicle(raw: Any, where: str) -> Vehicle:
         width=_int(obj, "width", where, minimum=1),
         length=_int(obj, "length", where, minimum=1),
         shipping_fee=fee,
-        # berat > 0 dibutuhkan agar mengeluarkan kendaraan selalu mengurangi kelebihan berat (DESIGN §3)
         weight=_positive_number(obj, "weight", where),
         eta=_int(obj, "eta", where, minimum=0),
     )
-
-
-# --- helper validasi -------------------------------------------------------------------------
 
 
 def _non_empty_list(data: dict, key: str) -> list:
@@ -140,7 +136,6 @@ def _id(obj: dict, where: str) -> str:
 
 def _number(obj: dict, key: str, where: str) -> float:
     value = _field(obj, key, where)
-    # bool adalah subclass int di Python, jadi ditolak secara eksplisit
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ValueError(f"{where}.{key}: harus berupa angka")
     if isinstance(value, float) and not math.isfinite(value):

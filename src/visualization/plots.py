@@ -1,4 +1,4 @@
-"""Plot hasil eksperimen dari dict hasil run (`RunResult.to_dict()`, EXPERIMENTS §3).
+"""Plot hasil eksperimen dari dict hasil run (`RunResult.to_dict()`).
 
 Plot wajib menurut spesifikasi (bagian Cakupan) dan sumber datanya:
 
@@ -101,9 +101,7 @@ def plot_summary(
     ax_obj, ax_time = fig.subplots(1, 2)
     finals = [[r["final_objective"] for r in groups[k]] for k in labels]
     ax_obj.boxplot(finals)
-    # label diset terpisah: argumen label boxplot berganti nama di matplotlib 3.9 (requirements: >= 3.8)
     ax_obj.set_xticks(range(1, len(labels) + 1), labels=labels)
-    # tiap kelompok hanya beberapa run (3 seed), jadi nilai per run ikut ditampilkan
     for k, values in enumerate(finals, start=1):
         ax_obj.scatter([k] * len(values), values, s=12, color="black", alpha=0.6, zorder=3)
     bounds = {r.get("upper_bound") for r in results}

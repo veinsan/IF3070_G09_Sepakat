@@ -1,4 +1,4 @@
-"""Generator instance persoalan acak (seeded) dalam format JSON DESIGN §2.
+"""Generator instance persoalan acak (seeded) dalam format JSON yang dibaca `core.problem`.
 
 Kendaraan diambil dari katalog tipe dengan ukuran tetap, sedangkan fee dan berat diacak dalam rentang
 tiap tipe. Kapasitas kapal = `capacity_ratio` x berat yang dibutuhkan untuk mengisi penuh geladak
@@ -23,7 +23,6 @@ import random
 from collections.abc import Sequence
 from pathlib import Path
 
-# tipe: (width, length, rentang shipping_fee [juta rupiah], rentang weight [unit])
 VEHICLE_TYPES: dict[str, tuple[int, int, tuple[int, int], tuple[int, int]]] = {
     "motor": (1, 2, (5, 12), (1, 1)),
     "sedan": (2, 4, (30, 50), (4, 6)),
@@ -114,7 +113,6 @@ def main() -> None:
 
     decks = list(zip(args.width, args.length))
     instance = generate_instance(random.Random(args.seed), args.vehicles, decks, args.capacity_ratio, args.types)
-    # parameter generator disimpan supaya instance bisa dibuat ulang persis
     instance = {"meta": {"generator": "src/core/generator.py", **vars(args), "out": str(args.out)}, **instance}
 
     args.out.parent.mkdir(parents=True, exist_ok=True)

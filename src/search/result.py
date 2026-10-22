@@ -1,4 +1,4 @@
-"""Format hasil run yang seragam untuk semua algoritma (EXPERIMENTS §3).
+"""Format hasil run yang seragam untuk semua algoritma.
 
 Setiap algoritma (HC, SA, GA) mengembalikan `RunResult`. `to_dict()` menghasilkan dict siap-JSON yang
 disimpan ke `output/` dan menjadi satu-satunya sumber untuk plot, visualisasi, dan tabel laporan, sehingga
@@ -78,7 +78,6 @@ class RunResult:
     final_state: State
     duration_s: float
     iterations: int
-    # Initial state/individu yang dinilai + delta probes; baseline kosong tidak dihitung.
     evaluations: int
     history: dict[str, list] = field(default_factory=dict)
     extra: dict[str, Any] = field(default_factory=dict)

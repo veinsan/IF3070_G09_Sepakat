@@ -1,4 +1,6 @@
-"""State persoalan beserta delta evaluation (DESIGN §1–§3).
+"""State persoalan beserta delta evaluation.
+
+State berupa complete-state formulation: IF3070_Materi03-BeyondClassicalSearch, slide 7 dan 12.
 
 State menyimpan satu `Placement` per kendaraan (index sama dengan `problem.vehicles`) dan agregat yang
 diperbarui secara incremental setiap kali satu kendaraan dipindah:
@@ -31,7 +33,6 @@ from core.objective import (
 )
 from core.problem import Problem
 
-# satu perubahan state: kendaraan ke-i dipindah ke placement baru (None = keluar kapal)
 Change = tuple[int, Placement]
 
 
@@ -56,7 +57,6 @@ class State:
             for i, placement in enumerate(positions):
                 self.set(i, placement)
 
-    # --- akses -----------------------------------------------------------------------------
 
     @property
     def positions(self) -> tuple[Placement, ...]:
@@ -81,7 +81,6 @@ class State:
         """Evaluasi penuh dari nol (lebih lambat). Dipakai untuk laporan hasil, bukan di dalam loop search."""
         return evaluate(self.problem, self._positions)
 
-    # --- perubahan -------------------------------------------------------------------------
 
     def set(self, i: int, placement: Placement) -> None:
         """Pindahkan kendaraan ke-i ke `placement` dan perbarui agregat secara incremental."""
@@ -103,8 +102,6 @@ class State:
 
     def delta(self, changes: Sequence[Change]) -> float:
         """Selisih objective jika `changes` diterapkan. State tidak berubah setelah pemanggilan."""
-        # apply lalu revert: biaya 2x luas kendaraan per perubahan, tetapi tetap memakai satu jalur evaluasi
-        # yang sama dengan apply() sehingga delta selalu konsisten dengan objective penuh.
         before = self.objective
         undo = self.apply(changes)
         after = self.objective
@@ -124,7 +121,6 @@ class State:
         clone._unit = self._unit
         return clone
 
-    # --- serialisasi (format output JSON, EXPERIMENTS §3) ----------------------------------
 
     def to_dict(self) -> dict:
         """Pemetaan semua kendaraan (di dalam dan di luar) + pemetaan sel tiap geladak (`decks`).
@@ -172,7 +168,6 @@ class State:
         loaded = sum(p is not None for p in self._positions)
         return f"State(objective={self.objective:g}, loaded={loaded}/{len(self._positions)})"
 
-    # --- internal --------------------------------------------------------------------------
 
     def _weight_units(self) -> int:
         ships = self.problem.ships

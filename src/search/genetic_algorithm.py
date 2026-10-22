@@ -1,7 +1,7 @@
-"""Genetic Algorithm dengan roulette wheel selection (DESIGN §7).
+"""Genetic Algorithm dengan roulette wheel selection.
 
-Sumber kuliah: M. L. Khodra, "Beyond Classical Search: Genetic Algorithm", 2021,
-https://www.youtube.com/watch?v=aI41TGo9J9c (referensi [5] spesifikasi).
+Sumber kuliah: IF3070_Materi03-BeyondClassicalSearch, slide 42-48 (populasi awal slide 45, seleksi roulette slide 46,
+crossover dan mutasi slide 47). Windowing fitness dan elitism adalah heuristik kelompok.
 
 - Chromosome = list `pos` milik `State` (satu gene per kendaraan, urutan index tetap), sehingga GA memakai
   objective dan delta evaluation yang sama dengan HC dan SA.
@@ -10,7 +10,7 @@ https://www.youtube.com/watch?v=aI41TGo9J9c (referensi [5] spesifikasi).
 - Selection: roulette wheel eksplisit. Cumulative sum fitness dibuat sekali per generasi, lalu setiap spin
   mengambil r ~ U(0, Σfit) dan memilih individu pertama dengan cumsum ≥ r (`bisect`).
 - Crossover: one-point pada index kendaraan dengan peluang `p_c`, menghasilkan dua anak.
-- Mutation: dengan peluang `p_m`, terapkan satu random neighbor (move/swap/rotate, DESIGN §4) ke anak.
+- Mutation: dengan peluang `p_m`, terapkan satu random neighbor (move/swap/rotate) ke anak.
 - Elitism: `elitism` individu terbaik dibawa langsung ke generasi berikutnya (heuristik tambahan).
 
 Parameter default ada di `config.py` (bagian Genetic Algorithm). Sesuai spesifikasi, eksperimen hanya
@@ -60,7 +60,6 @@ def roulette_cumulative(objectives: Sequence[float], epsilon: float = GA_EPSILON
 def spin(cumulative: Sequence[float], rng: random.Random) -> int:
     """Satu putaran roda: r ~ U(0, Σfit), pilih index pertama dengan cumsum ≥ r."""
     r = rng.uniform(0, cumulative[-1])
-    # bisect_left = index pertama dengan cumulative[i] >= r; min() menjaga r == Σfit akibat pembulatan float
     return min(bisect.bisect_left(cumulative, r), len(cumulative) - 1)
 
 
@@ -83,7 +82,7 @@ def crossover(a: State, b: State, cut: int) -> tuple[State, State]:
 
 
 def mutate(state: State, rng: random.Random) -> None:
-    """Terapkan satu random neighbor (DESIGN §4) ke `state` secara in-place."""
+    """Terapkan satu random neighbor ke `state` secara in-place."""
     state.apply(random_neighbor(state, rng))
 
 

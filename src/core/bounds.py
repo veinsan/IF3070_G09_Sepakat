@@ -1,4 +1,4 @@
-"""Acuan global optimum untuk analisis "seberapa dekat ke global optima" (DESIGN §8).
+"""Acuan global optimum untuk analisis "seberapa dekat ke global optima".
 
 - `upper_bound()`: relaksasi 0/1 knapsack dua dimensi (total berat <= kapasitas, total luas <= luas
   geladak) yang mengabaikan geometri. Semua susunan feasible juga feasible di relaksasi ini, jadi
@@ -36,7 +36,6 @@ def upper_bound(problem: Problem) -> float:
     area_cap = sum(ship.area for ship in problem.ships)
     weight_cap = math.floor(sum(ship.max_capacity + EPS for ship in problem.ships))
 
-    # best[a][w] = fee maksimum dengan total luas <= a dan total berat (floor) <= w
     best = [[0.0] * (weight_cap + 1) for _ in range(area_cap + 1)]
     for vehicle in problem.vehicles:
         if not fits_somewhere(problem, vehicle):
@@ -69,8 +68,6 @@ def brute_force(problem: Problem, max_nodes: int = 5_000_000) -> State:
     for ship in problem.ships:
         offsets.append(offsets[-1] + ship.area)
 
-    # placement unik per kendaraan: (bitmask sel, index kapal, placement). Orientasi kendaraan persegi
-    # menghasilkan bitmask yang sama, jadi cukup dicoba sekali.
     options: list[list[tuple[int, int, tuple[int, int, int, str]]]] = []
     for vehicle in problem.vehicles:
         seen: dict[int, tuple[int, int, tuple[int, int, int, str]]] = {}
@@ -86,7 +83,6 @@ def brute_force(problem: Problem, max_nodes: int = 5_000_000) -> State:
                         seen.setdefault(mask, (mask, s, (s, x, y, orientation)))
         options.append(list(seen.values()))
 
-    # kendaraan ber-fee besar dicoba dulu supaya solusi bagus cepat ditemukan dan pruning lebih efektif
     order = sorted(range(n), key=lambda i: -problem.vehicles[i].shipping_fee)
     remaining = [0.0] * (n + 1)
     for k in range(n - 1, -1, -1):
@@ -119,7 +115,7 @@ def brute_force(problem: Problem, max_nodes: int = 5_000_000) -> State:
             search(k + 1, used_cells | mask, fee + vehicle.shipping_fee)
             positions[i] = None
             used_weight[s] -= vehicle.weight
-        search(k + 1, used_cells, fee)  # kendaraan i di luar kapal
+        search(k + 1, used_cells, fee)
 
     search(0, 0, 0.0)
     return State(problem, best_positions)

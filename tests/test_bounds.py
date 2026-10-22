@@ -45,7 +45,7 @@ class TestUpperBound(unittest.TestCase):
             "ships": [{"id": "D", "width": 4, "length": 6, "max_capacity": 100}],
             "vehicles": [
                 {"id": "big", "width": 3, "length": 9, "shipping_fee": 500, "weight": 1, "eta": 1},
-                {"id": "rot", "width": 6, "length": 2, "shipping_fee": 10, "weight": 1, "eta": 1},  # muat jika V
+                {"id": "rot", "width": 6, "length": 2, "shipping_fee": 10, "weight": 1, "eta": 1},
             ],
         })
         self.assertFalse(fits_somewhere(problem, problem.vehicles[0]))
@@ -59,7 +59,7 @@ class TestUpperBound(unittest.TestCase):
                          for i in range(6)],
         })
         optimum = brute_force(problem)
-        self.assertEqual(optimum.objective, 15)  # hanya 3 kendaraan seberat 0.5 yang muat di kapasitas 1.5
+        self.assertEqual(optimum.objective, 15)
         self.assertGreaterEqual(upper_bound(problem), optimum.objective)
 
     def test_capacity_tolerance_does_not_underestimate_optimum(self):
@@ -97,7 +97,7 @@ class TestBruteForce(unittest.TestCase):
             self.assertGreaterEqual(upper_bound(problem), optimum.objective)
 
     def test_small_instance_reference_values(self):
-        """Nilai acuan small.json yang dipakai di laporan (DESIGN §8)."""
+        """Nilai acuan small.json yang dipakai di laporan."""
         problem = load_problem(DATA / "small.json")
         self.assertEqual(brute_force(problem).objective, 287)
         self.assertEqual(upper_bound(problem), 298)
