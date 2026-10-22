@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any
 
 from config import DATA_DIR, DEFAULT_INSTANCE, OUTPUT_DIR
+from core.eta_objective import SUFFIX, eta_problem
 from core.problem import Problem, load_problem
 from search.genetic_algorithm import genetic_algorithm
 from search.hill_climbing import random_restart, sideways_move, steepest_ascent, stochastic
@@ -45,8 +46,8 @@ ALGORITHMS: dict[str, tuple[Callable[..., RunResult], dict[str, str]]] = {
 }
 ALIASES = {"hc": "steepest"}
 
-# objective yang dioptimasi. Objective ETA (Bonus 1) belum ada; bila sudah, tambahkan di sini dan teruskan
-# ke algoritma di `run_algorithm`.
+# objective yang dioptimasi lewat CLI. Run Bonus 1 (objective ETA) dibuat oleh `eta_experiments.py` atau grup
+# `eta` di `experiments.py`; hasilnya tetap bisa dibuka dengan --view (`view_problem`).
 OBJECTIVES = ("fee",)
 
 PARAM_OPTIONS = ("max_sideways", "max_restart", "max_no_improve", "max_iterations", "iterations", "population")
@@ -136,6 +137,15 @@ def resolve_instance(value: str) -> Path:
     raise FileNotFoundError(f"instance '{value}' tidak ditemukan (cek path atau nama file di {DATA_DIR})")
 
 
+def view_problem(result: dict[str, Any], instance: str | None = None) -> Problem:
+    """Instance untuk --view: `instance` bila diberikan, selain itu dari hasil run. Hasil run Bonus 1 (instance
+    `<nama>_eta`) memakai instance turunan bobot urgensi, sama seperti saat run-nya dijalankan."""
+    name = instance or result["instance"]
+    if instance is None and name.endswith(SUFFIX):
+        return eta_problem(load_problem(resolve_instance(name.removesuffix(SUFFIX))))
+    return load_problem(resolve_instance(name))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--algo", choices=[*ALGORITHMS, *ALIASES],
@@ -173,7 +183,7 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("--view tidak bisa digabung dengan --algo atau parameter algoritma")
         try:
             result = json.loads(args.view.read_text(encoding="utf-8"))
-            problem = load_problem(resolve_instance(args.instance or result["instance"]))
+            problem = view_problem(result, args.instance)
             # validasi: hasil run harus cocok dengan instance-nya
             RunResult.from_dict(problem, result)
         except (OSError, ValueError, KeyError) as e:

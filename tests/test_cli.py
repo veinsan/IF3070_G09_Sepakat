@@ -11,8 +11,10 @@ from pathlib import Path
 
 from config import DATA_DIR, ROOT
 from core.problem import load_problem
-from main import ALGORITHMS, main, run_algorithm, run_id
+from core.eta_objective import run_eta
+from main import ALGORITHMS, main, run_algorithm, run_id, save_run
 from search.result import RunResult
+from search.simulated_annealing import simulated_annealing
 
 SMALL = load_problem(DATA_DIR / "small.json")
 PNG_SIGNATURE = b"\x89PNG"
@@ -108,6 +110,17 @@ class TestOptions(unittest.TestCase):
             self.assertEqual(code, 0)
             self.assertIn("algoritma   : sa | instance small | seed 1", out)
             self.assertTrue((Path(tmp) / "sa" / "small_seed1_plot.png").is_file())
+
+    def test_view_eta_run(self):
+        # hasil Bonus 1 (instance `small_eta`) dibuka dengan instance turunan bobot urgensi
+        with tempfile.TemporaryDirectory() as tmp:
+            result = run_eta(simulated_annealing, SMALL, seed=1, iterations=300)
+            save_run(result.to_dict(), result.problem, tmp, plots=False)
+            saved = Path(tmp) / "sa" / "small_eta_seed1.json"
+            code, out, err = run_cli("--view", saved, "--no-plot")
+            self.assertEqual(code, 0, err)
+            self.assertIn("instance small_eta", out)
+            self.assertIn(f"total fee   : {result.final_state.total_fee:g}", out)
 
     def test_invalid_arguments_exit_2(self):
         cases = [
