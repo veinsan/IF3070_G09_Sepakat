@@ -38,6 +38,7 @@ from core.problem import Problem
 from core.state import State, initial_state, random_state
 from search.neighbors import Move, all_neighbors, random_neighbor
 from search.result import FeasibleIncumbent, RunResult
+from search.trace import SearchObserver
 
 
 def best_neighbor(state: State, rng: random.Random) -> tuple[float, Move | None, int]:
@@ -78,7 +79,9 @@ class _Climb:
         return len(self.history) - 1
 
 
-def _climb(state: State, rng: random.Random, max_iterations: int, max_sideways: int) -> _Climb:
+def _climb(state: State, rng: random.Random, max_iterations: int, max_sideways: int,
+           observer: SearchObserver | None = None, step_offset: int = 0,
+           restart: int | None = None) -> _Climb:
     """Pendakian dengan neighbor terbaik. `max_sideways = 0` adalah Steepest Ascent murni."""
     if max_iterations < 0:
         raise ValueError("max_iterations harus >= 0")
@@ -86,6 +89,9 @@ def _climb(state: State, rng: random.Random, max_iterations: int, max_sideways: 
     incumbent.observe(state)
     climb = _Climb(state, incumbent, history=[state.objective],
                    feasible_history=[incumbent.state.objective], evaluation_history=[1])
+    if observer is not None:
+        details = {"restart": restart, "event": "restart"} if restart is not None else {}
+        observer(step_offset, state, incumbent.state, details)
     for _ in range(max_iterations):
         delta, move, evaluated = best_neighbor(state, rng)
         climb.evaluations += evaluated
@@ -98,6 +104,9 @@ def _climb(state: State, rng: random.Random, max_iterations: int, max_sideways: 
         climb.feasible_history.append(incumbent.state.objective)
         climb.evaluation_history.append(climb.evaluations)
         climb.history.append(state.objective)
+        if observer is not None:
+            details = {"restart": restart} if restart is not None else None
+            observer(step_offset + climb.iterations, state, incumbent.state, details)
         if delta <= EPS:  # sideways move: nilai sama, state berbeda
             climb.sideways_moves += 1
             if climb.sideways_moves >= max_sideways:
@@ -117,6 +126,8 @@ def steepest_ascent(
     seed: int | None = None,
     initial: State | None = None,
     max_iterations: int = HC_MAX_ITERATIONS,
+    *,
+    observer: SearchObserver | None = None,
 ) -> RunResult:
     """Steepest Ascent Hill-Climbing dari `initial` (default: state acak dari `seed`).
 
@@ -125,7 +136,9 @@ def steepest_ascent(
     rng = random.Random(seed)
     initial = _initial(problem, rng, initial)
     start = time.perf_counter()
-    climb = _climb(initial.copy(), rng, max_iterations, max_sideways=0)
+    climb = _climb(initial.copy(), rng, max_iterations, max_sideways=0, observer=observer)
+    if observer is not None:
+        observer(climb.iterations, climb.state, climb.incumbent.state, {"event": "finished"})
     duration = time.perf_counter() - start
     return RunResult(
         algorithm="steepest",
@@ -149,6 +162,8 @@ def sideways_move(
     initial: State | None = None,
     max_sideways: int = HC_MAX_SIDEWAYS,
     max_iterations: int = HC_MAX_ITERATIONS,
+    *,
+    observer: SearchObserver | None = None,
 ) -> RunResult:
     """Hill-Climbing with Sideways Move.
 
@@ -161,7 +176,9 @@ def sideways_move(
     rng = random.Random(seed)
     initial = _initial(problem, rng, initial)
     start = time.perf_counter()
-    climb = _climb(initial.copy(), rng, max_iterations, max_sideways)
+    climb = _climb(initial.copy(), rng, max_iterations, max_sideways, observer=observer)
+    if observer is not None:
+        observer(climb.iterations, climb.state, climb.incumbent.state, {"event": "finished"})
     duration = time.perf_counter() - start
     return RunResult(
         algorithm="sideways",
@@ -185,6 +202,8 @@ def random_restart(
     initial: State | None = None,
     max_restart: int = HC_MAX_RESTART,
     max_iterations: int = HC_MAX_ITERATIONS,
+    *,
+    observer: SearchObserver | None = None,
 ) -> RunResult:
     """Random-Restart Hill-Climbing: 1 percobaan awal + `max_restart` restart, masing-masing Steepest Ascent.
 
@@ -198,9 +217,24 @@ def random_restart(
     initial = _initial(problem, rng, initial)
 
     start = time.perf_counter()
-    climbs = [_climb(initial.copy(), rng, max_iterations, max_sideways=0)]
-    for _ in range(max_restart):
-        climbs.append(_climb(random_state(problem, rng, INITIAL_P_INSIDE), rng, max_iterations, max_sideways=0))
+    observed_best = FeasibleIncumbent(problem) if observer is not None else None
+
+    def observe_restart(step: int, current: State, best: State, details: dict | None = None) -> None:
+        observed_best.observe(current)
+        observer(step, current, observed_best.state, details)
+
+    callback = observe_restart if observer is not None else None
+    climbs = [_climb(initial.copy(), rng, max_iterations, max_sideways=0, observer=callback, restart=0)]
+    offset = len(climbs[0].history)
+    for restart in range(1, max_restart + 1):
+        climb = _climb(random_state(problem, rng, INITIAL_P_INSIDE), rng, max_iterations,
+                       max_sideways=0, observer=callback, step_offset=offset, restart=restart)
+        climbs.append(climb)
+        offset += len(climb.history)
+    if observer is not None:
+        final_best = max(climbs, key=lambda c: (c.incumbent.state.objective, c.incumbent.found))
+        observer(offset - 1, climbs[-1].state, final_best.incumbent.state,
+                 {"event": "finished", "restart": max_restart})
     duration = time.perf_counter() - start
 
     best_climb = max(climbs, key=lambda c: (c.incumbent.state.objective, c.incumbent.found))
@@ -247,6 +281,8 @@ def stochastic(
     initial: State | None = None,
     max_no_improve: int = HC_MAX_NO_IMPROVE,
     max_iterations: int = HC_STOCHASTIC_MAX_ITERATIONS,
+    *,
+    observer: SearchObserver | None = None,
 ) -> RunResult:
     """Stochastic Hill-Climbing: satu neighbor acak per iterasi, diterima hanya bila lebih baik (Δ > 0).
 
@@ -266,6 +302,8 @@ def stochastic(
     stop_reason = "max_iterations"
 
     start = time.perf_counter()
+    if observer is not None:
+        observer(0, current, incumbent.state, None)
     for _ in range(max_iterations):
         move = random_neighbor(current, rng)
         if current.delta(move) > EPS:
@@ -277,9 +315,13 @@ def stochastic(
         incumbent.observe(current)
         feasible_history.append(incumbent.state.objective)
         evaluation_history.append(evaluation_history[-1] + 1)
+        if observer is not None:
+            observer(len(history) - 1, current, incumbent.state, None)
         if no_improve >= max_no_improve:
             stop_reason = "max_no_improve"
             break
+    if observer is not None:
+        observer(len(history) - 1, current, incumbent.state, {"event": "finished"})
     duration = time.perf_counter() - start
 
     return RunResult(

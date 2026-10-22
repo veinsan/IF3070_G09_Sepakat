@@ -32,6 +32,7 @@ from core.problem import Problem
 from core.state import State, initial_state
 from search.neighbors import all_neighbors, random_neighbor
 from search.result import FeasibleIncumbent, RunResult
+from search.trace import SearchObserver
 
 
 def initial_temperature(
@@ -86,6 +87,8 @@ def simulated_annealing(
     t0_samples: int = SA_T0_SAMPLES,
     t0_accept: float = SA_T0_ACCEPT,
     stuck_window: int = SA_STUCK_WINDOW,
+    *,
+    observer: SearchObserver | None = None,
 ) -> RunResult:
     """Simulated Annealing dari `initial` (default: state acak dari `seed`) selama tepat `iterations` iterasi.
 
@@ -130,8 +133,11 @@ def simulated_annealing(
     in_stuck_episode = False
     local_optimum_checks: list[list[int | bool]] = []
     confirmation_evaluations = 0
+    if observer is not None:
+        observer(0, current, incumbent.state, {"temperature": temperature})
 
     for k in range(1, iterations + 1):
+        used_temperature = temperature
         changes = random_neighbor(current, rng)
         d = current.delta(changes)
         evaluations += 1
@@ -172,6 +178,12 @@ def simulated_annealing(
                 stuck_iterations.append(k)
             in_stuck_episode = local_optimum
         evaluation_history.append(evaluations)
+        if observer is not None:
+            observer(k, current, incumbent.state,
+                     {"temperature": used_temperature, "accepted": accept,
+                      "delta": d, "probability": 1.0 if d >= 0 else probability})
+    if observer is not None:
+        observer(iterations, current, incumbent.state, {"event": "finished", "temperature": temperature})
     duration = time.perf_counter() - start
 
     return RunResult(

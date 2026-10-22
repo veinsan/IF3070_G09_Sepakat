@@ -39,6 +39,7 @@ from core.problem import Problem
 from core.state import State, random_state
 from search.neighbors import random_neighbor
 from search.result import FeasibleIncumbent, RunResult
+from search.trace import SearchObserver
 
 
 def roulette_cumulative(objectives: Sequence[float], epsilon: float = GA_EPSILON) -> list[float]:
@@ -95,6 +96,8 @@ def genetic_algorithm(
     p_mutation: float = GA_P_MUTATION,
     elitism: int = GA_ELITISM,
     epsilon: float = GA_EPSILON,
+    *,
+    observer: SearchObserver | None = None,
 ) -> RunResult:
     """GA selama tepat `iterations` generasi dengan populasi berukuran tetap `population_size`.
 
@@ -140,6 +143,9 @@ def genetic_algorithm(
     evaluation_history = [evaluations]
     history_mean = [sum(objectives) / population_size]
     crossovers = mutations = 0
+    if observer is not None:
+        observer(0, initial, incumbent.state,
+                 {"generation": 0, "max": raw_best, "mean": history_mean[0], "population": population_size})
 
     for generation in range(1, iterations + 1):
         ranked = sorted(range(population_size), key=objectives.__getitem__, reverse=True)
@@ -176,6 +182,12 @@ def genetic_algorithm(
         history_mean.append(sum(objectives) / population_size)
         feasible_history.append(incumbent.state.objective)
         evaluation_history.append(evaluations)
+        if observer is not None:
+            observer(generation, population[top], incumbent.state,
+                     {"generation": generation, "max": objectives[top],
+                      "mean": history_mean[-1], "population": population_size})
+    if observer is not None:
+        observer(iterations, population[_argmax(objectives)], incumbent.state, {"event": "finished"})
     duration = time.perf_counter() - start
 
     return RunResult(
